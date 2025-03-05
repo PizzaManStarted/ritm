@@ -66,7 +66,7 @@ impl TuringMachine {
 
 impl Debug for TuringMachine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuringMachine").field("states", &self.states).field("reading_rubon", &self.reading_rubon).field("write_rubons", &self.write_rubons).finish()
+        f.debug_struct("TuringMachine").field("states", &self.states).finish()
     }
 }
 

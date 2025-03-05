@@ -12,7 +12,7 @@ fn main()
                                                                          vec!(('ç', TuringDirection::Left), ('ç', TuringDirection::Left))), 
                                                                                           "q_a".to_string()).expect("h");
     
-    let mut tm_exec = TuringMachineExecutor::new(mt, "Hi".to_string());
+    let mut tm_exec = TuringMachineExecutor::new(&turing_mach, "Hi".to_string());
     
     println!("{:?}", turing_mach);
 }
