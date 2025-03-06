@@ -34,7 +34,7 @@ impl Debug for TuringState
 }
 
 
-/// Represents the direction of a movement a rubbon can take after reading/writing a character
+/// Represents the direction of a movement a ribbon can take after reading/writing a character
 pub enum TuringDirection {
     Left,
     Right,
@@ -97,21 +97,21 @@ impl Debug for TuringTransition {
 
 
 
-pub trait TuringRubon 
+pub trait TuringRibbon 
 {
     fn new() -> Self;
 
     fn transition_state(&mut self, if_read: char, replace_by: char, move_to: TuringDirection);
 }
 
-pub struct TuringWriteRubon
+pub struct TuringWriteRibbon
 {
     chars_vec: Vec<char>,
     pointer: usize
 }
 
 
-impl TuringRubon for TuringWriteRubon 
+impl TuringRibbon for TuringWriteRibbon 
 {
     fn new() -> Self
     {
@@ -139,14 +139,14 @@ impl TuringRubon for TuringWriteRubon
 }
 
 
-impl Debug for TuringWriteRubon 
+impl Debug for TuringWriteRibbon 
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuringRubon").field("chars_vec", &self.chars_vec).finish()
+        f.debug_struct("TuringRibbon").field("chars_vec", &self.chars_vec).finish()
     }
 }
 
-impl Display for TuringWriteRubon 
+impl Display for TuringWriteRibbon 
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut res: String = String::from("[");

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Debug};
 
-use crate::{turing_errors::TuringError, turing_state::{TuringDirection, TuringRubon, TuringState, TuringTransition, TuringWriteRubon}};
+use crate::{turing_errors::TuringError, turing_state::{TuringDirection, TuringRibbon, TuringState, TuringTransition, TuringWriteRibbon}};
 
 
 /// A struct representing a Turing Machine with k rubbons.
@@ -15,7 +15,7 @@ impl TuringMachine {
     /// Creates a new empty Turing Machine that has `k` writting rubbons.
     pub fn new(k: u8) -> Self
     {
-        // Add the write rubons
+        // Add the write ribbons
         let init_state = TuringState::new(false);
         let accepting_state = TuringState::new(true);
         let rejecting_state = TuringState::new(false);
@@ -76,9 +76,9 @@ pub struct TuringMachineExecutor<'a>
     /// The turing machine that will execute a word
     turing_machine: &'a TuringMachine,
     /// The reading rubbon containing the word
-    reading_rubon:  TuringWriteRubon,
+    reading_ribbon:  TuringWriteRibbon,
     /// A vector containing all writting rubbons
-    write_rubons: Vec<TuringWriteRubon>,
+    write_ribbons: Vec<TuringWriteRibbon>,
     /// The current word to read
     word: String,
     /// The index of the current state of the turing machine
@@ -94,24 +94,24 @@ impl<'a> TuringMachineExecutor<'a> {
         Self 
         {
             state_pointer: 0,
-            reading_rubon: TuringWriteRubon::new(),
-            write_rubons: {
-                // Creates k rubons
+            reading_ribbon: TuringWriteRibbon::new(),
+            write_ribbons: {
+                // Creates k ribbons
                 let mut v = vec!();
                 for _ in 0..mt.k
                 {
-                    v.push(TuringWriteRubon::new());
+                    v.push(TuringWriteRibbon::new());
                 }
                 v
             },
             word,
             turing_machine: mt,
         };
-        s.reading_rubon.transition_state('ç', 'ç', TuringDirection::Right);
-        s.reading_rubon.transition_state('_', 'a', TuringDirection::Right);
-        s.reading_rubon.transition_state('_', 'b', TuringDirection::Left);
-        s.reading_rubon.transition_state('a', 'g', TuringDirection::Right);
-        println!("{}", s.reading_rubon);
+        s.reading_ribbon.transition_state('ç', 'ç', TuringDirection::Right);
+        s.reading_ribbon.transition_state('_', 'a', TuringDirection::Right);
+        s.reading_ribbon.transition_state('_', 'b', TuringDirection::Left);
+        s.reading_ribbon.transition_state('a', 'g', TuringDirection::Right);
+        println!("{}", s.reading_ribbon);
         s
     }
 }
