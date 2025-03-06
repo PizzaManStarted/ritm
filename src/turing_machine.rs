@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Debug};
 
-use crate::{turing_errors::TuringError, turing_state::{TuringDirection, TuringRibbon, TuringState, TuringTransition, TuringWriteRibbon}};
+use crate::{turing_errors::TuringError, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringTransition}};
 
 
 /// A struct representing a Turing Machine with k rubbons.
@@ -56,6 +56,11 @@ impl TuringMachine {
         state.add_transition(transition);
         return Ok(());
     }
+
+    pub fn get_state(&self, pointer: u8) -> &TuringState
+    {
+        return &self.states[pointer as usize];
+    }
 }
 
 
@@ -76,7 +81,7 @@ pub struct TuringMachineExecutor<'a>
     /// The turing machine that will execute a word
     turing_machine: &'a TuringMachine,
     /// The reading rubbon containing the word
-    reading_ribbon:  TuringWriteRibbon,
+    reading_ribbon:  TuringReadRibbon,
     /// A vector containing all writting rubbons
     write_ribbons: Vec<TuringWriteRibbon>,
     /// The current word to read
@@ -88,13 +93,13 @@ pub struct TuringMachineExecutor<'a>
 
 impl<'a> TuringMachineExecutor<'a> {
     /// Create a new [TuringMachineExecutor] for a given word.
-    pub fn new(mt: &'a TuringMachine, word: String) -> Self
+    pub fn new(mt: &'a TuringMachine, word: String) -> Result<Self, TuringError>
     {
         let mut s = 
         Self 
         {
             state_pointer: 0,
-            reading_ribbon: TuringWriteRibbon::new(),
+            reading_ribbon: TuringReadRibbon::new(),
             write_ribbons: {
                 // Creates k ribbons
                 let mut v = vec!();
@@ -107,11 +112,33 @@ impl<'a> TuringMachineExecutor<'a> {
             word,
             turing_machine: mt,
         };
-        s.reading_ribbon.transition_state('ç', 'ç', TuringDirection::Right);
-        s.reading_ribbon.transition_state('_', 'a', TuringDirection::Right);
-        s.reading_ribbon.transition_state('_', 'b', TuringDirection::Left);
-        s.reading_ribbon.transition_state('a', 'g', TuringDirection::Right);
-        println!("{}", s.reading_ribbon);
-        s
+        // Add the word to the reading ribbon
+        s.reading_ribbon.feed_word(s.word.to_string());
+
+        // s.reading_ribbon.transition_state('ç', 'ç', TuringDirection::Right);
+        // s.reading_ribbon.transition_state('_', 'a', TuringDirection::Right);
+        // s.reading_ribbon.transition_state('_', 'b', TuringDirection::Left);
+        // s.reading_ribbon.transition_state('a', 'g', TuringDirection::Right);
+        //println!("{}", s.reading_ribbon);
+        Ok(s)
+    }
+}
+
+
+impl<'a> Iterator for TuringMachineExecutor<'a> 
+{
+    type Item = ();
+    
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Fetch the current state
+        let curr_state = self.turing_machine.get_state(self.state_pointer);
+        // If one of the transition condition is true, 
+        for tr in curr_state.check_transition(self.reading_ribbon.read_curr_char()) 
+        {
+            // TODO think more about how to implement non-deterministic MT
+        }
+        println!("{:?}",curr_state);
+        None
     }
 }
