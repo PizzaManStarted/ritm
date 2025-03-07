@@ -1,36 +1,90 @@
-use std::fmt::{Debug, Display};
+use std::{
+    char,
+    fmt::{Debug, Display},
+};
 
-
-pub struct TuringState
-{
-    is_final: bool,
+/// Represents a state of a turing machine
+pub struct TuringState {
+    pub is_final: bool,
     transitions: Vec<TuringTransition>,
-    name: Option<String>
+    pub name: Option<String>,
 }
 
-impl TuringState 
-{
-    pub fn new(is_final: bool) -> Self
+impl TuringState {
+    /// Creates a new [TuringState]
+    pub fn new(is_final: bool) -> Self {
+        Self {
+            is_final,
+            transitions: vec![],
+            name: None,
+        }
+    }
+
+    /// Sets the name of a [TuringState]
+    /// 
+    /// Returns the given [TuringState]
+    pub fn set_name(mut self, name: String) -> Self
     {
-        Self {  is_final, 
-                transitions: vec!(),
-                name: None 
-            }
-    }    
-}
+        self.name = Some(name);
+        return self;
+    }
 
-impl Debug for TuringState 
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuringState").field("is_final", &self.is_final).field("transitions", &self.transitions).field("name", &self.name).finish()
+    /// Adds a new transition to the state
+    pub fn add_transition(&mut self, transition: TuringTransition) {
+        self.transitions.push(transition);
+    }
+
+    /// Checks for all transitions that can be taken when reading a char in this state
+    pub fn get_valid_transitions(&self, chars_read: Vec<char>) -> Vec<&TuringTransition> {
+        let mut res = vec![];
+        for t in &self.transitions {
+            if chars_read.len() != t.chars_read.len() 
+            {
+                return res;    
+            }
+            for i in 0..chars_read.len() 
+            {
+                // If one of the characters wasn't read, stop, and do not add this transition as valid
+                if t.chars_read[i] != chars_read[i] 
+                {
+                    break;
+                }
+                res.push(t);
+                
+            }
+        }
+        return res;
     }
 }
 
+impl Debug for TuringState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TuringState")
+            .field("is_final", &self.is_final)
+            .field("transitions", &self.transitions)
+            .field("name", &self.name)
+            .finish()
+    }
+}
 
-enum TuringDirection {
+/// Represents the direction of a movement a ribbon can take after reading/writing a character
+pub enum TuringDirection {
     Left,
     Right,
-    None
+    None,
+}
+
+impl TuringDirection {
+    /// Return the integer value of the direction.
+    ///
+    /// Left values are negatives, right values are positives and none is represented by zero.
+    pub fn get_value(&self) -> i8 {
+        match self {
+            Self::Left => -1,
+            Self::Right => 1,
+            Self::None => 0,
+        }
+    }
 }
 
 impl Debug for TuringDirection {
@@ -42,58 +96,71 @@ impl Debug for TuringDirection {
         }
     }
 }
+impl Display for TuringDirection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Self::Left => "L",
+            Self::Right => "R",
+            Self::None => "N",
+        })
+    }
+}
 
-struct TuringTransition
-{
-    char_read: char,
-    move_read: TuringDirection,
-    // When *first* char is read, replace it with the second *char* and move to direction 
-    char_write: (char, Option<char>, TuringDirection)
+/// A struct representing a turing transition
+pub struct TuringTransition {
+    /// The chars that have to be read in order apply the rest of the transition.
+    pub chars_read: Vec<char>,
+    /// The move to take after writing/reading the character.
+    pub move_read: TuringDirection,
+    /// The character to replace the character just read.
+    pub chars_write: Vec<(char, TuringDirection)>,
+    /// The index of the state to go to after passing through this state.
+    pub index_to_state: u8,
+}
+
+impl TuringTransition {
+    /// Creates a new [TuringTransition]
+    pub fn new(
+        char_read: Vec<char>,
+        move_read: TuringDirection,
+        chars_read_write: Vec<(char, TuringDirection)>,
+    ) -> Self {
+        Self {
+            chars_read: char_read,
+            move_read,
+            chars_write: chars_read_write,
+            index_to_state: 0,
+        }
+    }
 }
 
 impl Debug for TuringTransition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuringTransition").field("char_read", &self.char_read).field("move_read", &self.move_read).field("char_write", &self.char_write).finish()
+        f.debug_struct("TuringTransition")
+            .field("char_read", &self.chars_read)
+            .field("move_read", &self.move_read)
+            .field("char_write", &self.chars_write)
+            .finish()
     }
 }
 
-
-
-pub struct TuringRubon
-{
-    chars_vec: Vec<char>
-}
-
-
-impl TuringRubon 
-{
-    pub fn new() -> Self
+impl Display for TuringTransition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
     {
-        Self 
-        { 
-            chars_vec: vec!('ç'),
-        }
-    }
-}
-
-
-impl Debug for TuringRubon 
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuringRubon").field("chars_vec", &self.chars_vec).finish()
-    }
-}
-
-impl Display for TuringRubon 
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut res: String = String::from("[");
-        for c in &self.chars_vec 
+        let mut char_read = String::from(self.chars_read[0]);
+        for i in 1..self.chars_read.len()
         {
-            res.push_str(&format!("{c},"));
+            char_read.push_str(format!(", {}", self.chars_read[i]).as_str());
         }
-        res.pop();
-        res += "]";
-        write!(f, "({})", self)
+
+        let mut char_written = format!("{}", self.move_read);
+
+        for (c, dir) in &self.chars_write {
+            char_written.push_str(format!(", {}, {}", c, dir).as_str());
+        }
+
+
+
+        write!(f, "[{} -> {}]", char_read, char_written)
     }
 }
