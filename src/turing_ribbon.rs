@@ -1,31 +1,34 @@
-use std::{fmt::{Debug, Display}, u16};
+use std::fmt::{Debug, Display};
 
-use crate::turing_state::TuringDirection;
+use crate::{turing_errors::TuringError, turing_state::TuringDirection};
 
+
+/// A trait used to implement turing ribbons
 pub trait TuringRibbon : Display
 {
-    
+    /// Creates a new [TuringRibbon]
     fn new() -> Self;
 
-    fn transition_state(&mut self, if_read: char, replace_by: char, move_to: TuringDirection) -> bool;
+    fn transition_state(&mut self, if_read: char, replace_by: char, move_to: &TuringDirection) -> Result<bool, TuringError>;
 
+    /// Returns the current character being read by the ribbon
     fn read_curr_char(&self) -> char;
 
 }
 
+/// Represents a ribbon made to write and read characters.
 pub struct TuringWriteRibbon
 {
     chars_vec: Vec<char>,
     pointer: usize
 }
 
-
+/// Represents a ribbon made to store and only read a word.
 pub struct TuringReadRibbon
 {
     chars_vec: Vec<char>,
     pointer: usize
 }
-
 
 impl TuringRibbon for TuringWriteRibbon 
 {
@@ -38,16 +41,30 @@ impl TuringRibbon for TuringWriteRibbon
         }
     }
     
-    fn transition_state(&mut self, _: char, replace_by: char, move_to: TuringDirection) -> bool
+    fn transition_state(&mut self, if_read: char, replace_by: char, move_to: &TuringDirection) -> Result<bool, TuringError>
     {
-        // Replace the current char read
-        self.chars_vec[self.pointer] = replace_by;
-        self.chars_vec.push('_');
-        // Move to the new position
-        let new_pointer = (self.pointer as isize) + (move_to.get_value() as isize);
-        
-        self.pointer = new_pointer as usize;
-        return true;
+        // if the correct symbol was read
+        if self.chars_vec[self.pointer] == if_read 
+        {
+            let new_pointer = (self.pointer as isize) + (move_to.get_value() as isize);
+            
+            if new_pointer < 0
+            {
+                return Err(TuringError::OutofRangeRibbonError { tried_to_access: new_pointer as usize, ribbon_size: self.chars_vec.len() });
+            }
+            // In a write ribbon, we have an *infinite size*, so we can simulate this by adding when needed a new empty char
+            if new_pointer >= self.chars_vec.len() as isize {
+                self.chars_vec.push('_');
+                
+            }
+            // Replace the current char read
+            self.chars_vec[self.pointer] = replace_by;
+            
+            // Move to the new position
+            self.pointer = new_pointer as usize;
+            return Ok(true);
+        }
+        return Ok(false);
     }
     
     fn read_curr_char(&self) -> char {
@@ -67,20 +84,23 @@ impl TuringRibbon for TuringReadRibbon
         }
     }
     
-    fn transition_state(&mut self, if_read: char, _: char, move_to: TuringDirection) -> bool
+    /// If an error arose, then the transition will not be applied
+    fn transition_state(&mut self, if_read: char, _: char, move_to: &TuringDirection) -> Result<bool, TuringError>
     {
         // if the correct symbol was read
         if self.chars_vec[self.pointer] == if_read 
         {
-            // Replace the current char read
-            self.chars_vec.push('_');
             // Move to the new position
             let new_pointer = (self.pointer as isize) + (move_to.get_value() as isize);
             
+            if new_pointer < 0 || new_pointer >= self.chars_vec.len() as isize
+            {
+                return Err(TuringError::OutofRangeRibbonError { tried_to_access: new_pointer as usize, ribbon_size: self.chars_vec.len() });
+            }
             self.pointer = new_pointer as usize;
-            return true;
+            return Ok(true);
         }
-        return false;
+        return Ok(false);
     }
     
     fn read_curr_char(&self) -> char {

@@ -20,6 +20,15 @@ impl TuringState {
         }
     }
 
+    /// Sets the name of a [TuringState]
+    /// 
+    /// Returns the given [TuringState]
+    pub fn set_name(mut self, name: String) -> Self
+    {
+        self.name = Some(name);
+        return self;
+    }
+
     /// Adds a new transition to the state
     pub fn add_transition(&mut self, transition: TuringTransition) {
         self.transitions.push(transition);

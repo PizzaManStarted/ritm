@@ -16,7 +16,7 @@ fn main() {
                 TuringDirection::Right,
                 vec![('ç', TuringDirection::Right), ('ç', TuringDirection::Right)],
             ),
-            "q_a".to_string(),
+            "q_1".to_string(),
         )
         .expect("h");
 

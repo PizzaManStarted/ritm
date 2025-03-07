@@ -39,20 +39,45 @@ impl TuringMachine {
     /// Adds a new rule to a state of the machine.
     /// 
     /// If the given state didn't already exists, the state will be created.
-    pub fn add_rule_state(&mut self, from: String, mut transition: TuringTransition, to: String) -> Result<(), TuringError>
+    pub fn add_rule_state(&mut self, from: String, transition: TuringTransition, to: String) -> Result<(), TuringError>
     {
         // Checks if the given correct of number transitions was given
         if transition.chars_write.len() != self.k as usize
         {
             return Err(TuringError::NotEnougthArgsError);
         }
-        
-        let from_index = *self.name_index_hashmap.get(&from).unwrap(); // FIXME : Change unwrap
-        let to_index = *self.name_index_hashmap.get(&to).unwrap();
-        // Change transition index
-        transition.index_to_state = to_index;
+        let from_index = self.add_state(&from);
+        let to_index = self.add_state(&to);
 
-        let state = self.states.get_mut(from_index as usize).unwrap();
+        return self.add_rule_state_ind(from_index, transition, to_index);
+    }
+
+    /// Adds a new state to the turing machine and returns it's index.
+    /// 
+    /// If the state name already existed then the index of the already existing state is added.
+    pub fn add_state(&mut self, name: &String) -> u8
+    {
+        match self.name_index_hashmap.get(name) 
+        {
+            Some(e) => {
+                return *e;
+            },
+            None => 
+            {
+                self.states.push(TuringState::new(false).set_name(name.to_string()));
+                self.name_index_hashmap.insert(name.to_string(), (self.states.len()-1) as u8);
+                return (self.states.len()-1) as u8;
+            },
+        }
+    }
+
+
+    fn add_rule_state_ind(&mut self, from: u8, mut transition: TuringTransition, to: u8) -> Result<(), TuringError>
+    {
+        // Change transition index
+        transition.index_to_state = to;
+
+        let state  = self.states.get_mut(from as usize).unwrap();
         state.add_transition(transition);
         return Ok(());
     }
@@ -152,10 +177,25 @@ impl<'a> Iterator for TuringMachineExecutor<'a>
         // Take a random transition (non deterministic)
         let transition = transitions[rng().random_range(0..transitions.len())];
 
-        // Take the transition
+        /* TRANSITION */
         println!("What is this : {}", transition);
+
+        // Apply the transition
+        // to the read ribbons
+        self.reading_ribbon.transition_state(transition.chars_read[0], ' ', &transition.move_read).unwrap();
+        
+        // to the write ribbons
+        for i in 0..self.turing_machine.k 
+        {
+            self.write_ribbons[i as usize].transition_state(transition.chars_read[(i+1) as usize],
+                                                                                    transition.chars_write[i as usize].0, &transition.chars_write[i as usize].1).unwrap();
+        }
+
+        // Move to the next state
         self.state_pointer = transition.index_to_state;
 
+
+        // TODO CHECK IF CURRENT STATE IS ACCEPTING
         Some(())
     }
 }
