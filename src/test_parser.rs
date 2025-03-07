@@ -11,7 +11,7 @@ pub struct TuringGrammar;
 pub fn test()
 {
     
-    let unparsed_file = fs::read_to_string("resources/turing_test.tm").expect("cannot read file");
+    let unparsed_file = fs::read_to_string("resources/turing2.tm").expect("cannot read file");
 
     let file = TuringGrammar::parse(Rule::turing_machine, &unparsed_file)
         .expect("unsuccessful parse") // unwrap the parse result

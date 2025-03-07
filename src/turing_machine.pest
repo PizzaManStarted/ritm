@@ -1,4 +1,5 @@
-turing_machine = { ( rule ~ ";")+ }
+turing_machine = { WHITESPACE* ~ (  rule ~ ";")+ ~ EOI }
+
 rule = { (var) ~ ("{" ~ transition ~ ("|" ~ transition)* ~ "}")+ ~ (var)}
 
 transition = { to_read ~ "->" ~  to_write_move }
@@ -12,7 +13,8 @@ move = _{ dir_left | dir_right | dir_none }
     dir_none	= { "N" }
 
 var = { "q_" ~ (int|str) }
+
 int = { ASCII_DIGIT+ }
 str = { (ASCII_ALPHA| "_")+ }
-char = { ("ç" | ASCII_DIGIT|ASCII_ALPHA| "_") }
+char = { ("ç" | "#" | "$" | ASCII_DIGIT | ASCII_ALPHA | "_") }
 WHITESPACE = _{ " " | "\t" | "\n" }
