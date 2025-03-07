@@ -1,5 +1,5 @@
 use std::{collections::HashMap, fmt::Debug};
-
+use rand::{rng, Rng};
 use crate::{turing_errors::TuringError, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringTransition}};
 
 
@@ -130,15 +130,32 @@ impl<'a> Iterator for TuringMachineExecutor<'a>
     type Item = ();
     
 
-    fn next(&mut self) -> Option<Self::Item> {
+    fn next(&mut self) -> Option<Self::Item> 
+    {
         // Fetch the current state
         let curr_state = self.turing_machine.get_state(self.state_pointer);
-        // If one of the transition condition is true, 
-        for tr in curr_state.check_transition(self.reading_ribbon.read_curr_char()) 
-        {
-            // TODO think more about how to implement non-deterministic MT
+        // If one of the transition condition is true,
+        // Get all current char read by **all** ribbons
+        let mut char_vec = vec!(self.reading_ribbon.read_curr_char());
+        for ribbon in &self.write_ribbons {
+            char_vec.push(ribbon.read_curr_char());
         }
-        println!("{:?}",curr_state);
-        None
+        let transitions = curr_state.get_valid_transitions(char_vec); 
+        println!("{:?}", curr_state);
+        
+        // If no transitions can be provided
+        if transitions.len() == 0 
+        {
+            return None;
+        }
+        
+        // Take a random transition (non deterministic)
+        let transition = transitions[rng().random_range(0..transitions.len())];
+
+        // Take the transition
+        println!("What is this : {}", transition);
+        self.state_pointer = transition.index_to_state;
+
+        Some(())
     }
 }

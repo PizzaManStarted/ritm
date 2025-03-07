@@ -12,7 +12,7 @@ fn main() {
         .add_rule_state(
             "q_0".to_string(),
             TuringTransition::new(
-                'ç',
+                vec!('ç', 'ç', 'ç'),
                 TuringDirection::Right,
                 vec![('ç', TuringDirection::Right), ('ç', TuringDirection::Right)],
             ),
