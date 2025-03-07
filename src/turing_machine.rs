@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Debug};
+use std::{collections::HashMap, fmt::{Debug, Display}};
 use rand::{rng, Rng};
 use crate::{turing_errors::TuringError, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringTransition}};
 
@@ -39,7 +39,7 @@ impl TuringMachine {
     /// Adds a new rule to a state of the machine.
     /// 
     /// If the given state didn't already exists, the state will be created.
-    pub fn add_rule_state(&mut self, from: String, transition: TuringTransition, to: String) -> Result<(), TuringError>
+    pub fn add_rule_state(mut self, from: String, transition: TuringTransition, to: String) -> Result<Self, TuringError>
     {
         // Checks if the given correct of number transitions was given
         if transition.chars_write.len() != self.k as usize
@@ -49,7 +49,14 @@ impl TuringMachine {
         let from_index = self.add_state(&from);
         let to_index = self.add_state(&to);
 
-        return self.add_rule_state_ind(from_index, transition, to_index);
+        match self.add_rule_state_ind(from_index, transition, to_index) {
+            Ok(()) => {
+                return Ok(self);
+            },
+            Err(e) => {
+                return Err(e);
+            },
+        };
     }
 
     /// Adds a new state to the turing machine and returns it's index.
@@ -150,7 +157,7 @@ impl<'a> TuringMachineExecutor<'a> {
 }
 
 
-impl<'a> Iterator for TuringMachineExecutor<'a> 
+impl<'a> Iterator for &mut TuringMachineExecutor<'a> 
 {
     type Item = ();
     
@@ -159,6 +166,12 @@ impl<'a> Iterator for TuringMachineExecutor<'a>
     {
         // Fetch the current state
         let curr_state = self.turing_machine.get_state(self.state_pointer);
+        /* Checks if the state is accepting */
+        if curr_state.is_final
+        {
+            return None;
+        }
+        
         // If one of the transition condition is true,
         // Get all current char read by **all** ribbons
         let mut char_vec = vec!(self.reading_ribbon.read_curr_char());
@@ -177,9 +190,6 @@ impl<'a> Iterator for TuringMachineExecutor<'a>
         // Take a random transition (non deterministic)
         let transition = transitions[rng().random_range(0..transitions.len())];
 
-        /* TRANSITION */
-        println!("What is this : {}", transition);
-
         // Apply the transition
         // to the read ribbons
         self.reading_ribbon.transition_state(transition.chars_read[0], ' ', &transition.move_read).unwrap();
@@ -194,8 +204,20 @@ impl<'a> Iterator for TuringMachineExecutor<'a>
         // Move to the next state
         self.state_pointer = transition.index_to_state;
 
-
-        // TODO CHECK IF CURRENT STATE IS ACCEPTING
         Some(())
+    }
+}
+
+
+impl<'a> Display for TuringMachineExecutor<'a>{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
+    {
+        let mut write_str_rib = String::from(format!("{}",self.write_ribbons[0]));
+        for i in 1..self.write_ribbons.len() 
+        {
+            write_str_rib.push_str(format!("\n{}", self.write_ribbons[i]).as_str());
+        }
+
+        write!(f, "READ:\n{}\nWrite:\n{}", self.reading_ribbon, write_str_rib)
     }
 }

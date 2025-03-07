@@ -36,7 +36,7 @@ impl TuringRibbon for TuringWriteRibbon
     {
         Self 
         { 
-            chars_vec: vec!('ç'),
+            chars_vec: vec!('ç', '_'),
             pointer: 0
         }
     }
@@ -134,19 +134,19 @@ impl Display for TuringWriteRibbon
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
     {
-        write!(f, "{}", ribbon_to_string(&self.chars_vec, self.pointer))
+        write!(f, "{}", ribbon_to_string(&self.chars_vec, self.pointer, true))
     }
 }
 
 impl Display for TuringReadRibbon {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
     {
-        write!(f, "{}", ribbon_to_string(&self.chars_vec, self.pointer))
+        write!(f, "{}", ribbon_to_string(&self.chars_vec, self.pointer, false))
     }
 }
 
 /// Turns a character vector into an easy string to read for humans, displaying with an arrow the current char being pointed
-fn ribbon_to_string(chars_vec: &Vec<char>, pointer: usize) -> String
+fn ribbon_to_string(chars_vec: &Vec<char>, pointer: usize, is_inf: bool) -> String
 {
     let mut res: String = String::from("[");
     let mut pointing: String = String::from(" ");
@@ -163,9 +163,14 @@ fn ribbon_to_string(chars_vec: &Vec<char>, pointer: usize) -> String
         }
         count += 1;
     }
-    // [ç,a,a,a,a]
+    
     res.pop();
-    res += "]\n";
+    if is_inf 
+    {
+        res += ",...";    
+    }
+    res +=  "]\n";
+    
     res.push_str(&pointing);
     return res;
 }

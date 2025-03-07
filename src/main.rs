@@ -6,25 +6,40 @@ use turingrs::{
 fn main() {
     println!("Hello, world!");
 
-    let mut turing_mach: TuringMachine = TuringMachine::new(2);
-
-    turing_mach
+    let turing_mach: TuringMachine = TuringMachine::new(2)
         .add_rule_state(
             "q_0".to_string(),
             TuringTransition::new(
-                vec!('ç', 'ç', 'ç'),
+                vec!['ç', 'ç', 'ç'],
                 TuringDirection::Right,
                 vec![('ç', TuringDirection::Right), ('ç', TuringDirection::Right)],
             ),
             "q_1".to_string(),
         )
-        .expect("h");
+        .unwrap()
+        .add_rule_state(
+            "q_1".to_string(),
+            TuringTransition::new(
+                vec!['1', '_', '_'],
+                TuringDirection::Right,
+                vec![('1', TuringDirection::Right), ('0', TuringDirection::Right)],
+            ),
+            "q_a".to_string(),
+        )
+        .unwrap();
 
-    let tm_exec =
-        TuringMachineExecutor::new(&turing_mach, "Hi I am glad to meet you all".to_string()).unwrap();
+    let mut tm_exec =
+        TuringMachineExecutor::new(&turing_mach, "10001110011101".to_string())
+            .unwrap();
 
-    for () in tm_exec {
-        println!("hi")
+    let mut i = 0;
+    println!("Before all : \n{}", tm_exec);
+
+    for () in &mut tm_exec {
+        println!("{i}");
+        i+=1;
     }
-    //println!("{:?}", turing_mach);
+ 
+    println!("After all : \n{}", tm_exec);
+   
 }

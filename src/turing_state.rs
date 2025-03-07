@@ -5,9 +5,9 @@ use std::{
 
 /// Represents a state of a turing machine
 pub struct TuringState {
-    is_final: bool,
+    pub is_final: bool,
     transitions: Vec<TuringTransition>,
-    name: Option<String>,
+    pub name: Option<String>,
 }
 
 impl TuringState {
