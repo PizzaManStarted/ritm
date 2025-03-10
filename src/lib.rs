@@ -6,4 +6,4 @@ pub mod turing_errors;
 
 pub mod turing_ribbon;
 
-pub mod test_parser;
+pub mod parser;

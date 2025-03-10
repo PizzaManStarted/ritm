@@ -1,5 +1,5 @@
 use turingrs::{
-    test_parser::test, turing_machine::{TuringMachine, TuringMachineExecutor}, turing_state::{TuringDirection, TuringTransition}
+    parser::parse_turing_machine, turing_machine::{TuringMachine, TuringMachineExecutor}, turing_state::{TuringDirection, TuringTransition}
 };
 
 fn main() {
@@ -40,5 +40,5 @@ fn main() {
     // }
  
     // println!("After all : \n{}", tm_exec);
-    test();
+    parse_turing_machine("resources/turing2.tm".to_string());
 }
