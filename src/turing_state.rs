@@ -106,6 +106,17 @@ impl Display for TuringDirection {
     }
 }
 
+impl Clone for TuringDirection {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Left => Self::Left,
+            Self::Right => Self::Right,
+            Self::None => Self::None,
+        }
+    }
+}
+
+
 /// A struct representing a turing transition
 pub struct TuringTransition {
     /// The chars that have to be read in order apply the rest of the transition.
@@ -132,7 +143,34 @@ impl TuringTransition {
             index_to_state: 0,
         }
     }
+
+    
+    pub fn create(chars_read: Vec<char>, chars_write: Vec<char>, directions: Vec<TuringDirection>) -> Self
+    {
+        let mut chars_write_dir: Vec<(char, TuringDirection)> = vec!();
+
+        let move_read: TuringDirection = directions.get(0).expect("There must be at least one direction").clone();
+        
+        for i in 1..directions.len() 
+        {
+            chars_write_dir.push((*chars_write.get(i-1).unwrap(), directions.get(i).unwrap().clone()));        
+        }
+
+        Self {
+            chars_read,
+            move_read,
+            chars_write: chars_write_dir,
+            index_to_state : 0,
+        }
+    }
+
+    /// Returns the number of ribbons that are going to be affected by this transition.
+    pub fn get_number_of_ribbons(&self) -> usize
+    {
+        return self.chars_write.len();
+    }
 }
+
 
 impl Debug for TuringTransition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

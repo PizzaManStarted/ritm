@@ -2,7 +2,7 @@ use pest::{iterators::Pair, Parser};
 use std::fs;
 use pest_derive::Parser;
 
-use crate::{turing_errors::TuringError, turing_machine::TuringMachine, turing_state::TuringTransition};
+use crate::{turing_errors::TuringError, turing_machine::TuringMachine, turing_state::{TuringDirection, TuringTransition}};
 
 #[derive(Parser)]
 #[grammar = "turing_machine.pest"]
@@ -19,39 +19,128 @@ pub fn parse_turing_machine(file_path: String) -> Result<TuringMachine, TuringEr
         .expect("unsuccessful parse") // unwrap the parse result
         .next().unwrap(); // get and unwrap the `file` rule; never fails
     
-    let turing_mac: Option<TuringMachine> = None;
+    let mut turing_machine: Option<TuringMachine> = None;
 
-    for turing_machine in file.into_inner() {
+    let mut to_from_vars : Vec<String> = vec!();
+    let mut transition: TuringTransition;
+    let mut transitions: Vec<TuringTransition> = vec!();
+    let mut nb_of_ribbons: Option<usize> = None;
+
+    for turing_machine_rule in file.into_inner() {
         println!("______");
-        match turing_machine.as_rule() {
+        
+        match turing_machine_rule.as_rule() {
             Rule::rule => 
             {
-                let mut var1 = String::new();
-                let mut var2 = String::new();
-
-                for rule in turing_machine.into_inner() {
-                    println!("\t_=_=_=_=_");
+                let mut from_var = String::new();
+                
+                for rule in turing_machine_rule.into_inner() {
+                    println!("Showing : {}", rule.as_str());
                     match rule.as_rule() {
                         // Get var1 & var2
                         Rule::var =>
                         {
-                            if var1.eq("")
+                            if from_var.eq("")
                             {
-                                var1 = rule.into_inner().as_str().to_string();
+                                from_var = parse_str_token(rule);
                             }
-                            else if var2.eq("") {
-                                var2 = rule.into_inner().as_str().to_string();
+                            else {
+                                to_from_vars.push(from_var.clone());
+                                to_from_vars.push(parse_str_token(rule));
                             }
                         },
-                        Rule::transition => {},
+                        // Read all transitions
+                        Rule::transition => {
+                            // Add the transition
+                            transition = parse_transition(rule);
+                            if let Some(k) = nb_of_ribbons
+                            {
+                                if k != transition.get_number_of_ribbons() 
+                                {
+                                    panic!("Wrong nb of ribbons !"); // FIXME, wrap this in an error
+                                }
+                            }
+                            else {
+                                nb_of_ribbons = Some(transition.get_number_of_ribbons());
+                            }
+                            transitions.push(transition);
+                        },
                         _ => unreachable!(), 
                     }
+                    println!("\t_=_=_=_=_");
                 }
-                println!("q1: {}, q2: {}", var1, var2);
-                
+            },
+            // The file has ended, we can stop reading
+            Rule::EOI => {},
+            _ => unreachable!(),
+        }
+        
+    }
+    
+    return Ok(turing_machine.unwrap());
+}
+
+
+
+fn parse_str_token(rule: Pair<Rule>) -> String
+{
+    match rule.as_rule() 
+    {
+        Rule::var | Rule::int | Rule::str => 
+        {
+            rule.into_inner().as_str().to_string()
+        },
+        _ => unreachable!(),
+    }
+}
+
+fn parse_transition(rule: Pair<Rule>) -> TuringTransition
+{
+    let mut chars_read: Vec<char> = vec!();
+    let mut directions: Vec<TuringDirection> = vec!();
+    let mut chars_written: Vec<char> = vec!();
+
+    // Parse all the informations
+    for transition_rule in rule.into_inner()
+    {
+        match transition_rule.as_rule(){
+            Rule::to_read => 
+            {
+                // Parse all the characters to read
+                for chars_rule in transition_rule.into_inner() {
+                    chars_read.push(chars_rule.as_str().chars().next().unwrap());
+                }
+            },
+            Rule::to_write_move => 
+            {
+                for write_move_rule in transition_rule.into_inner()
+                {
+                    // FIXME AHHHHHHHHHH
+                    match write_move_rule.as_rule() {
+                        Rule::dir_left => 
+                        {
+                            directions.push(TuringDirection::Left);
+                        },
+                        Rule::dir_right => 
+                        {
+                            directions.push(TuringDirection::Right);
+                        },
+                        Rule::dir_none => 
+                        {
+                            directions.push(TuringDirection::None);
+                        },
+                        Rule::char =>
+                        {
+                            chars_written.push(write_move_rule.as_str().chars().next().unwrap());
+                        },
+                        _ => unreachable!(),
+                    };
+                    
+                }
             },
             _ => unreachable!(),
         }
     }
-    return Ok(turing_mac.unwrap());
+
+    TuringTransition::create(chars_read, chars_written, directions)
 }

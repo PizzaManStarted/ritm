@@ -1,4 +1,4 @@
-turing_machine = { WHITESPACE* ~ (  rule ~ ";")+ ~ EOI }
+turing_machine = { WHITESPACE* ~ ( rule ~ ";")+ ~ EOI? }
 
 rule = { (var) ~ ("{" ~ transition ~ ("|" ~ transition)* ~ "}")+ ~ (var)}
 

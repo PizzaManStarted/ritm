@@ -22,9 +22,9 @@ impl TuringMachine {
         
         // Create the hash map with the already known states
         let mut name_index_hashmap: HashMap<String, u8> = HashMap::new();
-        name_index_hashmap.insert("q_0".to_string(), 0);    // init
-        name_index_hashmap.insert("q_a".to_string(), 1);    // accepting
-        name_index_hashmap.insert("q_r".to_string(), 2);    // rejecting
+        name_index_hashmap.insert("i".to_string(), 0);    // init
+        name_index_hashmap.insert("a".to_string(), 1);    // accepting
+        name_index_hashmap.insert("r".to_string(), 2);    // rejecting
 
         let s = Self
         {
@@ -39,7 +39,7 @@ impl TuringMachine {
     /// Adds a new rule to a state of the machine.
     /// 
     /// If the given state didn't already exists, the state will be created.
-    pub fn add_rule_state(mut self, from: String, transition: TuringTransition, to: String) -> Result<Self, TuringError>
+    pub fn append_rule_state(mut self, from: String, transition: TuringTransition, to: String) -> Result<Self, TuringError>
     {
         // Checks if the given correct of number transitions was given
         if transition.chars_write.len() != self.k as usize
@@ -147,11 +147,6 @@ impl<'a> TuringMachineExecutor<'a> {
         // Add the word to the reading ribbon
         s.reading_ribbon.feed_word(s.word.to_string());
 
-        // s.reading_ribbon.transition_state('ç', 'ç', TuringDirection::Right);
-        // s.reading_ribbon.transition_state('_', 'a', TuringDirection::Right);
-        // s.reading_ribbon.transition_state('_', 'b', TuringDirection::Left);
-        // s.reading_ribbon.transition_state('a', 'g', TuringDirection::Right);
-        //println!("{}", s.reading_ribbon);
         Ok(s)
     }
 }
