@@ -38,7 +38,23 @@ fn main() {
     //     println!("{i}");
     //     i+=1;
     // }
- 
+
+    let mut tm = TuringMachine::new(2);
+    tm.append_rule_state("q_0".to_string(),
+             TuringTransition::new(
+                 vec!['ç', 'ç', 'ç'],
+                 TuringDirection::Right,
+                 vec![('ç', TuringDirection::Right), ('ç', TuringDirection::Right)],
+             ),
+             "q_1".to_string()).unwrap();
+    
     // println!("After all : \n{}", tm_exec);
-    parse_turing_machine("resources/turing2.tm".to_string());
+    let mt = parse_turing_machine("resources/turing2.tm".to_string()).unwrap();
+
+    let mut exec = TuringMachineExecutor::new(&mt, "00".to_string()).unwrap();
+
+    for () in &mut exec {
+        println!("hi")
+    }
+    println!("{}", exec);
 }

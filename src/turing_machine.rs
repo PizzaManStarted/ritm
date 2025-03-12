@@ -36,10 +36,12 @@ impl TuringMachine {
         s
     }
 
+
+
     /// Adds a new rule to a state of the machine.
     /// 
     /// If the given state didn't already exists, the state will be created.
-    pub fn append_rule_state(mut self, from: String, transition: TuringTransition, to: String) -> Result<Self, TuringError>
+    pub fn append_rule_state(&mut self, from: String, transition: TuringTransition, to: String) -> Result<(), TuringError>
     {
         // Checks if the given correct of number transitions was given
         if transition.chars_write.len() != self.k as usize
@@ -51,11 +53,23 @@ impl TuringMachine {
 
         match self.add_rule_state_ind(from_index, transition, to_index) {
             Ok(()) => {
-                return Ok(self);
+                return Ok(());
             },
             Err(e) => {
                 return Err(e);
             },
+        };
+
+    }
+
+    /// Adds a new rule to a state of the machine and returns the machine.
+    /// 
+    /// If the given state didn't already exists, the state will be created.
+    pub fn append_rule_state_self(mut self, from: String, transition: TuringTransition, to: String) -> Result<Self, TuringError>
+    {
+        match self.append_rule_state(from, transition, to) {
+            Ok(()) => return Ok(self),
+            Err(e) => return Err(e),
         };
     }
 

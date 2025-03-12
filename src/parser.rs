@@ -28,10 +28,11 @@ pub fn parse_turing_machine(file_path: String) -> Result<TuringMachine, TuringEr
 
     for turing_machine_rule in file.into_inner() {
         println!("______");
-        
         match turing_machine_rule.as_rule() {
             Rule::rule => 
             {
+                transitions = vec!();
+                to_from_vars = vec!();
                 let mut from_var = String::new();
                 
                 for rule in turing_machine_rule.into_inner() {
@@ -68,6 +69,20 @@ pub fn parse_turing_machine(file_path: String) -> Result<TuringMachine, TuringEr
                         _ => unreachable!(), 
                     }
                     println!("\t_=_=_=_=_");
+                };
+                println!("should i add all ? : {:?} ", to_from_vars);
+                // Add the colected transitions to the MT
+                if let None = turing_machine 
+                {
+                    turing_machine = Some(TuringMachine::new(transitions.get(0).unwrap().get_number_of_ribbons() as u8));    
+                }
+                if let Some(mt) = &mut turing_machine 
+                {
+                        
+                    for transition in transitions  
+                    {
+                        mt.append_rule_state(to_from_vars.get(0).unwrap().to_string(), transition, to_from_vars.get(1).unwrap().to_string());    
+                    }
                 }
             },
             // The file has ended, we can stop reading
@@ -115,7 +130,6 @@ fn parse_transition(rule: Pair<Rule>) -> TuringTransition
             {
                 for write_move_rule in transition_rule.into_inner()
                 {
-                    // FIXME AHHHHHHHHHH
                     match write_move_rule.as_rule() {
                         Rule::dir_left => 
                         {
