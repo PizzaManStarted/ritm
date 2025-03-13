@@ -17,7 +17,7 @@ impl TuringMachine {
     {
         // Add the write ribbons
         let init_state = TuringState::new(false).set_name("i");
-        let accepting_state = TuringState::new(true).set_name("i");
+        let accepting_state = TuringState::new(true).set_name("a");
         let rejecting_state = TuringState::new(false).set_name("r");
         
         // Create the hash map with the already known states

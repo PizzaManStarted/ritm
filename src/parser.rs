@@ -21,13 +21,13 @@ pub fn parse_turing_machine(file_path: String) -> Result<TuringMachine, TuringEr
     
     let mut turing_machine: Option<TuringMachine> = None;
 
-    let mut to_from_vars : Vec<String> = vec!();
+    let mut to_from_vars : Vec<String>;
     let mut transition: TuringTransition;
-    let mut transitions: Vec<TuringTransition> = vec!();
+    let mut transitions: Vec<TuringTransition>;
+
     let mut nb_of_ribbons: Option<usize> = None;
 
     for turing_machine_rule in file.into_inner() {
-        println!("______");
         match turing_machine_rule.as_rule() {
             Rule::rule => 
             {
@@ -36,7 +36,7 @@ pub fn parse_turing_machine(file_path: String) -> Result<TuringMachine, TuringEr
                 let mut from_var = String::new();
                 
                 for rule in turing_machine_rule.into_inner() {
-                    println!("Showing : {}", rule.as_str());
+                    // println!("Showing : {}", rule.as_str());
                     match rule.as_rule() {
                         // Get var1 & var2
                         Rule::var =>
@@ -58,7 +58,7 @@ pub fn parse_turing_machine(file_path: String) -> Result<TuringMachine, TuringEr
                             {
                                 if k != transition.get_number_of_ribbons() 
                                 {
-                                    panic!("Wrong nb of ribbons !"); // FIXME, wrap this in an error
+                                    return Err(TuringError::NotEnougthArgsError);
                                 }
                             }
                             else {
@@ -68,20 +68,27 @@ pub fn parse_turing_machine(file_path: String) -> Result<TuringMachine, TuringEr
                         },
                         _ => unreachable!(), 
                     }
-                    println!("\t_=_=_=_=_");
                 };
-                println!("should i add all ? : {:?} ", to_from_vars);
-                // Add the colected transitions to the MT
+                /* Add the colected transitions to the MT */
+
+                // If the MT doesn't already exists, create it
                 if let None = turing_machine 
                 {
-                    turing_machine = Some(TuringMachine::new(transitions.get(0).unwrap().get_number_of_ribbons() as u8));    
+                    // With the collected number of ribbons
+                    turing_machine = Some(TuringMachine::new(transitions.get(0).expect("At least one rule should be given in a transition").get_number_of_ribbons() as u8));    
                 }
+                // If the MT existed
                 if let Some(mt) = &mut turing_machine 
                 {
-                        
+                    // Adds all the collected transitions
                     for transition in transitions  
                     {
-                        mt.append_rule_state(to_from_vars.get(0).unwrap().to_string(), transition, to_from_vars.get(1).unwrap().to_string());    
+                        if let Err(e) = mt.append_rule_state(to_from_vars.get(0).expect("A name state was expected").to_string(), 
+                                            transition, 
+                                            to_from_vars.get(1).expect("Two name states were expected").to_string())
+                        {
+                            return Err(e);
+                        }
                     }
                 }
             },
@@ -89,7 +96,6 @@ pub fn parse_turing_machine(file_path: String) -> Result<TuringMachine, TuringEr
             Rule::EOI => {},
             _ => unreachable!(),
         }
-        
     }
     
     return Ok(turing_machine.unwrap());

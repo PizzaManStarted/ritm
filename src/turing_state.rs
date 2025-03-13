@@ -148,14 +148,19 @@ impl TuringTransition {
     pub fn create(chars_read: Vec<char>, chars_write: Vec<char>, directions: Vec<TuringDirection>) -> Self
     {
         let mut chars_write_dir: Vec<(char, TuringDirection)> = vec!();
-
         let move_read: TuringDirection = directions.get(0).expect("There must be at least one direction").clone();
-        
+
+        // TODO : Replace panics with real errors
+        if chars_write.len() != directions.len() -1 {
+            panic!("chars_write must have the same size as (directions - 1) in order to create couples of (char, TuringDirection)");
+        }
+        if chars_read.len() != directions.len() {
+            panic!("The number of chars to read must be equal to the number of (char, directions) to replace them with")
+        }
         for i in 1..directions.len() 
         {
             chars_write_dir.push((*chars_write.get(i-1).unwrap(), directions.get(i).unwrap().clone()));        
         }
-
         Self {
             chars_read,
             move_read,
