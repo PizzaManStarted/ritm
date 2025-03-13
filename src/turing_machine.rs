@@ -16,15 +16,15 @@ impl TuringMachine {
     pub fn new(k: u8) -> Self
     {
         // Add the write ribbons
-        let init_state = TuringState::new(false);
-        let accepting_state = TuringState::new(true);
-        let rejecting_state = TuringState::new(false);
+        let init_state = TuringState::new(false).set_name("i");
+        let accepting_state = TuringState::new(true).set_name("a");
+        let rejecting_state = TuringState::new(false).set_name("r");
         
         // Create the hash map with the already known states
         let mut name_index_hashmap: HashMap<String, u8> = HashMap::new();
-        name_index_hashmap.insert("q_0".to_string(), 0);    // init
-        name_index_hashmap.insert("q_a".to_string(), 1);    // accepting
-        name_index_hashmap.insert("q_r".to_string(), 2);    // rejecting
+        name_index_hashmap.insert("i".to_string(), 0);    // init
+        name_index_hashmap.insert("a".to_string(), 1);    // accepting
+        name_index_hashmap.insert("r".to_string(), 2);    // rejecting
 
         let s = Self
         {
@@ -36,10 +36,12 @@ impl TuringMachine {
         s
     }
 
+
+
     /// Adds a new rule to a state of the machine.
     /// 
     /// If the given state didn't already exists, the state will be created.
-    pub fn add_rule_state(mut self, from: String, transition: TuringTransition, to: String) -> Result<Self, TuringError>
+    pub fn append_rule_state(&mut self, from: String, transition: TuringTransition, to: String) -> Result<(), TuringError>
     {
         // Checks if the given correct of number transitions was given
         if transition.chars_write.len() != self.k as usize
@@ -51,11 +53,23 @@ impl TuringMachine {
 
         match self.add_rule_state_ind(from_index, transition, to_index) {
             Ok(()) => {
-                return Ok(self);
+                return Ok(());
             },
             Err(e) => {
                 return Err(e);
             },
+        };
+
+    }
+
+    /// Adds a new rule to a state of the machine and returns the machine.
+    /// 
+    /// If the given state didn't already exists, the state will be created.
+    pub fn append_rule_state_self(mut self, from: String, transition: TuringTransition, to: String) -> Result<Self, TuringError>
+    {
+        match self.append_rule_state(from, transition, to) {
+            Ok(()) => return Ok(self),
+            Err(e) => return Err(e),
         };
     }
 
@@ -71,7 +85,7 @@ impl TuringMachine {
             },
             None => 
             {
-                self.states.push(TuringState::new(false).set_name(name.to_string()));
+                self.states.push(TuringState::new(false).set_name(name));
                 self.name_index_hashmap.insert(name.to_string(), (self.states.len()-1) as u8);
                 return (self.states.len()-1) as u8;
             },
@@ -147,11 +161,6 @@ impl<'a> TuringMachineExecutor<'a> {
         // Add the word to the reading ribbon
         s.reading_ribbon.feed_word(s.word.to_string());
 
-        // s.reading_ribbon.transition_state('ç', 'ç', TuringDirection::Right);
-        // s.reading_ribbon.transition_state('_', 'a', TuringDirection::Right);
-        // s.reading_ribbon.transition_state('_', 'b', TuringDirection::Left);
-        // s.reading_ribbon.transition_state('a', 'g', TuringDirection::Right);
-        //println!("{}", s.reading_ribbon);
         Ok(s)
     }
 }
