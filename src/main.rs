@@ -49,12 +49,13 @@ fn main() {
              "q_1".to_string()).unwrap();
     
     // println!("After all : \n{}", tm_exec);
-    let mt = parse_turing_machine("resources/turing2.tm".to_string()).unwrap();
+    let mt = parse_turing_machine("resources/turing3.tm".to_string()).unwrap();
 
-    let mut exec = TuringMachineExecutor::new(&mt, "00".to_string()).unwrap();
+    println!("{:?}", mt);
+    let mut exec = TuringMachineExecutor::new(&mt, "100100".to_string()).unwrap();
 
     for () in &mut exec {
-        println!("hi")
+        println!("________________________")
     }
     println!("{}", exec);
 }

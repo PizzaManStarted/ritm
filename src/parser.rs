@@ -103,7 +103,7 @@ fn parse_str_token(rule: Pair<Rule>) -> String
     {
         Rule::var | Rule::int | Rule::str => 
         {
-            rule.into_inner().as_str().to_string()
+            rule.into_inner().as_str().trim().to_string()
         },
         _ => unreachable!(),
     }

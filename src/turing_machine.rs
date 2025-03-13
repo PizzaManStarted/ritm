@@ -16,9 +16,9 @@ impl TuringMachine {
     pub fn new(k: u8) -> Self
     {
         // Add the write ribbons
-        let init_state = TuringState::new(false);
-        let accepting_state = TuringState::new(true);
-        let rejecting_state = TuringState::new(false);
+        let init_state = TuringState::new(false).set_name("i");
+        let accepting_state = TuringState::new(true).set_name("i");
+        let rejecting_state = TuringState::new(false).set_name("r");
         
         // Create the hash map with the already known states
         let mut name_index_hashmap: HashMap<String, u8> = HashMap::new();
@@ -85,7 +85,7 @@ impl TuringMachine {
             },
             None => 
             {
-                self.states.push(TuringState::new(false).set_name(name.to_string()));
+                self.states.push(TuringState::new(false).set_name(name));
                 self.name_index_hashmap.insert(name.to_string(), (self.states.len()-1) as u8);
                 return (self.states.len()-1) as u8;
             },

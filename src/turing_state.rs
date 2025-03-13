@@ -23,9 +23,9 @@ impl TuringState {
     /// Sets the name of a [TuringState]
     /// 
     /// Returns the given [TuringState]
-    pub fn set_name(mut self, name: String) -> Self
+    pub fn set_name(mut self, name: &str) -> Self
     {
-        self.name = Some(name);
+        self.name = Some(name.to_string());
         return self;
     }
 
@@ -60,9 +60,9 @@ impl TuringState {
 impl Debug for TuringState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TuringState")
+            .field("name", &self.name)
             .field("is_final", &self.is_final)
             .field("transitions", &self.transitions)
-            .field("name", &self.name)
             .finish()
     }
 }
