@@ -1,5 +1,7 @@
 [package]
 name = "turingrs"
+authors = ["Axel Foucart"]
+description = "An implementation of turing machines with k ribbons"
 version = "0.1.0"
 edition = "2024"
 

@@ -58,7 +58,7 @@ pub fn parse_turing_machine(file_path: String) -> Result<TuringMachine, TuringEr
                             {
                                 if k != transition.get_number_of_ribbons() 
                                 {
-                                    return Err(TuringError::NotEnougthArgsError);
+                                    return Err(TuringError::NotEnougthArgsTransitionError);
                                 }
                             }
                             else {

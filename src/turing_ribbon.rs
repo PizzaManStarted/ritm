@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display};
 use crate::{turing_errors::TuringError, turing_state::TuringDirection};
 
 
-/// A trait used to implement turing ribbons
+/// A trait used to implement Turing ribbons
 pub trait TuringRibbon : Display
 {
     /// Creates a new [TuringRibbon]
@@ -50,7 +50,7 @@ impl TuringRibbon for TuringWriteRibbon
             
             if new_pointer < 0
             {
-                return Err(TuringError::OutofRangeRibbonError { tried_to_access: new_pointer as usize, ribbon_size: self.chars_vec.len() });
+                return Err(TuringError::OutofRangeRibbonError { accessed_index: new_pointer as usize, ribbon_size: self.chars_vec.len() });
             }
             // In a write ribbon, we have an *infinite size*, so we can simulate this by adding when needed a new empty char
             if new_pointer >= self.chars_vec.len() as isize {
@@ -95,7 +95,7 @@ impl TuringRibbon for TuringReadRibbon
             
             if new_pointer < 0 || new_pointer >= self.chars_vec.len() as isize
             {
-                return Err(TuringError::OutofRangeRibbonError { tried_to_access: new_pointer as usize, ribbon_size: self.chars_vec.len() });
+                return Err(TuringError::OutofRangeRibbonError { accessed_index: new_pointer as usize, ribbon_size: self.chars_vec.len() });
             }
             self.pointer = new_pointer as usize;
             return Ok(true);

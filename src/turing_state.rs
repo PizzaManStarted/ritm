@@ -117,20 +117,22 @@ impl Clone for TuringDirection {
 }
 
 
-/// A struct representing a turing transition
+/// A struct representing a turing transition of the form : 
+/// * `a_0, a_1, ..., a_{n-1} -> D_0, b_0, D_1, b_1, D_2, ..., b_{n-1}, D_n`
 pub struct TuringTransition {
-    /// The chars that have to be read in order apply the rest of the transition.
+    /// The chars that have to be read in order apply the rest of the transition : `a_0,..., a_{n-1}`
     pub chars_read: Vec<char>,
-    /// The move to take after writing/reading the character.
+    /// The move to take after writing/reading the character : `D_0`
     pub move_read: TuringDirection,
-    /// The character to replace the character just read.
+    /// The character to replace the character just read : `(b_0, D_1),..., (b_{n-1}, D_n)`
     pub chars_write: Vec<(char, TuringDirection)>,
     /// The index of the state to go to after passing through this state.
     pub index_to_state: u8,
 }
 
 impl TuringTransition {
-    /// Creates a new [TuringTransition]
+    /// Creates a new [TuringTransition] of the form : 
+    /// * `a_0, a_1, ..., a_{n-1} -> D_0, b_0, D_1, b_1, D_2, ..., b_{n-1}, D_n`
     pub fn new(
         char_read: Vec<char>,
         move_read: TuringDirection,
@@ -144,7 +146,13 @@ impl TuringTransition {
         }
     }
 
-    
+    /// Simplifies the creationf of a new [TuringTransition] of the form : 
+    /// * `a_0, a_1, ..., a_{n-1} -> D_0, b_0, D_1, b_1, D_2, ..., b_{n-1}, D_n`
+    /// 
+    /// ## Args :
+    /// * **chars_read** : The characters that have to be read in order to take this transition : `a_0,..., a_{n-1}`
+    /// * **chars_write** : The characters to replace the characters read : `b_0, ..., b_{n-1}` 
+    /// * **directions** : The directions to move the pointers of the ribbons : `D_0, ..., D_n` 
     pub fn create(chars_read: Vec<char>, chars_write: Vec<char>, directions: Vec<TuringDirection>) -> Self
     {
         let mut chars_write_dir: Vec<(char, TuringDirection)> = vec!();

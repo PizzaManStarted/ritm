@@ -46,7 +46,7 @@ impl TuringMachine {
         // Checks if the given correct of number transitions was given
         if transition.chars_write.len() != self.k as usize
         {
-            return Err(TuringError::NotEnougthArgsError);
+            return Err(TuringError::NotEnougthArgsTransitionError);
         }
         let from_index = self.add_state(&from);
         let to_index = self.add_state(&to);
@@ -92,7 +92,7 @@ impl TuringMachine {
         }
     }
 
-
+    /// Adds a new state to the turing machine using variables indexes
     fn add_rule_state_ind(&mut self, from: u8, mut transition: TuringTransition, to: u8) -> Result<(), TuringError>
     {
         // Change transition index
@@ -103,6 +103,7 @@ impl TuringMachine {
         return Ok(());
     }
 
+    /// Returns the state at the given index
     pub fn get_state(&self, pointer: u8) -> &TuringState
     {
         return &self.states[pointer as usize];
