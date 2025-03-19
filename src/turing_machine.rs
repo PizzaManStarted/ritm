@@ -167,9 +167,20 @@ impl<'a> TuringMachineExecutor<'a> {
 }
 
 
+
+pub struct TuringExecutionStep
+{
+    /// The index of the transition taken from the current state to the next one.
+    pub transition_index_taken : usize,
+    pub transition_taken : TuringTransition,
+    pub read_ribbon: TuringReadRibbon,
+    pub write_ribbons: Vec<TuringWriteRibbon>
+}
+
+
 impl<'a> Iterator for &mut TuringMachineExecutor<'a> 
 {
-    type Item = ();
+    type Item = TuringExecutionStep;
     
 
     fn next(&mut self) -> Option<Self::Item> 
@@ -189,7 +200,7 @@ impl<'a> Iterator for &mut TuringMachineExecutor<'a>
             char_vec.push(ribbon.read_curr_char());
         }
         let transitions = curr_state.get_valid_transitions(char_vec); 
-        println!("{:?}", curr_state);
+        //println!("{:?}", curr_state);
         
         // If no transitions can be provided
         if transitions.len() == 0 
@@ -198,7 +209,8 @@ impl<'a> Iterator for &mut TuringMachineExecutor<'a>
         }
         
         // Take a random transition (non deterministic)
-        let transition = transitions[rng().random_range(0..transitions.len())];
+        let transition_index_taken = rng().random_range(0..transitions.len());
+        let transition = transitions[transition_index_taken];
 
         // Apply the transition
         // to the read ribbons
@@ -214,12 +226,18 @@ impl<'a> Iterator for &mut TuringMachineExecutor<'a>
         // Move to the next state
         self.state_pointer = transition.index_to_state;
 
-        Some(())
+        Some(TuringExecutionStep
+        {
+            transition_index_taken,
+            transition_taken: transition.clone(),
+            read_ribbon: self.reading_ribbon.clone(),
+            write_ribbons: self.write_ribbons.clone(),
+        })
     }
 }
 
 
-impl<'a> Display for TuringMachineExecutor<'a>{
+impl<'a> Display for TuringExecutionStep{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
     {
         let mut write_str_rib = String::from(format!("{}",self.write_ribbons[0]));
@@ -228,6 +246,6 @@ impl<'a> Display for TuringMachineExecutor<'a>{
             write_str_rib.push_str(format!("\n{}", self.write_ribbons[i]).as_str());
         }
 
-        write!(f, "READ:\n{}\nWrite:\n{}", self.reading_ribbon, write_str_rib)
+        write!(f, "* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", self.transition_taken, self.read_ribbon, write_str_rib)
     }
 }
