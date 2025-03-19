@@ -4,7 +4,7 @@ use crate::{turing_errors::TuringError, turing_state::TuringDirection};
 
 
 /// A trait used to implement Turing ribbons
-pub trait TuringRibbon : Display
+pub trait TuringRibbon : Display + Clone
 {
     /// Creates a new [TuringRibbon]
     fn new() -> Self;
@@ -123,20 +123,7 @@ impl TuringReadRibbon
     }
 }
 
-impl Debug for TuringWriteRibbon 
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuringRibbon").field("chars_vec", &self.chars_vec).finish()
-    }
-}
 
-impl Display for TuringWriteRibbon 
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
-    {
-        write!(f, "{}", ribbon_to_string(&self.chars_vec, self.pointer, true))
-    }
-}
 
 impl Display for TuringReadRibbon {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
@@ -173,4 +160,35 @@ fn ribbon_to_string(chars_vec: &Vec<char>, pointer: usize, is_inf: bool) -> Stri
     
     res.push_str(&pointing);
     return res;
+}
+
+
+
+impl Debug for TuringWriteRibbon 
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TuringRibbon").field("chars_vec", &self.chars_vec).finish()
+    }
+}
+
+impl Display for TuringWriteRibbon 
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
+    {
+        write!(f, "{}", ribbon_to_string(&self.chars_vec, self.pointer, true))
+    }
+}
+
+
+impl Clone for TuringReadRibbon {
+    fn clone(&self) -> Self {
+        Self { chars_vec: self.chars_vec.clone(), pointer: self.pointer.clone() }
+    }
+}
+
+
+impl Clone for TuringWriteRibbon {
+    fn clone(&self) -> Self {
+        Self { chars_vec: self.chars_vec.clone(), pointer: self.pointer.clone() }
+    }
 }

@@ -40,17 +40,12 @@ impl TuringState {
         for t in &self.transitions {
             if chars_read.len() != t.chars_read.len() 
             {
-                return res;    
+                return res;    // FIXME add error here
             }
-            for i in 0..chars_read.len() 
-            {
-                // If one of the characters wasn't read, stop, and do not add this transition as valid
-                if t.chars_read[i] != chars_read[i] 
-                {
-                    break;
-                }
+            //println!("Let me check for : {} | chars read: {:?} and tr.read : {:?}", t, chars_read, t.chars_read);
+            if chars_read.eq(&t.chars_read) {
+                //println!("\t*Adding it !");
                 res.push(t);
-                
             }
         }
         return res;
@@ -184,6 +179,12 @@ impl TuringTransition {
     }
 }
 
+
+impl Clone for TuringTransition {
+    fn clone(&self) -> Self {
+        Self { chars_read: self.chars_read.clone(), move_read: self.move_read.clone(), chars_write: self.chars_write.clone(), index_to_state: self.index_to_state.clone() }
+    }
+}
 
 impl Debug for TuringTransition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
