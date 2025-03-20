@@ -9,13 +9,16 @@ use crate::{turing_errors::TuringError, turing_machine::TuringMachine, turing_st
 pub struct TuringGrammar;
 
 
-
-pub fn parse_turing_machine(file_path: String) -> Result<TuringMachine, TuringError>
+pub fn parse_turing_machine_file(file_path: String) -> Result<TuringMachine, TuringError>
 {
-    
     let unparsed_file = fs::read_to_string(&file_path).expect("cannot read file");
+    return parse_turing_machine(unparsed_file);
+}
 
-    let file: Pair<'_, Rule> = TuringGrammar::parse(Rule::turing_machine, &unparsed_file)
+
+pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachine, TuringError>
+{
+    let file: Pair<'_, Rule> = TuringGrammar::parse(Rule::turing_machine, &turing_mach)
         .expect("unsuccessful parse") // unwrap the parse result
         .next().unwrap(); // get and unwrap the `file` rule; never fails
     

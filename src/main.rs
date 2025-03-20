@@ -1,5 +1,5 @@
 use turingrs::{
-    parser::parse_turing_machine, turing_machine::{TuringMachine, TuringMachineExecutor}, turing_state::{TuringDirection, TuringTransition}
+    parser::*, turing_machine::{TuringMachine, TuringMachineExecutor}, turing_state::{TuringDirection, TuringTransition}
 };
 
 fn main() {
@@ -49,7 +49,7 @@ fn main() {
              "q_1".to_string()).unwrap();
     
     // println!("After all : \n{}", tm_exec);
-    let mt = parse_turing_machine("resources/turing4.tm".to_string()).unwrap();
+    let mt = parse_turing_machine_file("resources/turing4.tm".to_string()).unwrap();
 
     println!("{:?}", mt);
     let mut exec = TuringMachineExecutor::new(&mt, "10101011010".to_string()).unwrap();
