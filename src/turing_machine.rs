@@ -62,8 +62,6 @@ impl TuringMachine {
     }
 
     /// Adds a new rule to a state of the machine.
-    /// 
-    /// If the given state didn't already exists, the state will be created.
     pub fn append_rule_state(&mut self, from: u8, transition: TuringTransition, to: u8) -> Result<(), TuringError>
     {
         // Checks if the given correct of number transitions was given
