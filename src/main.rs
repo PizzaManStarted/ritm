@@ -40,7 +40,7 @@ fn main() {
     // }
 
     let mut tm = TuringMachine::new(2);
-    tm.append_rule_state("q_0".to_string(),
+    tm.append_rule_state_by_name("q_0".to_string(),
              TuringTransition::new(
                  vec!['ç', 'ç', 'ç'],
                  TuringDirection::Right,

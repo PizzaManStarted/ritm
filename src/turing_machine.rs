@@ -6,7 +6,7 @@ use crate::{turing_errors::TuringError, turing_ribbon::{TuringReadRibbon, Turing
 /// A struct representing a Turing Machine with k rubbons.
 pub struct TuringMachine
 {
-    name_index_hashmap: HashMap<String, u8>, 
+    pub name_index_hashmap: HashMap<String, u8>, 
     states: Vec<TuringState>,
     k: u8,
 }
@@ -41,7 +41,7 @@ impl TuringMachine {
     /// Adds a new rule to a state of the machine.
     /// 
     /// If the given state didn't already exists, the state will be created.
-    pub fn append_rule_state(&mut self, from: String, transition: TuringTransition, to: String) -> Result<(), TuringError>
+    pub fn append_rule_state_by_name(&mut self, from: String, transition: TuringTransition, to: String) -> Result<(), TuringError>
     {
         // Checks if the given correct of number transitions was given
         if transition.chars_write.len() != self.k as usize
@@ -59,6 +59,27 @@ impl TuringMachine {
                 return Err(e);
             },
         };
+    }
+
+    /// Adds a new rule to a state of the machine.
+    /// 
+    /// If the given state didn't already exists, the state will be created.
+    pub fn append_rule_state(&mut self, from: u8, transition: TuringTransition, to: u8) -> Result<(), TuringError>
+    {
+        // Checks if the given correct of number transitions was given
+        if transition.chars_write.len() != self.k as usize
+        {
+            return Err(TuringError::NotEnougthArgsTransitionError);
+        }
+
+        match self.add_rule_state_ind(from, transition, to) {
+            Ok(()) => {
+                return Ok(());
+            },
+            Err(e) => {
+                return Err(e);
+            },
+        };
 
     }
 
@@ -67,7 +88,7 @@ impl TuringMachine {
     /// If the given state didn't already exists, the state will be created.
     pub fn append_rule_state_self(mut self, from: String, transition: TuringTransition, to: String) -> Result<Self, TuringError>
     {
-        match self.append_rule_state(from, transition, to) {
+        match self.append_rule_state_by_name(from, transition, to) {
             Ok(()) => return Ok(self),
             Err(e) => return Err(e),
         };
@@ -116,7 +137,7 @@ impl TuringMachine {
 
     /// Get the transition index between two nodes if it exists.
     /// Returns the first one found.
-    pub fn get_transition_index(&self, n1: &String, n2: &String) -> Option<usize>
+    pub fn get_transition_index_by_name(&self, n1: &String, n2: &String) -> Option<usize>
     {
         // Get n1 and n2 indexes if they exists
         let n1_state = match self.name_index_hashmap.get(n1) 
@@ -132,6 +153,22 @@ impl TuringMachine {
 
         for (i, t) in n1_state.transitions.iter().enumerate() {
             if t.index_to_state == n2_index{
+                return Some(i);
+            }
+        }
+        
+        return None;
+    }
+
+    /// Get the transition index between two nodes if it exists.
+    /// Returns the first one found.
+    pub fn get_transition_index(&self, n1: u8, n2: u8) -> Option<usize>
+    {
+        // Get n1 and n2 indexes if they exists
+        let n1_state = self.get_state(n1);
+
+        for (i, t) in n1_state.transitions.iter().enumerate() {
+            if t.index_to_state == n2{
                 return Some(i);
             }
         }
