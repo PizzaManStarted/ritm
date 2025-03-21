@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::{Debug, Display}};
+use std::{collections::HashMap, fmt::{Debug, Display}, os::linux::raw::stat, usize};
 use rand::{rng, Rng};
 use crate::{turing_errors::TuringError, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringTransition}};
 
@@ -108,6 +108,88 @@ impl TuringMachine {
     {
         return &self.states[pointer as usize];
     }
+
+    pub fn get_state_from_name(&self, name: &String) -> &TuringState
+    {
+        return self.get_state(*self.name_index_hashmap.get(name).unwrap());
+    }
+
+    /// Get the transition index between two nodes if it exists.
+    /// Returns the first one found.
+    pub fn get_transition_index(&self, n1: &String, n2: &String) -> Option<usize>
+    {
+        // Get n1 and n2 indexes if they exists
+        let n1_state = match self.name_index_hashmap.get(n1) 
+        {
+            Some(i) => &self.states[*i as usize],
+            None => return None,
+        };
+        let n2_index = match self.name_index_hashmap.get(n2) 
+        {
+            Some(i) => *i,
+            None => return None,
+        };
+
+        for (i, t) in n1_state.transitions.iter().enumerate() {
+            if t.index_to_state == n2_index{
+                return Some(i);
+            }
+        }
+        
+        return None;
+    }
+
+    /// Removes all the transitions from this state to the given node
+    pub fn remove_transitions(&mut self, from: &String, to: &String)
+    {
+        // Get n1 and n2 indexes if they exists
+        let n1_state = match self.name_index_hashmap.get(from) 
+        {
+            Some(i) => &mut self.states[*i as usize],
+            None => return,
+        };
+        // Remove all transitions from n1 to n2
+        n1_state.remove_transitions(*self.name_index_hashmap.get(to).unwrap());
+    }
+
+    /// Removes a state and **all** mentions of it in **all** transitions of **all** the other states of the TuringMachine
+    pub fn remove_state(&mut self, state_name: &String)
+    {
+        // First keep the index for later
+        let index = *self.name_index_hashmap.get(state_name).unwrap();
+        // Remove references to this state from *all* other nodes transitions
+        let mut states = vec!();
+        for name in self.name_index_hashmap.keys() {
+            if name.eq(state_name) {
+                continue;
+            }
+            states.push(name.clone());
+        }
+        let mut prev_val;
+        for name in &states
+        {
+            self.remove_transitions(&name, state_name);
+            // For all nodes with a bigger index, lower their index by one in the hashmap
+            prev_val = *self.name_index_hashmap.get_mut(name).unwrap();
+            if prev_val >= index
+            {
+                *self.name_index_hashmap.get_mut(name).unwrap() -= 1;
+                // notify all nodes about that change
+                for name_other in &states 
+                {
+                    if !name_other.eq(state_name) {
+                        continue;       
+                    }
+                    // TODO : simplify this line
+                    self.states[*self.name_index_hashmap.get(name_other).unwrap() as usize].update_transitions(prev_val, prev_val + 1);
+
+                }
+            }
+        }
+        // Remove the node 
+        self.name_index_hashmap.remove(state_name);
+        self.states.remove(index.into());
+    }
 }
 
 
@@ -118,7 +200,7 @@ impl TuringMachine {
 
 impl Debug for TuringMachine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuringMachine").field("states", &self.states).finish()
+        f.debug_struct("TuringMachine").field("states", &self.states).field("hashmap", &self.name_index_hashmap).finish()
     }
 }
 
