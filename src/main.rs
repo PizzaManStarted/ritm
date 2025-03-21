@@ -49,12 +49,15 @@ fn main() {
              "q_1".to_string()).unwrap();
     
     // println!("After all : \n{}", tm_exec);
-    let mt = parse_turing_machine_file("resources/turing4.tm".to_string()).unwrap();
-
+    let mut mt = parse_turing_machine_file("resources/turing4.tm".to_string()).unwrap();
+    mt.remove_state(&"2".to_string());
+    mt.remove_state(&"i".to_string());
+    mt.remove_state(&"1".to_string());
+    mt.remove_state(&"a".to_string());
     println!("{:?}", mt);
-    let mut exec = TuringMachineExecutor::new(&mt, "10101011010".to_string()).unwrap();
+    // let mut exec = TuringMachineExecutor::new(&mt, "10101011010".to_string()).unwrap();
 
-    for tmp in &mut exec {
-        println!("_______________\nExec. step ::\n{}", tmp)
-    }
+    // for tmp in &mut exec {
+    //     println!("_______________\nExec. step ::\n{}", tmp)
+    // }
 }

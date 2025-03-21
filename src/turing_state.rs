@@ -3,10 +3,12 @@ use std::{
     fmt::{Debug, Display},
 };
 
+use crate::turing_errors::TuringError;
+
 /// Represents a state of a turing machine
 pub struct TuringState {
     pub is_final: bool,
-    transitions: Vec<TuringTransition>,
+    pub transitions: Vec<TuringTransition>,
     pub name: Option<String>,
 }
 
@@ -32,6 +34,38 @@ impl TuringState {
     /// Adds a new transition to the state
     pub fn add_transition(&mut self, transition: TuringTransition) {
         self.transitions.push(transition);
+    }
+
+    /// Removes the transition at the given index 
+    pub fn remove_transition(&mut self, transition_index: u8) -> TuringTransition
+    {
+        self.transitions.remove(transition_index.into())
+    }
+
+    /// Removes all the transitions from this state that are pointing at the given index
+    pub fn remove_transitions(&mut self, to_index: u8)
+    {
+        let mut transitions = vec!();
+        for t in &self.transitions 
+        {
+            if t.index_to_state != to_index 
+            {
+                transitions.push(t.clone());
+            }
+        }
+        self.transitions = transitions;
+    }
+
+    /// Updates the transition index to a new one
+    pub fn update_transitions(&mut self, to_index_curr: u8, to_index_new: u8)
+    {
+        for t in &mut self.transitions
+        {
+            if t.index_to_state == to_index_curr 
+            {
+                t.index_to_state = to_index_new;    
+            }
+        }
     }
 
     /// Checks for all transitions that can be taken when reading a char in this state
