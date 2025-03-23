@@ -233,6 +233,7 @@ impl Debug for TuringTransition {
             .field("char_read", &self.chars_read)
             .field("move_read", &self.move_read)
             .field("char_write", &self.chars_write)
+            .field("next", &self.index_to_state)
             .finish()
     }
 }
