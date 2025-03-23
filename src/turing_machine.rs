@@ -198,15 +198,22 @@ impl Debug for TuringMachine {
     }
 }
 
-/// 
+/// A trait used to iterate over all the states of a turing machine.
 pub trait TuringExecutor
 {
+    /// Gets the stored turing machine.
     fn get_turing_machine(&self) -> &TuringMachine;
+    /// Gets the current state pointer of this struct. 
     fn get_state_pointer(&self) -> u8;
+    /// Sets a new value to the state pointer.
     fn set_state_pointer(&mut self, new_val: u8);
+    /// Gets the writtings ribbons stored inside this struct.
     fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon;
+    /// Gets the writtings ribbons stored inside this struct.
     fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon>;
 
+    /// Transforms the current struct as a [TuringExecutor] in order to start 
+    /// iterating.
     fn as_iter(&mut self) -> &mut dyn TuringExecutor;
 }
 
@@ -364,8 +371,11 @@ pub struct TuringExecutionStep
 {
     /// The index of the transition taken from the current state to the next one.
     pub transition_index_taken : usize,
+    /// A clone of the transition that was just taken
     pub transition_taken : TuringTransition,
+    /// A clone representing the current state of the reading ribbon after taking that transition.
     pub read_ribbon: TuringReadRibbon,
+    /// A clone representing the current state of the writting ribbons after taking that transition.
     pub write_ribbons: Vec<TuringWriteRibbon>
 }
 
