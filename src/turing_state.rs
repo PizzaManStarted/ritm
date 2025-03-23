@@ -96,6 +96,13 @@ impl Debug for TuringState {
     }
 }
 
+impl Clone for TuringState {
+    fn clone(&self) -> Self {
+        Self { is_final: self.is_final.clone(), transitions: self.transitions.clone(), name: self.name.clone() }
+    }
+}
+
+
 /// Represents the direction of a movement a ribbon can take after reading/writing a character
 pub enum TuringDirection {
     Left,

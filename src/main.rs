@@ -1,5 +1,5 @@
 use turingrs::{
-    parser::*, turing_machine::{TuringMachine, TuringMachineExecutor}, turing_state::{TuringDirection, TuringTransition}
+    parser::*, turing_machine::{TuringExecutor, TuringMachine, TuringMachineExecutor, TuringMachineExecutorRef}, turing_state::{TuringDirection, TuringTransition}
 };
 
 fn main() {
@@ -50,14 +50,17 @@ fn main() {
     
     // println!("After all : \n{}", tm_exec);
     let mut mt = parse_turing_machine_file("resources/turing4.tm".to_string()).unwrap();
-    mt.remove_state(&"2".to_string());
-    mt.remove_state(&"i".to_string());
-    mt.remove_state(&"1".to_string());
-    mt.remove_state(&"a".to_string());
-    println!("{:?}", mt);
-    // let mut exec = TuringMachineExecutor::new(&mt, "10101011010".to_string()).unwrap();
+    
+    // FIX ME This is not okay !
+    //mt.remove_state(&"a".to_string());
+    //println!("{:?}", mt);
+    // FIXME : Fix the bug of index being wrong when removing something like a !
+    let mut exec= TuringMachineExecutorRef::new(&mt, "10101011010".to_string()).unwrap();
 
-    // for tmp in &mut exec {
-    //     println!("_______________\nExec. step ::\n{}", tmp)
-    // }
+    //let mut exec = TuringMachineExecutor::new(mt, "1010101010".to_string()).unwrap();
+    for tmp in exec.as_iter() {
+        println!("_______________\nExec. step ::\n{}", tmp)
+    }
+
+    println!("{:?}", exec.get_state_pointer());
 }

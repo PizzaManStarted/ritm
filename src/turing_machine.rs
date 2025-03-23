@@ -192,22 +192,32 @@ impl TuringMachine {
     }
 }
 
-
-
-
-
-
-
 impl Debug for TuringMachine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TuringMachine").field("states", &self.states).field("hashmap", &self.name_index_hashmap).finish()
     }
 }
 
-/// A struct made to execute a word to a turing machine
-pub struct TuringMachineExecutor<'a>
+/// 
+pub trait TuringExecutor
 {
-    /// The turing machine that will execute a word
+    fn get_turing_machine(&self) -> &TuringMachine;
+    fn get_state_pointer(&self) -> u8;
+    fn set_state_pointer(&mut self, new_val: u8);
+    fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon;
+    fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon>;
+
+    fn as_iter(&mut self) -> &mut dyn TuringExecutor;
+}
+
+
+
+
+
+/// A struct made to execute a word to a turing machine
+pub struct TuringMachineExecutorRef<'a>
+{
+    /// The **reference** to a turing machine that will execute a word
     turing_machine: &'a TuringMachine,
     /// The reading rubbon containing the word
     reading_ribbon:  TuringReadRibbon,
@@ -219,8 +229,7 @@ pub struct TuringMachineExecutor<'a>
     state_pointer: u8,
 }
 
-
-impl<'a> TuringMachineExecutor<'a> {
+impl<'a> TuringMachineExecutorRef<'a> {
     /// Create a new [TuringMachineExecutor] for a given word.
     pub fn new(mt: &'a TuringMachine, word: String) -> Result<Self, TuringError>
     {
@@ -250,6 +259,107 @@ impl<'a> TuringMachineExecutor<'a> {
 
 
 
+impl<'a> TuringExecutor for TuringMachineExecutorRef<'a> {
+
+    fn get_turing_machine(&self) -> &TuringMachine {
+        self.turing_machine
+    }
+
+    fn get_state_pointer(&self) -> u8 {
+        self.state_pointer
+    }
+
+    fn set_state_pointer(&mut self, new_val: u8) {
+        self.state_pointer = new_val;
+    }
+
+    fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon {
+        &mut self.reading_ribbon
+    }
+
+    fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon> {
+        &mut self.write_ribbons
+    }
+
+    fn as_iter(&mut self) -> &mut dyn TuringExecutor
+    {
+        self as &mut dyn TuringExecutor
+    }
+}
+
+pub struct TuringMachineExecutor
+{
+    /// The turing machine that will execute a word
+    turing_machine: TuringMachine,
+    /// The reading rubbon containing the word
+    reading_ribbon:  TuringReadRibbon,
+    /// A vector containing all writting rubbons
+    write_ribbons: Vec<TuringWriteRibbon>,
+    /// The current word to read
+    word: String,
+    /// The index of the current state of the turing machine
+    state_pointer: u8,
+}
+
+impl TuringMachineExecutor {
+    /// Create a new [TuringMachineExecutor] for a given word.
+    pub fn new(mt: TuringMachine, word: String) -> Result<Self, TuringError>
+    {
+        let mut s = 
+        Self 
+        {
+            state_pointer: 0,
+            reading_ribbon: TuringReadRibbon::new(),
+            write_ribbons: {
+                // Creates k ribbons
+                let mut v = vec!();
+                for _ in 0..mt.k
+                {
+                    v.push(TuringWriteRibbon::new());
+                }
+                v
+            },
+            word,
+            turing_machine: mt,
+        };
+        // Add the word to the reading ribbon
+        s.reading_ribbon.feed_word(s.word.to_string());
+
+        Ok(s)
+    }
+}
+
+
+impl TuringExecutor for TuringMachineExecutor {
+    fn get_turing_machine(&self) -> &TuringMachine {
+        & self.turing_machine
+    }
+
+    fn get_state_pointer(&self) -> u8 {
+        self.state_pointer
+    }
+
+    fn set_state_pointer(&mut self, new_val: u8) {
+        self.state_pointer = new_val;
+    }
+
+    fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon {
+        &mut self.reading_ribbon
+    }
+
+    fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon> {
+        &mut self.write_ribbons
+    }
+    
+    fn as_iter(&mut self) -> &mut dyn TuringExecutor
+    {
+        self as &mut dyn TuringExecutor
+    }
+}
+
+
+
+
 pub struct TuringExecutionStep
 {
     /// The index of the transition taken from the current state to the next one.
@@ -260,7 +370,7 @@ pub struct TuringExecutionStep
 }
 
 
-impl<'a> Iterator for &mut TuringMachineExecutor<'a> 
+impl<'a> Iterator for &mut dyn TuringExecutor
 {
     type Item = TuringExecutionStep;
     
@@ -268,7 +378,8 @@ impl<'a> Iterator for &mut TuringMachineExecutor<'a>
     fn next(&mut self) -> Option<Self::Item> 
     {
         // Fetch the current state
-        let curr_state = self.turing_machine.get_state(self.state_pointer);
+        let curr_state =  self.get_turing_machine().get_state(self.get_state_pointer()).clone();
+
         /* Checks if the state is accepting */
         if curr_state.is_final
         {
@@ -277,8 +388,8 @@ impl<'a> Iterator for &mut TuringMachineExecutor<'a>
         
         // If one of the transition condition is true,
         // Get all current char read by **all** ribbons
-        let mut char_vec = vec!(self.reading_ribbon.read_curr_char());
-        for ribbon in &self.write_ribbons {
+        let mut char_vec = vec!(self.get_reading_ribbon().read_curr_char().clone());
+        for ribbon in self.get_writting_ribbons() {
             char_vec.push(ribbon.read_curr_char());
         }
         let transitions = curr_state.get_valid_transitions(char_vec); 
@@ -296,24 +407,24 @@ impl<'a> Iterator for &mut TuringMachineExecutor<'a>
 
         // Apply the transition
         // to the read ribbons
-        self.reading_ribbon.transition_state(transition.chars_read[0], ' ', &transition.move_read).unwrap();
+        self.get_reading_ribbon().transition_state(transition.chars_read[0], ' ', &transition.move_read).unwrap();
         
         // to the write ribbons
-        for i in 0..self.turing_machine.k 
+        for i in 0..self.get_turing_machine().k 
         {
-            self.write_ribbons[i as usize].transition_state(transition.chars_read[(i+1) as usize],
+            self.get_writting_ribbons()[i as usize].transition_state(transition.chars_read[(i+1) as usize],
                                                                                     transition.chars_write[i as usize].0, &transition.chars_write[i as usize].1).unwrap();
         }
 
         // Move to the next state
-        self.state_pointer = transition.index_to_state;
+        self.set_state_pointer(transition.index_to_state);
 
         Some(TuringExecutionStep
         {
             transition_index_taken,
             transition_taken: transition.clone(),
-            read_ribbon: self.reading_ribbon.clone(),
-            write_ribbons: self.write_ribbons.clone(),
+            read_ribbon: self.get_reading_ribbon().clone(),
+            write_ribbons: self.get_writting_ribbons().clone(),
         })
     }
 }
