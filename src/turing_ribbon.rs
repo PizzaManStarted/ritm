@@ -218,7 +218,6 @@ mod tests{
         
         ribbon.feed_word("test".to_string());
 
-        
         assert_eq!(ribbon.chars_vec, vec!('ç', 't', 'e', 's', 't', '$'));
     }
 
@@ -256,11 +255,6 @@ mod tests{
             },
         }
 
-    }
-
-    #[test]
-    fn test_transition_writte_ribbon()
-    {
     }
 
     

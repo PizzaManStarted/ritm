@@ -3,8 +3,6 @@ use std::{
     fmt::{Debug, Display},
 };
 
-use crate::turing_errors::TuringError;
-
 /// Represents a state of a turing machine
 pub struct TuringState {
     pub is_final: bool,
