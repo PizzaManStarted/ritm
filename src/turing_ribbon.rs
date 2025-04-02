@@ -192,3 +192,70 @@ impl Clone for TuringWriteRibbon {
         Self { chars_vec: self.chars_vec.clone(), pointer: self.pointer.clone() }
     }
 }
+
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+
+    #[test]
+    fn test_new_read_ribbon()
+    {
+        let ribbon = TuringReadRibbon::new();
+
+        assert_eq!(ribbon.pointer, 0);
+        assert_eq!(ribbon.chars_vec, vec!('ç', '$'));
+        let ribbon = TuringWriteRibbon::new();
+    
+        assert_eq!(ribbon.pointer, 0);
+        assert_eq!(ribbon.chars_vec, vec!('ç', '_'));
+    }
+
+    #[test]
+    fn test_feed_word_ribbon()
+    {
+        let mut ribbon = TuringReadRibbon::new();
+        
+        ribbon.feed_word("test".to_string());
+
+        assert_eq!(ribbon.chars_vec, vec!('ç', 't', 'e', 's', 't', '$'));
+    }
+
+
+    #[test]
+    fn test_transition_read_ribbon()
+    {
+        let mut ribbon = TuringReadRibbon::new();
+        
+        ribbon.feed_word("test".to_string());
+
+        ribbon.transition_state('ç', 'ç', &TuringDirection::Right).unwrap();
+        assert_eq!(ribbon.pointer, 1);
+        ribbon.transition_state('t', 'p', &TuringDirection::Left).unwrap();
+        assert_eq!(ribbon.pointer, 0);
+        ribbon.transition_state('ç', 'ç', &TuringDirection::None).unwrap();
+        assert_eq!(ribbon.pointer, 0);
+        
+        assert_eq!(ribbon.chars_vec, vec!('ç', 't', 'e', 's', 't', '$'));
+
+
+        ribbon.transition_state('ç', '_', &TuringDirection::Right).unwrap();
+        ribbon.transition_state('t', '_', &TuringDirection::Right).unwrap();
+        ribbon.transition_state('e', '_', &TuringDirection::Right).unwrap();
+        ribbon.transition_state('s', '_', &TuringDirection::Right).unwrap();
+        ribbon.transition_state('t', '_', &TuringDirection::Right).unwrap();
+
+        match ribbon.transition_state('$', '_', &TuringDirection::Right) {
+            Ok(b) => {panic!("Transition should have returned a TuringError and not : {}", b)},
+            Err(e) => {
+                match e {
+                    TuringError::OutofRangeRibbonError { accessed_index: _, ribbon_size: _ } => (),
+                    _ => panic!("OutofRangeRibbonError was expected")
+                }
+            },
+        }
+
+    }
+
+    
+}
