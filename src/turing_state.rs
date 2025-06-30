@@ -5,8 +5,11 @@ use std::{
 
 /// Represents a state of a turing machine
 pub struct TuringState {
+    /// Represents if the state is a final state or not
     pub is_final: bool,
+    /// The vector containing all the transitions to the neighboring states 
     pub transitions: Vec<TuringTransition>,
+    /// The name of this state
     pub name: Option<String>,
 }
 
@@ -101,7 +104,7 @@ impl Clone for TuringState {
 }
 
 
-/// Represents the direction of a movement a ribbon can take after reading/writing a character
+/// Represents the direction of a movement that the pointer of a ribbon can take after reading/writing a character
 pub enum TuringDirection {
     Left,
     Right,
@@ -152,21 +155,24 @@ impl Clone for TuringDirection {
 
 
 /// A struct representing a turing transition of the form : 
-/// * `a_0, a_1, ..., a_{n-1} -> D_0, b_0, D_1, b_1, D_2, ..., b_{n-1}, D_n`
+/// * `a_0, a_1, ..., a_{n-1} -> D_0, b_1, D_1, b_2, D_2, ..., b_{n-1}, D_{n-1}`
+/// With :
+/// * `a_i` : The character *i* being read.
+/// * `D_i` : Direction to take by taking this transition, see [TuringDirection] for more information.
+/// * `b_i` : The character to replace the character *i* with.
 pub struct TuringTransition {
     /// The chars that have to be read in order apply the rest of the transition : `a_0,..., a_{n-1}`
     pub chars_read: Vec<char>,
     /// The move to take after writing/reading the character : `D_0`
     pub move_read: TuringDirection,
-    /// The character to replace the character just read : `(b_0, D_1),..., (b_{n-1}, D_n)`
+    /// The character to replace the character just read : `(b_0, D_0),..., (b_{n-1}, D_{n-1})`
     pub chars_write: Vec<(char, TuringDirection)>,
     /// The index of the state to go to after passing through this state.
     pub index_to_state: u8,
 }
 
 impl TuringTransition {
-    /// Creates a new [TuringTransition] of the form : 
-    /// * `a_0, a_1, ..., a_{n-1} -> D_0, b_0, D_1, b_1, D_2, ..., b_{n-1}, D_n`
+    /// Creates a new [TuringTransition].
     pub fn new(
         char_read: Vec<char>,
         move_read: TuringDirection,
@@ -181,12 +187,12 @@ impl TuringTransition {
     }
 
     /// Simplifies the creationf of a new [TuringTransition] of the form : 
-    /// * `a_0, a_1, ..., a_{n-1} -> D_0, b_0, D_1, b_1, D_2, ..., b_{n-1}, D_n`
+    /// * `a_0, a_1, ..., a_{n-1} -> D_0, b_1, D_1, b_2, D_2, ..., b_{n-1}, D_{n-1}`
     /// 
     /// ## Args :
     /// * **chars_read** : The characters that have to be read in order to take this transition : `a_0,..., a_{n-1}`
     /// * **chars_write** : The characters to replace the characters read : `b_0, ..., b_{n-1}` 
-    /// * **directions** : The directions to move the pointers of the ribbons : `D_0, ..., D_n` 
+    /// * **directions** : The directions to move the pointers of the ribbons : `D_0, ..., D_{n-1}`
     pub fn create(chars_read: Vec<char>, chars_write: Vec<char>, directions: Vec<TuringDirection>) -> Self
     {
         let mut chars_write_dir: Vec<(char, TuringDirection)> = vec!();
@@ -212,7 +218,7 @@ impl TuringTransition {
     }
 
     /// Returns the number of ribbons that are going to be affected by this transition.
-    pub fn get_number_of_ribbons(&self) -> usize
+    pub fn get_number_of_affected_ribbons(&self) -> usize
     {
         return self.chars_write.len();
     }

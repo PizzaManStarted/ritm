@@ -9,7 +9,17 @@ pub trait TuringRibbon : Display + Clone
     /// Creates a new [TuringRibbon]
     fn new() -> Self;
 
-    fn transition_state(&mut self, if_read: char, replace_by: char, move_to: &TuringDirection) -> Result<bool, TuringError>;
+    /// Tries to apply the transition to the given ribbon.
+    /// 
+    /// The transition is applied if the character being pointed by the head of this ribbon is the same as the given `if_read` character.
+    /// 
+    /// ## Returns
+    /// A [bool] if everything went correctly :
+    /// * `Some(true)` if the transition went smoothly.
+    /// * `Some(false)` if the transition could not be taken.
+    /// 
+    /// A [TuringError] if an error happened, like for example, it was not possible to move at the given direction.
+    fn try_apply_transition(&mut self, if_read: char, replace_by: char, move_to: &TuringDirection) -> Result<bool, TuringError>;
 
     /// Returns the current character being read by the ribbon
     fn read_curr_char(&self) -> char;
@@ -32,6 +42,7 @@ pub struct TuringReadRibbon
 
 impl TuringRibbon for TuringWriteRibbon 
 {
+    /// Creates a new [TuringWriteRibbon]
     fn new() -> Self
     {
         Self 
@@ -41,7 +52,7 @@ impl TuringRibbon for TuringWriteRibbon
         }
     }
     
-    fn transition_state(&mut self, if_read: char, replace_by: char, move_to: &TuringDirection) -> Result<bool, TuringError>
+    fn try_apply_transition(&mut self, if_read: char, replace_by: char, move_to: &TuringDirection) -> Result<bool, TuringError>
     {
         // if the correct symbol was read
         if self.chars_vec[self.pointer] == if_read 
@@ -75,6 +86,7 @@ impl TuringRibbon for TuringWriteRibbon
 
 impl TuringRibbon for TuringReadRibbon
 {
+    /// Creates a new [TuringReadRibbon]
     fn new() -> Self 
     {
         Self 
@@ -84,8 +96,7 @@ impl TuringRibbon for TuringReadRibbon
         }
     }
     
-    /// If an error arose, then the transition will not be applied
-    fn transition_state(&mut self, if_read: char, _: char, move_to: &TuringDirection) -> Result<bool, TuringError>
+    fn try_apply_transition(&mut self, if_read: char, _: char, move_to: &TuringDirection) -> Result<bool, TuringError>
     {
         // if the correct symbol was read
         if self.chars_vec[self.pointer] == if_read 
@@ -93,6 +104,7 @@ impl TuringRibbon for TuringReadRibbon
             // Move to the new position
             let new_pointer = (self.pointer as isize) + (move_to.get_value() as isize);
             
+            // If the pointer points out of the bounds of the reading ribbon
             if new_pointer < 0 || new_pointer >= self.chars_vec.len() as isize
             {
                 return Err(TuringError::OutofRangeRibbonError { accessed_index: new_pointer as usize, ribbon_size: self.chars_vec.len() });
@@ -229,23 +241,23 @@ mod tests{
         
         ribbon.feed_word("test".to_string());
 
-        ribbon.transition_state('ç', 'ç', &TuringDirection::Right).unwrap();
+        ribbon.try_apply_transition('ç', 'ç', &TuringDirection::Right).unwrap();
         assert_eq!(ribbon.pointer, 1);
-        ribbon.transition_state('t', 'p', &TuringDirection::Left).unwrap();
+        ribbon.try_apply_transition('t', 'p', &TuringDirection::Left).unwrap();
         assert_eq!(ribbon.pointer, 0);
-        ribbon.transition_state('ç', 'ç', &TuringDirection::None).unwrap();
+        ribbon.try_apply_transition('ç', 'ç', &TuringDirection::None).unwrap();
         assert_eq!(ribbon.pointer, 0);
         
         assert_eq!(ribbon.chars_vec, vec!('ç', 't', 'e', 's', 't', '$'));
 
 
-        ribbon.transition_state('ç', '_', &TuringDirection::Right).unwrap();
-        ribbon.transition_state('t', '_', &TuringDirection::Right).unwrap();
-        ribbon.transition_state('e', '_', &TuringDirection::Right).unwrap();
-        ribbon.transition_state('s', '_', &TuringDirection::Right).unwrap();
-        ribbon.transition_state('t', '_', &TuringDirection::Right).unwrap();
+        ribbon.try_apply_transition('ç', '_', &TuringDirection::Right).unwrap();
+        ribbon.try_apply_transition('t', '_', &TuringDirection::Right).unwrap();
+        ribbon.try_apply_transition('e', '_', &TuringDirection::Right).unwrap();
+        ribbon.try_apply_transition('s', '_', &TuringDirection::Right).unwrap();
+        ribbon.try_apply_transition('t', '_', &TuringDirection::Right).unwrap();
 
-        match ribbon.transition_state('$', '_', &TuringDirection::Right) {
+        match ribbon.try_apply_transition('$', '_', &TuringDirection::Right) {
             Ok(b) => {panic!("Transition should have returned a TuringError and not : {}", b)},
             Err(e) => {
                 match e {

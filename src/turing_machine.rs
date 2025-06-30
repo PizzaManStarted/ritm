@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::{Debug, Display}, usize};
+use std::{collections::HashMap, f32::consts::E, fmt::{Debug, Display}, usize};
 use rand::{rng, Rng};
 use crate::{turing_errors::TuringError, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringTransition}};
 
@@ -16,9 +16,14 @@ pub struct TuringMachine
 
 impl TuringMachine {
     /// Creates a new empty Turing Machine that has `k` writting rubbons.
+    /// 
+    /// Three default states will be created :
+    /// * `q_i` : The initial state
+    /// * `q_a` : The default accepting state
+    /// * `q_r` : The default rejecting state
     pub fn new(k: u8) -> Self
     {
-        // Add the write ribbons
+        // Add the default states
         let init_state = TuringState::new(false).set_name("i");
         let accepting_state = TuringState::new(true).set_name("a");
         let rejecting_state = TuringState::new(false).set_name("r");
@@ -29,25 +34,23 @@ impl TuringMachine {
         name_index_hashmap.insert("a".to_string(), 1);    // accepting
         name_index_hashmap.insert("r".to_string(), 2);    // rejecting
 
-        let s = Self
+        Self
         {
             name_index_hashmap,
             states: vec!(init_state, accepting_state, rejecting_state),
             k,
-        };
-
-        s
+        }
     }
 
 
 
-    /// Adds a new rule to a state of the machine.
+    /// Adds a new rule to a state of the machine of the form : `from {transition} to`
     /// 
-    /// If the given state didn't already exists, the state will be created.
+    /// If one of the given state didn't already exists, a new with that name will be created.
     pub fn append_rule_state_by_name(&mut self, from: String, transition: TuringTransition, to: String) -> Result<(), TuringError>
     {
-        // Checks if the given correct of number transitions was given
-        if transition.chars_write.len() != self.k as usize
+        // Checks if the given number of ribbons was given
+        if transition.get_number_of_affected_ribbons() != self.k as usize
         {
             return Err(TuringError::NotEnougthArgsTransitionError);
         }
@@ -100,15 +103,21 @@ impl TuringMachine {
     /// If the state name already existed then the index of the already existing state is added.
     pub fn add_state(&mut self, name: &String) -> u8
     {
+        // Try to find the index of the state inside the hashmap 
         match self.name_index_hashmap.get(name) 
         {
+            // If the index was found, return it
             Some(e) => {
                 return *e;
             },
+            // If not
             None => 
             {
+                // Pushes in the vector of states a new state with the given name 
                 self.states.push(TuringState::new(false).set_name(name));
+                // Adds the index of this state to the hashmap 
                 self.name_index_hashmap.insert(name.to_string(), (self.states.len()-1) as u8);
+                // Returns the index of the newly created state
                 return (self.states.len()-1) as u8;
             },
         }
@@ -117,6 +126,12 @@ impl TuringMachine {
     /// Adds a new state to the turing machine using variables indexes
     fn add_rule_state_ind(&mut self, from: u8, mut transition: TuringTransition, to: u8) -> Result<(), TuringError>
     {
+        if self.states.len() <= from as usize {
+            return Err(TuringError::OutOfRangeStateError { accessed_index: from as usize, states_len: self.states.len() });
+        }
+        if self.states.len() <= to as usize {
+            return Err(TuringError::OutOfRangeStateError { accessed_index: to as usize, states_len: self.states.len() });
+        }
         // Change transition index
         transition.index_to_state = to;
 
@@ -126,14 +141,21 @@ impl TuringMachine {
     }
 
     /// Returns the state at the given index
-    pub fn get_state(&self, pointer: u8) -> &TuringState
+    pub fn get_state(&self, pointer: u8) -> Result<&TuringState, TuringError>
     {
-        return &self.states[pointer as usize];
+        if self.states.len() <= pointer as usize {
+            return Err(TuringError::OutOfRangeStateError { accessed_index: pointer as usize, states_len: self.states.len() });
+        }
+        Ok(&self.states[pointer as usize])
     }
 
-    pub fn get_state_from_name(&self, name: &String) -> &TuringState
+    /// Returns the state that has the given name
+    pub fn get_state_from_name(&self, name: &String) -> Result<&TuringState, TuringError>
     {
-        return self.get_state(*self.name_index_hashmap.get(name).unwrap());
+        match self.name_index_hashmap.get(name) {
+            Some(index) => self.get_state(*index),
+            None => Err(TuringError::UnknownStateError { state_name: name.to_string() }),
+        }
     }
 
     /// Get the transition index between two nodes if it exists.
@@ -161,33 +183,49 @@ impl TuringMachine {
         return None;
     }
 
-    /// Get the transition index between two nodes if it exists.
-    /// Returns the first one found.
-    pub fn get_transition_index(&self, n1: u8, n2: u8) -> Option<usize>
+    /// Get all the transitions indexes between two nodes.
+    pub fn get_transition_index(&self, n1: u8, n2: u8) -> Result<Vec<usize>, TuringError>
     {
-        // Get n1 and n2 indexes if they exists
+        let mut vec = vec!();
+        // Get n1 index
         let n1_state = self.get_state(n1);
+        if let Err(e) = n1_state {
+            return Err(e);
+        }
+        let n1_state = n1_state.unwrap();
 
+        // Fetch all transition that go toward n2
         for (i, t) in n1_state.transitions.iter().enumerate() {
             if t.index_to_state == n2{
-                return Some(i);
+                vec.push(i);
             }
         }
         
-        return None;
+        return Ok(vec);
     }
 
     /// Removes all the transitions from this state to the given node
-    pub fn remove_transitions(&mut self, from: &String, to: &String)
+    pub fn remove_transitions(&mut self, from: &String, to: &String) -> Result<(), TuringError>
     {
         // Get n1 and n2 indexes if they exists
-        let n1_state = match self.name_index_hashmap.get(from) 
-        {
-            Some(i) => &mut self.states[*i as usize],
-            None => return,
-        };
+
+        let n1_state = self.name_index_hashmap.get(from);
+        if let None = n1_state {
+            return Err(TuringError::UnknownStateError { state_name: from.to_string() });
+        }
+
+        let n1_state = &mut self.states[*n1_state.unwrap() as usize];
+
+        let n2_state = self.name_index_hashmap.get(to);
+        if let None = n2_state {
+            return Err(TuringError::UnknownStateError { state_name: to.to_string() });
+        }
+        let n2_index = n2_state.unwrap();
+
+
         // Remove all transitions from n1 to n2
-        n1_state.remove_transitions(*self.name_index_hashmap.get(to).unwrap());
+        n1_state.remove_transitions(*n2_index);
+        Ok(())
     }
 
     /// Removes a state and **all** mentions of it in **all** transitions of **all** the other states of the TuringMachine
@@ -426,7 +464,7 @@ impl<'a> Iterator for &mut dyn TuringExecutor
     fn next(&mut self) -> Option<Self::Item> 
     {
         // Fetch the current state
-        let curr_state =  self.get_turing_machine().get_state(self.get_state_pointer()).clone();
+        let curr_state =  self.get_turing_machine().get_state(self.get_state_pointer()).unwrap().clone();
 
         /* Checks if the state is accepting */
         if curr_state.is_final
@@ -455,12 +493,12 @@ impl<'a> Iterator for &mut dyn TuringExecutor
 
         // Apply the transition
         // to the read ribbons
-        self.get_reading_ribbon().transition_state(transition.chars_read[0], ' ', &transition.move_read).unwrap();
+        self.get_reading_ribbon().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
         
         // to the write ribbons
         for i in 0..self.get_turing_machine().k 
         {
-            self.get_writting_ribbons()[i as usize].transition_state(transition.chars_read[(i+1) as usize],
+            self.get_writting_ribbons()[i as usize].try_apply_transition(transition.chars_read[(i+1) as usize],
                                                                                     transition.chars_write[i as usize].0, &transition.chars_write[i as usize].1).unwrap();
         }
 

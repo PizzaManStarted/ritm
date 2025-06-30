@@ -59,13 +59,13 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachine, Turing
                             transition = parse_transition(rule);
                             if let Some(k) = nb_of_ribbons
                             {
-                                if k != transition.get_number_of_ribbons() 
+                                if k != transition.get_number_of_affected_ribbons() 
                                 {
                                     return Err(TuringError::NotEnougthArgsTransitionError);
                                 }
                             }
                             else {
-                                nb_of_ribbons = Some(transition.get_number_of_ribbons());
+                                nb_of_ribbons = Some(transition.get_number_of_affected_ribbons());
                             }
                             transitions.push(transition);
                         },
@@ -78,7 +78,7 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachine, Turing
                 if let None = turing_machine 
                 {
                     // With the collected number of ribbons
-                    turing_machine = Some(TuringMachine::new(transitions.get(0).expect("At least one rule should be given in a transition").get_number_of_ribbons() as u8));    
+                    turing_machine = Some(TuringMachine::new(transitions.get(0).expect("At least one rule should be given in a transition").get_number_of_affected_ribbons() as u8));    
                 }
                 // If the MT existed
                 if let Some(mt) = &mut turing_machine 
