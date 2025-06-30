@@ -1,4 +1,4 @@
-use turingrs::{
+use ritm::{
     parser::*, turing_machine::{TuringExecutor, TuringMachine, TuringMachineExecutor, TuringMachineExecutorRef}, turing_state::{TuringDirection, TuringTransition}
 };
 

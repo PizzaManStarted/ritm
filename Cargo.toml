@@ -1,6 +1,6 @@
 [package]
-name = "turingrs"
-authors = ["Axel Foucart"]
+name = "ritm"
+authors = ["Axel Foucart", "Adrien Zianne"]
 description = "An implementation of turing machines with k ribbons"
 version = "0.1.0"
 edition = "2024"
