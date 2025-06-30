@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::{Debug, Display}, os::linux::raw::stat, usize};
+use std::{collections::HashMap, fmt::{Debug, Display}, usize};
 use rand::{rng, Rng};
 use crate::{turing_errors::TuringError, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringTransition}};
 
@@ -10,6 +10,9 @@ pub struct TuringMachine
     states: Vec<TuringState>,
     k: u8,
 }
+
+
+
 
 impl TuringMachine {
     /// Creates a new empty Turing Machine that has `k` writting rubbons.
