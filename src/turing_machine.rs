@@ -207,8 +207,7 @@ impl TuringMachine {
     /// Removes all the transitions from this state to the given node
     pub fn remove_transitions(&mut self, from: &String, to: &String) -> Result<(), TuringError>
     {
-        // Get n1 and n2 indexes if they exists
-
+        // Fetch n1 as a state
         let n1_state = self.name_index_hashmap.get(from);
         if let None = n1_state {
             return Err(TuringError::UnknownStateError { state_name: from.to_string() });
@@ -216,6 +215,7 @@ impl TuringMachine {
 
         let n1_state = &mut self.states[*n1_state.unwrap() as usize];
 
+        // Fetch n2 as an index
         let n2_state = self.name_index_hashmap.get(to);
         if let None = n2_state {
             return Err(TuringError::UnknownStateError { state_name: to.to_string() });
@@ -229,10 +229,15 @@ impl TuringMachine {
     }
 
     /// Removes a state and **all** mentions of it in **all** transitions of **all** the other states of the TuringMachine
-    pub fn remove_state(&mut self, state_name: &String)
+    pub fn remove_state(&mut self, state_name: &String) -> Result<(), TuringError>
     {
         // First keep the index for later
-        let index = *self.name_index_hashmap.get(state_name).unwrap();
+        let index = self.name_index_hashmap.get(state_name);
+        if let None = index {
+            return Err(TuringError::UnknownStateError { state_name: state_name.to_string() });
+        }
+        let index = *index.unwrap();
+
         // Remove references to this state from *all* other nodes transitions
         let mut states = vec!();
         for name in self.name_index_hashmap.keys() {
@@ -265,6 +270,7 @@ impl TuringMachine {
         // Remove the node 
         self.name_index_hashmap.remove(state_name);
         self.states.remove(index.into());
+        Ok(())
     }
 }
 
