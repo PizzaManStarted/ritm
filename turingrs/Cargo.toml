@@ -1,5 +1,5 @@
 [package]
-name = "turingrs"
+name = "ritm_core"
 authors = ["Axel Foucart", "Adrien Zianne"]
 description = "An implementation of turing machines with k ribbons"
 version = "0.1.0"
