@@ -1,0 +1,11 @@
+[package]
+name = "turingrs"
+authors = ["Axel Foucart", "Adrien Zianne"]
+description = "An implementation of turing machines with k ribbons"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+pest = "2.7.15"
+pest_derive = "2.7.15"
+rand = "0.9.0"
