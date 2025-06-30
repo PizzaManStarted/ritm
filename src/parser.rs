@@ -100,8 +100,11 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachine, Turing
             _ => unreachable!(),
         }
     }
-    
-    return Ok(turing_machine.unwrap());
+    match turing_machine {
+        Some(t) => return Ok(t),
+        // If no parse value was given, simply return a read only one
+        None => return Ok(TuringMachine::new(1)),
+    }
 }
 
 

@@ -49,18 +49,23 @@ fn main() {
              "q_1".to_string()).unwrap();
     
     // println!("After all : \n{}", tm_exec);
-    let mut mt = parse_turing_machine_file("resources/turing4.tm".to_string()).unwrap();
+    let mut mt = parse_turing_machine_file("resources/turing2.tm".to_string()).unwrap();
+    // let mut mt  = parse_turing_machine("".to_string()).unwrap();
     
     // FIX ME This is not okay !
     //mt.remove_state(&"a".to_string());
     //println!("{:?}", mt);
     // FIXME : Fix the bug of index being wrong when removing something like a !
-    let mut exec= TuringMachineExecutorRef::new(&mt, "10101011010".to_string()).unwrap();
+    let mut exec= TuringMachineExecutorRef::new(&mt, "0010011".to_string()).unwrap();
+    
+    println!("{:?}", exec.get_writting_ribbons());
 
-    //let mut exec = TuringMachineExecutor::new(mt, "1010101010".to_string()).unwrap();
+    //&et mut exec = TuringMachineExecutor::new(mt, "1010101010".to_string()).unwrap();
     for tmp in exec.as_iter() {
         println!("_______________\nExec. step ::\n{}", tmp)
     }
+    
+    println!("{:?}", mt);
 
     println!("{:?}", exec.get_state_pointer());
 }
