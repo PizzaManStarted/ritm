@@ -61,7 +61,7 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachineGraph, T
                             {
                                 if k != transition.get_number_of_affected_ribbons() 
                                 {
-                                    return Err(TuringError::NotEnougthArgsTransitionError);
+                                    return Err(TuringError::ArgsSizeTransitionError);
                                 }
                             }
                             else {
@@ -78,7 +78,7 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachineGraph, T
                 if let None = turing_machine 
                 {
                     // With the collected number of ribbons
-                    turing_machine = Some(TuringMachineGraph::new(transitions.get(0).expect("At least one rule should be given in a transition").get_number_of_affected_ribbons() as u8));    
+                    turing_machine = Some(TuringMachineGraph::new(transitions.get(0).expect("At least one rule should be given in a transition").get_number_of_affected_ribbons() as u8).unwrap());    
                 }
                 // If the MT existed
                 if let Some(mt) = &mut turing_machine 
@@ -103,7 +103,7 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachineGraph, T
     match turing_machine {
         Some(t) => return Ok(t),
         // If no parse value was given, simply return a read only one
-        None => return Ok(TuringMachineGraph::new(1)),
+        None => return Ok(TuringMachineGraph::new(1).unwrap()),
     }
 }
 
@@ -168,5 +168,5 @@ fn parse_transition(rule: Pair<Rule>) -> TuringTransition
         }
     }
 
-    TuringTransition::create(chars_read, chars_written, directions)
+    TuringTransition::create(chars_read, chars_written, directions).unwrap()
 }

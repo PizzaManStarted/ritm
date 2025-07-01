@@ -1,7 +1,8 @@
 use std::{
-    char,
-    fmt::{Debug, Display},
+    char, f32::consts::E, fmt::{Debug, Display}
 };
+
+use crate::turing_errors::TuringError;
 
 /// Represents a state of a turing machine
 pub struct TuringState {
@@ -193,28 +194,34 @@ impl TuringTransition {
     /// * **chars_read** : The characters that have to be read in order to take this transition : `a_0,..., a_{n-1}`
     /// * **chars_write** : The characters to replace the characters read : `b_0, ..., b_{n-1}` 
     /// * **directions** : The directions to move the pointers of the ribbons : `D_0, ..., D_{n-1}`
-    pub fn create(chars_read: Vec<char>, chars_write: Vec<char>, directions: Vec<TuringDirection>) -> Self
+    pub fn create(chars_read: Vec<char>, chars_write: Vec<char>, directions: Vec<TuringDirection>) -> Result<Self, TuringError>
     {
         let mut chars_write_dir: Vec<(char, TuringDirection)> = vec!();
-        let move_read: TuringDirection = directions.get(0).expect("There must be at least one direction").clone();
+        let move_read = directions.get(0);
 
-        // TODO : Replace panics with real errors
-        if chars_write.len() != directions.len() -1 {
-            panic!("chars_write must have the same size as (directions - 1) in order to create couples of (char, TuringDirection)");
+        if let None = move_read {
+            return Err(TuringError::ArgsSizeTransitionError);
+        }
+        let move_read = move_read.unwrap().clone();
+
+        if chars_write.len() != directions.len() {
+            return Err(TuringError::ArgsSizeTransitionError);
         }
         if chars_read.len() != directions.len() {
-            panic!("The number of chars to read must be equal to the number of (char, directions) to replace them with")
+            return Err(TuringError::ArgsSizeTransitionError);
         }
         for i in 1..directions.len() 
         {
             chars_write_dir.push((*chars_write.get(i-1).unwrap(), directions.get(i).unwrap().clone()));        
         }
-        Self {
-            chars_read,
-            move_read,
-            chars_write: chars_write_dir,
-            index_to_state : 0,
-        }
+        Ok(
+            Self {
+                chars_read,
+                move_read,
+                chars_write: chars_write_dir,
+                index_to_state : 0,
+            }
+        )
     }
 
     /// Returns the number of ribbons that are going to be affected by this transition.

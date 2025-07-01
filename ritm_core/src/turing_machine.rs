@@ -24,12 +24,15 @@ impl TuringMachineGraph {
     /// * `q_i` : The initial state
     /// * `q_a` : The default accepting state
     /// * `q_r` : The default rejecting state
-    pub fn new(k: u8) -> Self
+    pub fn new(k: u8) -> Result<Self, TuringError>
     {
+        if k == 0 {
+            return Err(TuringError::IllegalActionError { cause: "Tried to create a turing machine graph with 0 ribbon".to_string() });
+        }
         // Add the default states
         let init_state = TuringState::new(false).set_name("i");
         let accepting_state = TuringState::new(true).set_name("a");
-        let rejecting_state = TuringState::new(false).set_name("r");
+        let rejecting_state = TuringState::new(true).set_name("r");
         
         // Create the hash map with the already known states
         let mut name_index_hashmap: HashMap<String, u8> = HashMap::new();
@@ -37,12 +40,12 @@ impl TuringMachineGraph {
         name_index_hashmap.insert("a".to_string(), 1);    // accepting
         name_index_hashmap.insert("r".to_string(), 2);    // rejecting
 
-        Self
+        Ok(Self
         {
             name_index_hashmap,
             states: vec!(init_state, accepting_state, rejecting_state),
             k,
-        }
+        })
     }
 
 
@@ -56,7 +59,7 @@ impl TuringMachineGraph {
         // Checks if the given number of ribbons is correct
         if transition.get_number_of_affected_ribbons() != self.k as usize
         {
-            return Err(TuringError::NotEnougthArgsTransitionError);
+            return Err(TuringError::ArgsSizeTransitionError);
         }
         let from_index = self.add_state(&from);
         let to_index = self.add_state(&to);
@@ -82,7 +85,7 @@ impl TuringMachineGraph {
         // Checks if the given correct of number transitions was given
         if transition.chars_write.len() != self.k as usize
         {
-            return Err(TuringError::NotEnougthArgsTransitionError);
+            return Err(TuringError::ArgsSizeTransitionError);
         }
 
         match self.add_rule_state_ind(from_index, transition, to_index) {
@@ -246,9 +249,14 @@ impl TuringMachineGraph {
             return Err(TuringError::UnknownStateError { state_name: state_name.to_string() });
         }
         let index = *index.unwrap();
-
-        // Remove references to this state from *all* other nodes transitions
+        // if the node is one of the 3 initial nodes, throw an error
+        if index <= 2  {
+            return Err(TuringError::IllegalActionError { cause: format!("Tried to delete the state {state_name}.") });
+        }
+        
+        /* Remove references to this state from *all* other nodes transitions */
         let mut states = vec!();
+        // Fetch all names that aren't the state we are trying to remove
         for name in self.name_index_hashmap.keys() {
             if name.eq(state_name) {
                 continue;
@@ -258,13 +266,17 @@ impl TuringMachineGraph {
         let mut prev_val;
         for name in &states
         {
-            self.remove_transitions(&name, state_name);
-            // For all nodes with a bigger index, lower their index by one in the hashmap
+            // Remove all transitions to this node
+            if let Err(e) = self.remove_transitions(&name, state_name) {
+                return Err(e);
+            }
+            // if this node has a bigger index, we lower it by one in the hashmap,
+            // because it means that the removed node was placed before in the vector and that the position of this node has changed
             prev_val = *self.name_index_hashmap.get_mut(name).unwrap();
             if prev_val >= index
             {
                 *self.name_index_hashmap.get_mut(name).unwrap() -= 1;
-                // notify all nodes about that change
+                // notify all neighboring nodes about that change
                 for name_other in &states 
                 {
                     if !name_other.eq(state_name) {
@@ -513,7 +525,7 @@ impl<'a> Iterator for &mut dyn TuringIterator
         self.get_reading_ribbon().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
         
         // to the write ribbons
-        for i in 0..self.get_turing_machine().k 
+        for i in 0..self.get_turing_machine().k
         {
             self.get_writting_ribbons()[i as usize].try_apply_transition(transition.chars_read[(i+1) as usize],
                                                                                     transition.chars_write[i as usize].0, &transition.chars_write[i as usize].1).unwrap();
