@@ -2,27 +2,27 @@ use pest::{iterators::Pair, Parser};
 use std::fs;
 use pest_derive::Parser;
 
-use crate::{turing_errors::TuringError, turing_machine::TuringMachine, turing_state::{TuringDirection, TuringTransition}};
+use crate::{turing_errors::TuringError, turing_machine::TuringMachineGraph, turing_state::{TuringDirection, TuringTransition}};
 
 #[derive(Parser)]
 #[grammar = "turing_machine.pest"]
 pub struct TuringGrammar;
 
 
-pub fn parse_turing_machine_file(file_path: String) -> Result<TuringMachine, TuringError>
+pub fn parse_turing_machine_file(file_path: String) -> Result<TuringMachineGraph, TuringError>
 {
     let unparsed_file = fs::read_to_string(&file_path).expect("cannot read file");
     return parse_turing_machine(unparsed_file);
 }
 
 
-pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachine, TuringError>
+pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachineGraph, TuringError>
 {
     let file: Pair<'_, Rule> = TuringGrammar::parse(Rule::turing_machine, &turing_mach)
         .expect("unsuccessful parse") // unwrap the parse result
         .next().unwrap(); // get and unwrap the `file` rule; never fails
     
-    let mut turing_machine: Option<TuringMachine> = None;
+    let mut turing_machine: Option<TuringMachineGraph> = None;
 
     let mut to_from_vars : Vec<String>;
     let mut transition: TuringTransition;
@@ -78,7 +78,7 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachine, Turing
                 if let None = turing_machine 
                 {
                     // With the collected number of ribbons
-                    turing_machine = Some(TuringMachine::new(transitions.get(0).expect("At least one rule should be given in a transition").get_number_of_affected_ribbons() as u8));    
+                    turing_machine = Some(TuringMachineGraph::new(transitions.get(0).expect("At least one rule should be given in a transition").get_number_of_affected_ribbons() as u8));    
                 }
                 // If the MT existed
                 if let Some(mt) = &mut turing_machine 
@@ -103,7 +103,7 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachine, Turing
     match turing_machine {
         Some(t) => return Ok(t),
         // If no parse value was given, simply return a read only one
-        None => return Ok(TuringMachine::new(1)),
+        None => return Ok(TuringMachineGraph::new(1)),
     }
 }
 

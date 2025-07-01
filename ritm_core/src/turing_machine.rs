@@ -3,19 +3,22 @@ use rand::{rng, Rng};
 use crate::{turing_errors::TuringError, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringTransition}};
 
 
-/// A struct representing a Turing Machine with k rubbons.
-pub struct TuringMachine
+/// A struct representing a Turing Machine graph with k rubbons.
+pub struct TuringMachineGraph
 {
+    /// The hashmap containing a mapping of all nodes names and their related index in the `states` field.
     pub name_index_hashmap: HashMap<String, u8>, 
+    /// The vector containing all the nodes of the turing machine graph
     states: Vec<TuringState>,
+    /// The number of ribbons this graph was made for
     k: u8,
 }
 
 
 
 
-impl TuringMachine {
-    /// Creates a new empty Turing Machine that has `k` writting rubbons.
+impl TuringMachineGraph {
+    /// Creates a new empty Turing Machine graph that has `k` writting rubbons.
     /// 
     /// Three default states will be created :
     /// * `q_i` : The initial state
@@ -44,12 +47,13 @@ impl TuringMachine {
 
 
 
-    /// Adds a new rule to a state of the machine of the form : `from {transition} to`
+    /// Adds a new rule to a state of the machine of the form : `from {transition} to`.
+    /// Meaning, a new edge is added to the graph.
     /// 
-    /// If one of the given state didn't already exists, a new with that name will be created.
+    /// If one of the given state didn't already exists, a new one with that name will be created.
     pub fn append_rule_state_by_name(&mut self, from: String, transition: TuringTransition, to: String) -> Result<(), TuringError>
     {
-        // Checks if the given number of ribbons was given
+        // Checks if the given number of ribbons is correct
         if transition.get_number_of_affected_ribbons() != self.k as usize
         {
             return Err(TuringError::NotEnougthArgsTransitionError);
@@ -67,8 +71,13 @@ impl TuringMachine {
         };
     }
 
-    /// Adds a new rule to a state of the machine.
-    pub fn append_rule_state(&mut self, from: u8, transition: TuringTransition, to: u8) -> Result<(), TuringError>
+    /// Adds a new rule to a state of the machine of the form : `from {transition} to`.
+    /// Meaning, a new edge is added to the graph.
+    /// 
+    /// ## Returns
+    /// * If everything went correctly : `Ok(())`
+    /// * Otherwise, it will return a [TuringError]
+    pub fn append_rule_state(&mut self, from_index: u8, transition: TuringTransition, to_index: u8) -> Result<(), TuringError>
     {
         // Checks if the given correct of number transitions was given
         if transition.chars_write.len() != self.k as usize
@@ -76,7 +85,7 @@ impl TuringMachine {
             return Err(TuringError::NotEnougthArgsTransitionError);
         }
 
-        match self.add_rule_state_ind(from, transition, to) {
+        match self.add_rule_state_ind(from_index, transition, to_index) {
             Ok(()) => {
                 return Ok(());
             },
@@ -98,9 +107,9 @@ impl TuringMachine {
         };
     }
 
-    /// Adds a new state to the turing machine and returns it's index.
+    /// Adds a new state to the turing machine graph and returns its index. Meaning a new node is added to the graph.
     /// 
-    /// If the state name already existed then the index of the already existing state is added.
+    /// If the state name already existed then the index of the already existing state is returned.
     pub fn add_state(&mut self, name: &String) -> u8
     {
         // Try to find the index of the state inside the hashmap 
@@ -123,7 +132,7 @@ impl TuringMachine {
         }
     }
 
-    /// Adds a new state to the turing machine using variables indexes
+    /// Adds a new state to the turing machine graph using variables indexes
     fn add_rule_state_ind(&mut self, from: u8, mut transition: TuringTransition, to: u8) -> Result<(), TuringError>
     {
         if self.states.len() <= from as usize {
@@ -140,7 +149,7 @@ impl TuringMachine {
         return Ok(());
     }
 
-    /// Returns the state at the given index
+    /// Returns the state (*node*) at the given index.
     pub fn get_state(&self, pointer: u8) -> Result<&TuringState, TuringError>
     {
         if self.states.len() <= pointer as usize {
@@ -149,7 +158,7 @@ impl TuringMachine {
         Ok(&self.states[pointer as usize])
     }
 
-    /// Returns the state that has the given name
+    /// Returns the state (*node*) that has the given name.
     pub fn get_state_from_name(&self, name: &String) -> Result<&TuringState, TuringError>
     {
         match self.name_index_hashmap.get(name) {
@@ -274,17 +283,17 @@ impl TuringMachine {
     }
 }
 
-impl Debug for TuringMachine {
+impl Debug for TuringMachineGraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TuringMachine").field("states", &self.states).field("hashmap", &self.name_index_hashmap).finish()
     }
 }
 
 /// A trait used to iterate over all the states of a turing machine.
-pub trait TuringExecutor
+pub trait TuringIterator
 {
     /// Gets the stored turing machine.
-    fn get_turing_machine(&self) -> &TuringMachine;
+    fn get_turing_machine(&self) -> &TuringMachineGraph;
     /// Gets the current state pointer of this struct. 
     fn get_state_pointer(&self) -> u8;
     /// Sets a new value to the state pointer.
@@ -296,7 +305,7 @@ pub trait TuringExecutor
 
     /// Transforms the current struct as a [TuringExecutor] in order to start 
     /// iterating.
-    fn as_iter(&mut self) -> &mut dyn TuringExecutor;
+    fn as_iter(&mut self) -> &mut dyn TuringIterator;
 }
 
 
@@ -304,10 +313,10 @@ pub trait TuringExecutor
 
 
 /// A struct made to execute a word to a turing machine
-pub struct TuringMachineExecutorRef<'a>
+pub struct TuringMachineWithRef<'a>
 {
     /// The **reference** to a turing machine that will execute a word
-    turing_machine: &'a TuringMachine,
+    graph: &'a TuringMachineGraph,
     /// The reading rubbon containing the word
     reading_ribbon:  TuringReadRibbon,
     /// A vector containing all writting rubbons
@@ -318,9 +327,9 @@ pub struct TuringMachineExecutorRef<'a>
     state_pointer: u8,
 }
 
-impl<'a> TuringMachineExecutorRef<'a> {
-    /// Create a new [TuringMachineExecutor] for a given word.
-    pub fn new(mt: &'a TuringMachine, word: String) -> Result<Self, TuringError>
+impl<'a> TuringMachineWithRef<'a> {
+    /// Create a new [TuringMachineWithRef] for a given word.
+    pub fn new(mt: &'a TuringMachineGraph, word: String) -> Result<Self, TuringError>
     {
         let mut s = 
         Self 
@@ -337,7 +346,7 @@ impl<'a> TuringMachineExecutorRef<'a> {
                 v
             },
             word,
-            turing_machine: mt,
+            graph: mt,
         };
         // Add the word to the reading ribbon
         s.reading_ribbon.feed_word(s.word.to_string());
@@ -348,10 +357,10 @@ impl<'a> TuringMachineExecutorRef<'a> {
 
 
 
-impl<'a> TuringExecutor for TuringMachineExecutorRef<'a> {
+impl<'a> TuringIterator for TuringMachineWithRef<'a> {
 
-    fn get_turing_machine(&self) -> &TuringMachine {
-        self.turing_machine
+    fn get_turing_machine(&self) -> &TuringMachineGraph {
+        self.graph
     }
 
     fn get_state_pointer(&self) -> u8 {
@@ -370,16 +379,18 @@ impl<'a> TuringExecutor for TuringMachineExecutorRef<'a> {
         &mut self.write_ribbons
     }
 
-    fn as_iter(&mut self) -> &mut dyn TuringExecutor
+    fn as_iter(&mut self) -> &mut dyn TuringIterator
     {
-        self as &mut dyn TuringExecutor
+        self as &mut dyn TuringIterator
     }
 }
 
-pub struct TuringMachineExecutor
+
+/// A struct representing an executable turing machine.
+pub struct TuringMachine
 {
     /// The turing machine that will execute a word
-    turing_machine: TuringMachine,
+    turing_machine: TuringMachineGraph,
     /// The reading rubbon containing the word
     reading_ribbon:  TuringReadRibbon,
     /// A vector containing all writting rubbons
@@ -390,9 +401,9 @@ pub struct TuringMachineExecutor
     state_pointer: u8,
 }
 
-impl TuringMachineExecutor {
-    /// Create a new [TuringMachineExecutor] for a given word.
-    pub fn new(mt: TuringMachine, word: String) -> Result<Self, TuringError>
+impl TuringMachine {
+    /// Create a new [TuringMachine] for a given graph and word.
+    pub fn new(mt: TuringMachineGraph, word: String) -> Result<Self, TuringError>
     {
         let mut s = 
         Self 
@@ -419,8 +430,8 @@ impl TuringMachineExecutor {
 }
 
 
-impl TuringExecutor for TuringMachineExecutor {
-    fn get_turing_machine(&self) -> &TuringMachine {
+impl TuringIterator for TuringMachine {
+    fn get_turing_machine(&self) -> &TuringMachineGraph {
         & self.turing_machine
     }
 
@@ -440,9 +451,9 @@ impl TuringExecutor for TuringMachineExecutor {
         &mut self.write_ribbons
     }
     
-    fn as_iter(&mut self) -> &mut dyn TuringExecutor
+    fn as_iter(&mut self) -> &mut dyn TuringIterator
     {
-        self as &mut dyn TuringExecutor
+        self as &mut dyn TuringIterator
     }
 }
 
@@ -462,7 +473,7 @@ pub struct TuringExecutionStep
 }
 
 
-impl<'a> Iterator for &mut dyn TuringExecutor
+impl<'a> Iterator for &mut dyn TuringIterator
 {
     type Item = TuringExecutionStep;
     
