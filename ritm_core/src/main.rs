@@ -3,7 +3,7 @@ use ritm_core::{
 };
 
 fn main() {
-    let mut mt = parse_turing_machine_file("turingrs/resources/turing2.tm".to_string()).unwrap();
+    let mut mt = parse_turing_machine_file("resources/turing2.tm".to_string()).unwrap();
     // let mut mt  = parse_turing_machine("".to_string()).unwrap();
     
     // FIX ME This is not okay !

@@ -10,11 +10,12 @@ pub enum TuringError {
     WordNotAcceptedError,
     /// Error when a transition was not given enougth args
     NotEnougthArgsTransitionError,
-    /// Erorr when trying to access a state using an index that goes outide of the bound 
+    /// Error when trying to access a state using an index that goes outide of the bound 
     OutOfRangeStateError {
         accessed_index : usize,
         states_len : usize,
     },
+    /// Error when trying to access a state using a string but the state does not exists
     UnknownStateError {
         state_name : String
     }
