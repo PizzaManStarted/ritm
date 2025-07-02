@@ -1,4 +1,4 @@
-use ritm_core::{turing_errors::TuringError, turing_machine::TuringMachineGraph, turing_state::{TuringDirection::{self, *}, TuringTransition}};
+use ritm_core::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_state::{TuringDirection::{self}, TuringTransition}};
 
 
 #[test]
