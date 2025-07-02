@@ -74,7 +74,7 @@ fn get_nodes_test() {
 #[test]
 fn transition_creation_test() 
 {
-    expect_wrong_args_error(TuringTransition::create(vec!('ç'),
+    expect_wrong_args_error(TuringTransition::create(vec!('ç', 'ç'),
                                                          vec!(),
                                                          vec!(TuringDirection::Left)));
 

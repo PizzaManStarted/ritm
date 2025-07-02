@@ -214,7 +214,6 @@ impl TuringTransition {
         {
             chars_write_dir.push((*chars_write.get(i-1).unwrap(), directions.get(i).unwrap().clone()));        
         }
-        println!("{:?}", chars_write_dir);
         Ok(
             Self {
                 chars_read,
