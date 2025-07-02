@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use rand::{rng, Rng};
 
-use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::TuringTransition};
+use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::TuringTransitionMultRibbons};
 
 
 /// A trait used to iterate over all the states of a turing machine.
@@ -181,7 +181,7 @@ pub struct TuringExecutionStep
     /// The index of the transition taken from the current state to the next one.
     pub transition_index_taken : usize,
     /// A clone of the transition that was just taken
-    pub transition_taken : TuringTransition,
+    pub transition_taken : TuringTransitionMultRibbons,
     /// A clone representing the current state of the reading ribbon after taking that transition.
     pub read_ribbon: TuringReadRibbon,
     /// A clone representing the current state of the writting ribbons after taking that transition.
@@ -236,7 +236,7 @@ impl<'a> Iterator for &mut dyn TuringIterator
         }
 
         // Move to the next state
-        self.set_state_pointer(transition.index_to_state);
+        self.set_state_pointer(transition.index_to_state.unwrap());
 
         Some(TuringExecutionStep
         {

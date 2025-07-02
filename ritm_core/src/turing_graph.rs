@@ -1,6 +1,6 @@
 use std::{collections::HashMap, f32::consts::E, fmt::{Debug, Display}, usize};
 use rand::{rand_core::le, rng, Rng};
-use crate::{turing_errors::TuringError, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringTransition}};
+use crate::{turing_errors::TuringError, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringTransitionMultRibbons}};
 
 
 /// A struct representing a Turing Machine graph with k rubbons.
@@ -30,9 +30,9 @@ impl TuringMachineGraph {
             return Err(TuringError::IllegalActionError { cause: "Tried to create a turing machine graph with 0 ribbon".to_string() });
         }
         // Add the default states
-        let init_state = TuringState::new(false).set_name("i");
-        let accepting_state = TuringState::new(true).set_name("a");
-        let rejecting_state = TuringState::new(true).set_name("r");
+        let init_state = TuringState::new(false, &String::from("i"));
+        let accepting_state = TuringState::new(true, &String::from("a"));
+        let rejecting_state = TuringState::new(true, &String::from("r"));
         
         // Create the hash map with the already known states
         let mut name_index_hashmap: HashMap<String, u8> = HashMap::new();
@@ -54,7 +54,7 @@ impl TuringMachineGraph {
     /// Meaning, a new edge is added to the graph.
     /// 
     /// If one of the given state didn't already exists, a [TuringError::UnknownStateError] will be returned.
-    pub fn append_rule_state_by_name(&mut self, from: String, transition: TuringTransition, to: String) -> Result<(), TuringError>
+    pub fn append_rule_state_by_name(&mut self, from: String, transition: TuringTransitionMultRibbons, to: String) -> Result<(), TuringError>
     {
         // Checks if the given number of ribbons is correct
         if transition.get_number_of_affected_ribbons() != self.k as usize
@@ -91,7 +91,7 @@ impl TuringMachineGraph {
     /// ## Returns
     /// * If everything went correctly : `Ok(())`
     /// * Otherwise, it will return a [TuringError]
-    pub fn append_rule_state(&mut self, from_index: u8, transition: TuringTransition, to_index: u8) -> Result<(), TuringError>
+    pub fn append_rule_state(&mut self, from_index: u8, transition: TuringTransitionMultRibbons, to_index: u8) -> Result<(), TuringError>
     {
         // Checks if the given correct of number transitions was given
         if transition.chars_write.len() != self.k as usize
@@ -113,7 +113,7 @@ impl TuringMachineGraph {
     /// Adds a new rule to a state of the machine and returns the machine.
     /// 
     /// If the given state didn't already exists, the state will be created.
-    pub fn append_rule_state_self(mut self, from: String, transition: TuringTransition, to: String) -> Result<Self, TuringError>
+    pub fn append_rule_state_self(mut self, from: String, transition: TuringTransitionMultRibbons, to: String) -> Result<Self, TuringError>
     {
         match self.append_rule_state_by_name(from, transition, to) {
             Ok(()) => return Ok(self),
@@ -137,7 +137,7 @@ impl TuringMachineGraph {
             None => 
             {
                 // Pushes in the vector of states a new state with the given name 
-                self.states.push(TuringState::new(false).set_name(name));
+                self.states.push(TuringState::new(false, name));
                 // Adds the index of this state to the hashmap 
                 self.name_index_hashmap.insert(name.to_string(), (self.states.len()-1) as u8);
                 // Returns the index of the newly created state
@@ -147,7 +147,7 @@ impl TuringMachineGraph {
     }
 
     /// Adds a new state to the turing machine graph using variables indexes
-    fn add_rule_state_ind(&mut self, from: u8, mut transition: TuringTransition, to: u8) -> Result<(), TuringError>
+    fn add_rule_state_ind(&mut self, from: u8, mut transition: TuringTransitionMultRibbons, to: u8) -> Result<(), TuringError>
     {
         if self.states.len() <= from as usize {
             return Err(TuringError::OutOfRangeStateError { accessed_index: from as usize, states_len: self.states.len() });
@@ -156,7 +156,7 @@ impl TuringMachineGraph {
             return Err(TuringError::OutOfRangeStateError { accessed_index: to as usize, states_len: self.states.len() });
         }
         // Change transition index
-        transition.index_to_state = to;
+        transition.index_to_state = Some(to);
 
         let state  = self.states.get_mut(from as usize).unwrap();
         state.add_transition(transition);
@@ -199,7 +199,7 @@ impl TuringMachineGraph {
         };
 
         for (i, t) in n1_state.transitions.iter().enumerate() {
-            if t.index_to_state == n2_index {
+            if t.index_to_state.unwrap() == n2_index {
                 res.push(i);
             }
         }
@@ -220,7 +220,7 @@ impl TuringMachineGraph {
 
         // Fetch all transition that go toward n2
         for (i, t) in n1_state.transitions.iter().enumerate() {
-            if t.index_to_state == n2{
+            if t.index_to_state.unwrap() == n2 {
                 vec.push(i);
             }
         }

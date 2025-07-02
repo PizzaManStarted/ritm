@@ -1,5 +1,5 @@
 use ritm_core::{
-    parser::*, turing_graph::TuringMachineGraph, turing_machine::{TuringIterator, TuringMachineWithRef}, turing_state::{TuringDirection, TuringTransition}
+    parser::*, turing_graph::TuringMachineGraph, turing_machine::{TuringIterator, TuringMachineWithRef}, turing_state::{TuringDirection, TuringTransitionMultRibbons}
 };
 
 fn main() {

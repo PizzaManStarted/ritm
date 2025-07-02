@@ -1,4 +1,4 @@
-use ritm_core::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_state::{TuringDirection::{self}, TuringTransition}};
+use ritm_core::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_state::{TuringDirection::{self}, TuringTransitionMultRibbons}};
 
 
 #[test]
@@ -15,6 +15,9 @@ fn create_graph_test()
     assert!(graph.get_state_from_name(&"a".to_string()).unwrap().is_final);
     assert!(graph.get_state_from_name(&"r".to_string()).unwrap().is_final);
     assert!(!graph.get_state_from_name(&"i".to_string()).unwrap().is_final);
+
+    TuringMachineGraph::new(1).unwrap();
+
 }
 
 #[test]
@@ -55,14 +58,14 @@ fn get_nodes_test() {
     assert_eq!(graph.add_state(&"d".to_string()), 5);
 
     // check they get be obtained
-    assert_eq!(graph.get_state(3).unwrap().name.clone().unwrap(), "b".to_string());
-    assert_eq!(graph.get_state(4).unwrap().name.clone().unwrap(), "c".to_string());
-    assert_eq!(graph.get_state(5).unwrap().name.clone().unwrap(), "d".to_string());
+    assert_eq!(graph.get_state(3).unwrap().name.clone(), "b".to_string());
+    assert_eq!(graph.get_state(4).unwrap().name.clone(), "c".to_string());
+    assert_eq!(graph.get_state(5).unwrap().name.clone(), "d".to_string());
 
     // check they get be obtained
-    assert_eq!(graph.get_state_from_name(&"b".to_string()).unwrap().name.clone().unwrap(), "b".to_string());
-    assert_eq!(graph.get_state_from_name(&"c".to_string()).unwrap().name.clone().unwrap(), "c".to_string());
-    assert_eq!(graph.get_state_from_name(&"d".to_string()).unwrap().name.clone().unwrap(), "d".to_string());
+    assert_eq!(graph.get_state_from_name(&"b".to_string()).unwrap().name.clone(), "b".to_string());
+    assert_eq!(graph.get_state_from_name(&"c".to_string()).unwrap().name.clone(), "c".to_string());
+    assert_eq!(graph.get_state_from_name(&"d".to_string()).unwrap().name.clone(), "d".to_string());
 
     // Check they aren't final
     assert!(!graph.get_state_from_name(&"b".to_string()).unwrap().is_final);
@@ -72,37 +75,21 @@ fn get_nodes_test() {
 
 
 #[test]
-fn transition_creation_test() 
-{
-    expect_wrong_args_error(TuringTransition::create(vec!('ç', 'ç'),
-                                                         vec!(),
-                                                         vec!(TuringDirection::Left)));
-
-    expect_wrong_args_error(TuringTransition::create(vec!(),
-                                                         vec!('ç'),
-                                                         vec!(TuringDirection::Left)));
-
-    expect_wrong_args_error(TuringTransition::create(vec!('ç'),
-                                                         vec!('ç'),
-                                                         vec!()));
-}
-
-#[test]
 fn add_transition()
 {
     let mut graph = TuringMachineGraph::new(2).unwrap();
 
     graph.append_rule_state_by_name(String::from("i"), 
-                                TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
+                                TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
                                 String::from("a")).expect("no errors were expected");
 
     // e, is not part of the graph
     expect_unk_name_error(graph.append_rule_state_by_name(String::from("e"), 
-                                TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
+                                TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
                                 String::from("a")));
     // o, is not part of the graph
     expect_unk_name_error(graph.append_rule_state_by_name(String::from("a"), 
-                            TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
+                            TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
                             String::from("o")));
     // add e and o to the graph
     graph.add_state(&String::from("e"));
@@ -116,7 +103,7 @@ fn add_transition()
     }
     // add transition
     graph.append_rule_state_by_name(String::from("e"), 
-                                TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
+                                TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
                                 String::from("o")).expect("no errors were expected");
 
     // Check that the transition was really added
@@ -143,19 +130,6 @@ fn add_transition_2_or_more_ribbon()
     
 }
 
-
-
-#[test]
-fn add_transition_not_existing_nodes() {
-    let mut graph = TuringMachineGraph::new(1).unwrap();
-    // Add new nodes
-    assert_eq!(graph.add_state(&"b".to_string()), 3);
-    assert_eq!(graph.add_state(&"c".to_string()), 4);
-
-}
-
-
-
 fn expect_illegal_action_error<O>(res : Result<O, TuringError>)
 {
     if let Err(e) = res {
@@ -169,18 +143,6 @@ fn expect_illegal_action_error<O>(res : Result<O, TuringError>)
     }
 }
 
-fn expect_wrong_args_error<O>(res : Result<O, TuringError>)
-{
-    if let Err(e) = res {
-        match e {
-            TuringError::ArgsSizeTransitionError => (),
-            _ => panic!("Wrong error was returned"),
-        }
-    }
-    else {
-        panic!("Should have thrown an error")
-    }
-}
 
 fn expect_unk_name_error<O>(res : Result<O, TuringError>)
 {

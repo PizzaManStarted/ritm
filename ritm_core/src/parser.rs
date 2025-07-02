@@ -2,7 +2,7 @@ use pest::{iterators::Pair, Parser};
 use std::fs;
 use pest_derive::Parser;
 
-use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_machine::TuringMachine, turing_state::{TuringDirection, TuringTransition}};
+use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_machine::TuringMachine, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
 
 #[derive(Parser)]
 #[grammar = "turing_machine.pest"]
@@ -25,8 +25,8 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachineGraph, T
     let mut turing_machine: Option<TuringMachineGraph> = None;
 
     let mut to_from_vars : Vec<String>;
-    let mut transition: TuringTransition;
-    let mut transitions: Vec<TuringTransition>;
+    let mut transition: TuringTransitionMultRibbons;
+    let mut transitions: Vec<TuringTransitionMultRibbons>;
 
     let mut nb_of_ribbons: Option<usize> = None;
 
@@ -121,7 +121,7 @@ fn parse_str_token(rule: Pair<Rule>) -> String
     }
 }
 
-fn parse_transition(rule: Pair<Rule>) -> TuringTransition
+fn parse_transition(rule: Pair<Rule>) -> TuringTransitionMultRibbons
 {
     let mut chars_read: Vec<char> = vec!();
     let mut directions: Vec<TuringDirection> = vec!();
@@ -168,5 +168,5 @@ fn parse_transition(rule: Pair<Rule>) -> TuringTransition
         }
     }
 
-    TuringTransition::create(chars_read, chars_written, directions).unwrap()
+    TuringTransitionMultRibbons::create(chars_read, chars_written, directions).unwrap()
 }
