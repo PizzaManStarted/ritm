@@ -198,13 +198,13 @@ impl TuringTransition {
     {
         let mut chars_write_dir: Vec<(char, TuringDirection)> = vec!();
         let move_read = directions.get(0);
-
+        
         if let None = move_read {
             return Err(TuringError::ArgsSizeTransitionError);
         }
         let move_read = move_read.unwrap().clone();
-
-        if chars_write.len() != directions.len() {
+        
+        if chars_write.len() + 1 != directions.len(){
             return Err(TuringError::ArgsSizeTransitionError);
         }
         if chars_read.len() != directions.len() {
@@ -214,6 +214,7 @@ impl TuringTransition {
         {
             chars_write_dir.push((*chars_write.get(i-1).unwrap(), directions.get(i).unwrap().clone()));        
         }
+        println!("{:?}", chars_write_dir);
         Ok(
             Self {
                 chars_read,
@@ -223,11 +224,11 @@ impl TuringTransition {
             }
         )
     }
-
+    
     /// Returns the number of ribbons that are going to be affected by this transition.
     pub fn get_number_of_affected_ribbons(&self) -> usize
     {
-        return self.chars_write.len();
+        return self.chars_write.len() + 1;
     }
 }
 

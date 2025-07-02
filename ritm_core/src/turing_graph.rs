@@ -1,5 +1,5 @@
 use std::{collections::HashMap, f32::consts::E, fmt::{Debug, Display}, usize};
-use rand::{rng, Rng};
+use rand::{rand_core::le, rng, Rng};
 use crate::{turing_errors::TuringError, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringTransition}};
 
 
@@ -53,7 +53,7 @@ impl TuringMachineGraph {
     /// Adds a new rule to a state of the machine of the form : `from {transition} to`.
     /// Meaning, a new edge is added to the graph.
     /// 
-    /// If one of the given state didn't already exists, a new one with that name will be created.
+    /// If one of the given state didn't already exists, a [TuringError::UnknownStateError] will be returned.
     pub fn append_rule_state_by_name(&mut self, from: String, transition: TuringTransition, to: String) -> Result<(), TuringError>
     {
         // Checks if the given number of ribbons is correct
@@ -61,9 +61,20 @@ impl TuringMachineGraph {
         {
             return Err(TuringError::ArgsSizeTransitionError);
         }
-        let from_index = self.add_state(&from);
-        let to_index = self.add_state(&to);
+        let from_index = self.name_index_hashmap.get(&from);
+        if let None = from_index {
+            return Err(TuringError::UnknownStateError { state_name: from });
+        }
+        let from_index = *from_index.unwrap();
 
+
+        let to_index = self.name_index_hashmap.get(&to);
+        if let None = to_index {
+            return Err(TuringError::UnknownStateError { state_name: to });
+        }
+        let to_index = *to_index.unwrap();
+
+        
         match self.add_rule_state_ind(from_index, transition, to_index) {
             Ok(()) => {
                 return Ok(());
@@ -172,27 +183,28 @@ impl TuringMachineGraph {
 
     /// Get the transition index between two nodes if it exists.
     /// Returns the first one found.
-    pub fn get_transition_index_by_name(&self, n1: &String, n2: &String) -> Option<usize>
+    pub fn get_transition_indexes_by_name(&self, n1: &String, n2: &String) -> Result<Vec<usize>, TuringError>
     {
+        let mut res = vec!();
         // Get n1 and n2 indexes if they exists
         let n1_state = match self.name_index_hashmap.get(n1) 
         {
             Some(i) => &self.states[*i as usize],
-            None => return None,
+            None => return Err(TuringError::UnknownStateError { state_name: n1.clone() }),
         };
         let n2_index = match self.name_index_hashmap.get(n2) 
         {
             Some(i) => *i,
-            None => return None,
+            None => return Err(TuringError::UnknownStateError { state_name: n2.clone() }),
         };
 
         for (i, t) in n1_state.transitions.iter().enumerate() {
-            if t.index_to_state == n2_index{
-                return Some(i);
+            if t.index_to_state == n2_index {
+                res.push(i);
             }
         }
         
-        return None;
+        return Ok(res);
     }
 
     /// Get all the transitions indexes between two nodes.

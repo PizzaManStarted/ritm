@@ -88,12 +88,61 @@ fn transition_creation_test()
 }
 
 #[test]
-fn add_transition_existing_node()
+fn add_transition()
 {
-    let mut graph = TuringMachineGraph::new(1).unwrap();
+    let mut graph = TuringMachineGraph::new(2).unwrap();
+
+    graph.append_rule_state_by_name(String::from("i"), 
+                                TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
+                                String::from("a")).expect("no errors were expected");
+
+    // e, is not part of the graph
+    expect_unk_name_error(graph.append_rule_state_by_name(String::from("e"), 
+                                TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
+                                String::from("a")));
+    // o, is not part of the graph
+    expect_unk_name_error(graph.append_rule_state_by_name(String::from("a"), 
+                            TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
+                            String::from("o")));
+    // add e and o to the graph
+    graph.add_state(&String::from("e"));
+    graph.add_state(&String::from("o"));
+
+    // Check that the transition didn't already exists
+    // Check that the transition was really added
+    if !graph.get_transition_indexes_by_name(&String::from("e"), &String::from("o"))
+                    .expect("a value was expected here").is_empty() {
+                        panic!("No values were expected");
+    }
+    // add transition
+    graph.append_rule_state_by_name(String::from("e"), 
+                                TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
+                                String::from("o")).expect("no errors were expected");
+
+    // Check that the transition was really added
+    if graph.get_transition_indexes_by_name(&String::from("e"), &String::from("o"))
+                    .expect("a value was expected here").is_empty() {
+                        panic!("A value should be here");
+    }
+
+    // Add the same transition again
+    // TODO check this
+}
+
+
+#[test]
+fn add_transition_2_or_more_ribbon()
+{
+    let mut graph = TuringMachineGraph::new(2).unwrap();
+
+    // well 
+
+    
+    let mut graph = TuringMachineGraph::new(3).unwrap();
 
     
 }
+
 
 
 #[test]
@@ -125,6 +174,19 @@ fn expect_wrong_args_error<O>(res : Result<O, TuringError>)
     if let Err(e) = res {
         match e {
             TuringError::ArgsSizeTransitionError => (),
+            _ => panic!("Wrong error was returned"),
+        }
+    }
+    else {
+        panic!("Should have thrown an error")
+    }
+}
+
+fn expect_unk_name_error<O>(res : Result<O, TuringError>)
+{
+    if let Err(e) = res {
+        match e {
+            TuringError::UnknownStateError { state_name } => (),
             _ => panic!("Wrong error was returned"),
         }
     }

@@ -206,6 +206,7 @@ impl Clone for TuringWriteRibbon {
 }
 
 
+// Keeping the unit test here because we need to access private fields
 #[cfg(test)]
 mod tests{
     use super::*;
