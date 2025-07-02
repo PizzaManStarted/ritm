@@ -10,11 +10,16 @@ pub enum TuringError {
         accessed_index: usize,
         ribbon_size: usize,
     },
+    /// Error returned when trying to access an out of range transition
+    OutOfRangeTransitionError {
+        accessed_index : usize,
+        states_len : usize,
+    },
     /// Error when a word given to a turing machine did not end on an accepting state
     WordNotAcceptedError,
     /// Error when a transition was given a wrong number of args
     ArgsSizeTransitionError,
-    /// Error when trying to access a state using an index that goes outide of the bound 
+    /// Error when trying to access a state using an index that goes outside of the bound 
     OutOfRangeStateError {
         accessed_index : usize,
         states_len : usize,
@@ -41,6 +46,11 @@ impl Debug for TuringError {
                         .debug_struct("OutofRangeRibbonError")
                         .field("tried_to_access", tried_to_access)
                         .field("ribbon_size", ribbon_size)
+                        .finish(),
+            Self::OutOfRangeTransitionError { accessed_index, states_len } => f
+                        .debug_struct("OutOfRangeTransitionError")
+                        .field("accessed_index", accessed_index)
+                        .field("states_len", states_len)
                         .finish(),
             Self::WordNotAcceptedError => write!(f, "WordNotAcceptedError"),
             Self::ArgsSizeTransitionError => write!(f, "NotEnougthArgsError"),

@@ -35,10 +35,13 @@ impl TuringState {
         self.transitions.push(transition);
     }
 
-    /// Removes the transition ***at*** the given index 
-    pub fn remove_transition(&mut self, transition_index: u8) -> TuringTransitionMultRibbons
+    /// Removes the transition ***at*** the given index and returns it if it was correctly returned
+    pub fn remove_transition(&mut self, transition_index: u8) -> Result<TuringTransitionMultRibbons, TuringError>
     {
-        self.transitions.remove(transition_index.into())
+        if self.transitions.len() <= transition_index as usize {
+            return Err(TuringError::OutOfRangeTransitionError { accessed_index: transition_index as usize, states_len: self.transitions.len() });
+        }
+        Ok(self.transitions.remove(transition_index.into()))
     }
 
     /// Removes all the transitions from this state ***that are pointing*** at the given index

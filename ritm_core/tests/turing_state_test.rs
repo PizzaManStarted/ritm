@@ -19,9 +19,15 @@ fn transition_creation_test()
                                                          vec!('ç'),
                                                          vec!()));
 
-    if let Some(v) = t1.index_to_state {
+    if let Some(_) = t1.index_to_state {
         panic!("A none value was expected here");
     }
+
+    assert_eq!(t1.chars_read, vec!('ç','ç'));
+    assert_eq!(t1.move_read, TuringDirection::Left);
+    assert_eq!(t1.chars_write, vec!(('ç',TuringDirection::Right)));
+
+    assert_eq!(t1.get_number_of_affected_ribbons(), 2)
 }
 
 #[test]
@@ -78,8 +84,6 @@ fn add_transitions() {
     let transition =  TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     s.add_transition(transition);
 
-    
-
     // Check that the transition was added
     assert_eq!(s.transitions.first().unwrap(), &TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap());
 }
@@ -91,8 +95,18 @@ fn remove_transitions() {
     s.add_transition(TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap());
     s.add_transition(TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('0'), vec!(TuringDirection::Left, TuringDirection::Left)).unwrap());
 
-    // Check that all transitions were used
-    s.remove_transition(0);
+    // Remove both of them
+    s.remove_transition(0).unwrap();
+    s.remove_transition(0).unwrap();
+
+    assert!(s.transitions.is_empty());
+
+    // Add them back
+    s.add_transition(TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap());
+    s.add_transition(TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('0'), vec!(TuringDirection::Left, TuringDirection::Left)).unwrap());
+
+
+    expect_out_of_range_transition_error(s.remove_transition(2));
 }
 
 
@@ -101,6 +115,19 @@ fn expect_wrong_args_error<O>(res : Result<O, TuringError>)
     if let Err(e) = res {
         match e {
             TuringError::ArgsSizeTransitionError => (),
+            _ => panic!("Wrong error was returned"),
+        }
+    }
+    else {
+        panic!("Should have thrown an error")
+    }
+}
+
+fn expect_out_of_range_transition_error<O>(res : Result<O, TuringError>)
+{
+    if let Err(e) = res {
+        match e {
+            TuringError::OutOfRangeTransitionError { accessed_index, states_len } => (),
             _ => panic!("Wrong error was returned"),
         }
     }
