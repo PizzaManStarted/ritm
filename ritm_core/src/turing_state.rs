@@ -31,8 +31,14 @@ impl TuringState {
     }
 
     /// Adds a new transition to the state
-    pub fn add_transition(&mut self, transition: TuringTransitionMultRibbons) {
-        self.transitions.push(transition);
+    pub fn add_transition(&mut self, transition: TuringTransitionMultRibbons) -> Result<(), TuringError> 
+    {
+        // Check that the number of ribbon from a transition is the same for all added transitions
+        if ! self.transitions.is_empty() && self.transitions.first().unwrap().get_number_of_affected_ribbons() != transition.get_number_of_affected_ribbons() {
+            return Err(TuringError::ArgsSizeTransitionError);
+        }
+
+        Ok(self.transitions.push(transition))
     }
 
     /// Removes the transition ***at*** the given index and returns it if it was correctly returned
@@ -81,16 +87,25 @@ impl TuringState {
     pub fn get_valid_transitions(&self, chars_read: Vec<char>) -> Vec<&TuringTransitionMultRibbons> {
         let mut res = vec![];
         for t in &self.transitions {
-            // if chars_read.len() != t.chars_read.len() 
-            // {
-            //     return res;    // FIXME add error here
-            // }
-            //println!("Let me check for : {} | chars read: {:?} and tr.read : {:?}", t, chars_read, t.chars_read);
             if chars_read.eq(&t.chars_read) {
-                //println!("\t*Adding it !");
                 res.push(t);
             }
         }
+        return res;
+    }
+
+    /// Gets all the transitions that can be taken to reach the given index.
+    pub fn get_transitions_to(&self, to_index: u8) -> Vec<&TuringTransitionMultRibbons> {
+        let mut res = vec!();
+
+        for t in &self.transitions {
+            if let Some(i) = t.index_to_state {
+                if i == to_index {
+                    res.push(t);
+                }
+            }
+        }
+
         return res;
     }
 }
@@ -284,7 +299,8 @@ impl Display for TuringTransitionMultRibbons {
 }
 
 impl PartialEq for TuringTransitionMultRibbons {
+    /// Checks if two [TuringTransitionMultRibbons] are equivalent. Note that the `index_to_state` field is not part of this comparison.
     fn eq(&self, other: &Self) -> bool {
-        self.chars_read == other.chars_read && self.move_read == other.move_read && self.chars_write == other.chars_write && self.index_to_state == other.index_to_state
+        self.chars_read == other.chars_read && self.move_read == other.move_read && self.chars_write == other.chars_write
     }
 }

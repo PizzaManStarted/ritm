@@ -8,18 +8,18 @@ use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing
 /// A trait used to iterate over all the states of a turing machine.
 pub trait TuringIterator
 {
-    /// Gets the stored turing machine.
-    fn get_turing_machine(&self) -> &TuringMachineGraph;
+    /// Gets the stored turing machine graph.
+    fn get_turing_machine_graph(&self) -> &TuringMachineGraph;
     /// Gets the current state pointer of this struct. 
     fn get_state_pointer(&self) -> u8;
     /// Sets a new value to the state pointer.
     fn set_state_pointer(&mut self, new_val: u8);
-    /// Gets the writtings ribbons stored inside this struct.
+    /// Gets the reading ribbon stored inside this struct.
     fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon;
     /// Gets the writtings ribbons stored inside this struct.
     fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon>;
 
-    /// Transforms the current struct as a [TuringExecutor] in order to start 
+    /// Transforms the current struct as a [TuringIterator] in order to start 
     /// iterating.
     fn as_iter(&mut self) -> &mut dyn TuringIterator;
 }
@@ -75,7 +75,7 @@ impl<'a> TuringMachineWithRef<'a> {
 
 impl<'a> TuringIterator for TuringMachineWithRef<'a> {
 
-    fn get_turing_machine(&self) -> &TuringMachineGraph {
+    fn get_turing_machine_graph(&self) -> &TuringMachineGraph {
         self.graph
     }
 
@@ -147,7 +147,7 @@ impl TuringMachine {
 
 
 impl TuringIterator for TuringMachine {
-    fn get_turing_machine(&self) -> &TuringMachineGraph {
+    fn get_turing_machine_graph(&self) -> &TuringMachineGraph {
         & self.turing_machine
     }
 
@@ -197,7 +197,7 @@ impl<'a> Iterator for &mut dyn TuringIterator
     fn next(&mut self) -> Option<Self::Item> 
     {
         // Fetch the current state
-        let curr_state =  self.get_turing_machine().get_state(self.get_state_pointer()).unwrap().clone();
+        let curr_state =  self.get_turing_machine_graph().get_state(self.get_state_pointer()).unwrap().clone();
 
         /* Checks if the state is accepting */
         if curr_state.is_final
@@ -229,7 +229,7 @@ impl<'a> Iterator for &mut dyn TuringIterator
         self.get_reading_ribbon().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
         
         // to the write ribbons
-        for i in 0..self.get_turing_machine().get_k()
+        for i in 0..self.get_turing_machine_graph().get_k()
         {
             self.get_writting_ribbons()[i as usize].try_apply_transition(transition.chars_read[(i+1) as usize],
                                                                                     transition.chars_write[i as usize].0, &transition.chars_write[i as usize].1).unwrap();
