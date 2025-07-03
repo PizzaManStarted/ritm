@@ -118,15 +118,15 @@ fn add_transition()
 
 
 #[test]
-fn add_transition_2_or_more_ribbon()
+fn delete_transitions()
 {
     let mut graph = TuringMachineGraph::new(2).unwrap();
+    let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
 
-    // well 
+    graph.append_rule_state_self(String::from("i"), t1, String::from("a")).unwrap();
 
-    
-    let mut graph = TuringMachineGraph::new(3).unwrap();
 
+    // TODO TEST remove with transition
     
 }
 

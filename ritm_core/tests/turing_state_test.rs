@@ -96,15 +96,15 @@ fn add_transitions() {
 }
 
 #[test]
-fn remove_transitions() {
+fn remove_transitions_using_index() {
     let mut s = TuringState::new(false,  &String::from("test"));
     // add transitions
     s.add_transition(TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap()).expect("There shouldn't be an error");
     s.add_transition(TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('0'), vec!(TuringDirection::Left, TuringDirection::Left)).unwrap()).expect("There shouldn't be an error");
 
     // Remove both of them
-    s.remove_transition(0).unwrap();
-    s.remove_transition(0).unwrap();
+    s.remove_transition_with_index(0).unwrap();
+    s.remove_transition_with_index(0).unwrap();
 
     assert!(s.transitions.is_empty());
 
@@ -112,8 +112,31 @@ fn remove_transitions() {
     s.add_transition(TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap()).expect("There shouldn't be an error");
     s.add_transition(TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('0'), vec!(TuringDirection::Left, TuringDirection::Left)).unwrap()).expect("There shouldn't be an error");
 
+    expect_out_of_range_transition_error(s.remove_transition_with_index(2));
+}
 
-    expect_out_of_range_transition_error(s.remove_transition(2));
+#[test]
+fn remove_transitions_using_ref() {
+    let mut s = TuringState::new(false,  &String::from("test"));
+    let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
+    let t2 = TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('0'), vec!(TuringDirection::Left, TuringDirection::Left)).unwrap();
+
+    // add transitions
+    s.add_transition(t1.clone()).expect("There shouldn't be an error");
+    s.add_transition(t2.clone()).expect("There shouldn't be an error");
+
+    // Remove the first one
+    s.remove_transition(&t1);
+    // check that it was removed, but not the other one
+    assert!(s.get_valid_transitions(vec!('ç', 'ç')).is_empty());
+    assert!(!s.get_valid_transitions(vec!('ç', '_')).is_empty());
+    
+    // Nothing should happen
+    s.remove_transition(&t1);
+
+    // Remove the second one
+    s.remove_transition(&t2);
+    assert!(s.get_valid_transitions(vec!('ç', '_')).is_empty());
 }
 
 #[test]

@@ -231,6 +231,41 @@ impl TuringMachineGraph {
     /// Removes all the transitions from this state to the given node
     pub fn remove_transitions(&mut self, from: &String, to: &String) -> Result<(), TuringError>
     {
+        let val = self.fetch_n1_state_n2_index(from, to);
+        if let Err(e) = val {
+            return Err(e);
+        }
+        let (n1_state, n2_index) = val.unwrap();
+
+        // Remove all transitions from n1 to n2
+        n1_state.remove_transitions(n2_index);
+        Ok(())
+    }
+
+
+    /// Removes all transitions of the form `from {transition} to` using the given parameters.
+    ///  
+    /// The `transition`'s `index_to_state` field, will not be be taken into account here (as it will be changed with the index of `to` anyways), the rest however is still important.
+    pub fn remove_transition(&mut self, from: &String, transition: &TuringTransitionMultRibbons, to: &String) -> Result<(), TuringError>
+    {
+        let val = self.fetch_n1_state_n2_index(from, to);
+        if let Err(e) = val {
+            return Err(e);
+        }
+        let (n1_state, n2_index) = val.unwrap();
+
+        let mut trans = transition.clone();
+        // In order to make sure it is removed, we change the index to the correct one 
+        trans.index_to_state = Some(n2_index);
+        n1_state.remove_transition(&trans);
+
+        Ok(())
+    }
+
+
+    fn fetch_n1_state_n2_index(&mut self, from: &String, to: &String) -> Result<(&mut TuringState, u8), TuringError>
+    {
+
         // Fetch n1 as a state
         let n1_state = self.name_index_hashmap.get(from);
         if let None = n1_state {
@@ -246,10 +281,7 @@ impl TuringMachineGraph {
         }
         let n2_index = n2_state.unwrap();
 
-
-        // Remove all transitions from n1 to n2
-        n1_state.remove_transitions(*n2_index);
-        Ok(())
+        return Ok((n1_state, *n2_index));
     }
 
     /// Removes a state and **all** mentions of it in **all** transitions of **all** the other states of the TuringMachine
