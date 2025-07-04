@@ -94,7 +94,8 @@ impl TuringState {
                 // If it was pointing to the old index, update it
                 if index_to_state == to_index_curr 
                 {
-                    t.index_to_state = Some(to_index_new);    
+                    t.index_to_state = Some(to_index_new);
+                    println!("changing it : from {} to {}", index_to_state, to_index_new);    
                 }
             }
         }

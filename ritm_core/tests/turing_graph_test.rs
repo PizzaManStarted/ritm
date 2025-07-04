@@ -169,13 +169,15 @@ fn delete_node()
     let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     let t2 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     let t3 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
-
-    graph.add_state(&String::from("t"));
-    graph.add_state(&String::from("q"));
+    
+    let _ = graph.add_state(&String::from("t")); 
+    let ind_p = graph.add_state(&String::from("p"));
+    let ind_q = graph.add_state(&String::from("q"));
 
     graph.append_rule_state_by_name(String::from("t"), t1.clone(), String::from("a")).unwrap(); // t -> a
     graph.append_rule_state_by_name(String::from("r"), t2.clone(), String::from("t")).unwrap(); // r -> t
-    graph.append_rule_state_by_name(String::from("a"), t3.clone(), String::from("t")).unwrap(); // a -> t
+    graph.append_rule_state_by_name(String::from("q"), t3.clone(), String::from("t")).unwrap(); // q -> t
+    graph.append_rule_state_by_name(String::from("q"), t3.clone(), String::from("p")).unwrap(); // q -> p
 
     expect_unk_name_error(graph.remove_state(&String::from("o")));
     // remove 't'
@@ -187,14 +189,25 @@ fn delete_node()
         panic!("No index should have been returned")
     }
 
-    // Check all the related transitions are also gone
+    // Check all the related transitions to 't' are also gone
     assert!(graph.get_state_from_name(&String::from("r")).unwrap().get_valid_transitions(vec!('ç', 'ç')).is_empty());
     assert!(graph.get_state_from_name(&String::from("a")).unwrap().get_valid_transitions(vec!('ç', 'ç')).is_empty());
 
+    
+    assert_eq!(graph.get_state_from_name(&String::from("q")).unwrap().get_valid_transitions(vec!('ç', 'ç')).len(), 1);
+    assert_eq!(*graph.get_state_from_name(&String::from("q")).unwrap().get_valid_transitions(vec!('ç', 'ç')).first().unwrap(), &t3); // only q -> p, should be left
 
-    graph.remove_state(&String::from("q")).unwrap();
-    expect_unk_name_error(graph.remove_state(&String::from("q")));
+    // Check that the indexes of 'q' and 'p' are also changed
+    assert_eq!(graph.add_state(&String::from("p")), ind_p - 1);
+    assert_eq!(graph.add_state(&String::from("q")), ind_q - 1);
 
+    let ind_p = ind_p - 1;
+    let ind_q = ind_q - 1;
+
+
+    // Important to also make sure that the transition also changed 
+    
+    assert_eq!(graph.get_transitions_to(ind_q, ind_p).unwrap(), vec!(&t3));
 }
 
 
