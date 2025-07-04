@@ -122,13 +122,81 @@ fn delete_transitions()
 {
     let mut graph = TuringMachineGraph::new(2).unwrap();
     let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
+    let t2 = TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
 
-    graph.append_rule_state_self(String::from("i"), t1, String::from("a")).unwrap();
+    graph.append_rule_state_by_name(String::from("i"), t1.clone(), String::from("a")).unwrap();
+    graph.append_rule_state_by_name(String::from("i"), t2.clone(), String::from("a")).unwrap();
 
+    expect_unk_name_error(graph.remove_transition(&String::from("i"), &t1, &String::from("p")));
+    expect_unk_name_error(graph.remove_transition(&String::from("d"), &t1, &String::from("a")));
 
-    // TODO TEST remove with transition
-    
+    // Remove transition
+    graph.remove_transition(&String::from("i"), &t1, &String::from("a")).unwrap();
+
+    // Check that it was indeed removed
+    assert!(graph.get_state(0).unwrap().get_valid_transitions(vec!('ç', 'ç')).is_empty());
+    // and that the other one is still present
+    assert_eq!(**graph.get_state(0).unwrap().get_valid_transitions(vec!('ç', '_')).first().unwrap(), t2);
 }
+
+
+#[test]
+fn delete_all_transitions_two_nodes() 
+{
+    let mut graph = TuringMachineGraph::new(2).unwrap();
+    let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
+    let t2 = TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
+    let t3 = TuringTransitionMultRibbons::create(vec!('_', '_'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
+
+    graph.append_rule_state_by_name(String::from("i"), t1.clone(), String::from("a")).unwrap();
+    graph.append_rule_state_by_name(String::from("i"), t2.clone(), String::from("a")).unwrap();
+    graph.append_rule_state_by_name(String::from("i"), t3.clone(), String::from("i")).unwrap(); // i -> i
+
+    // Removes all transitions btw 'i' and 'a'
+    graph.remove_transitions(&String::from("i"), &String::from("a")).unwrap();
+
+    // (note: index of 'i' is 0)
+    assert!(graph.get_state(0).unwrap().get_transitions_to(1).is_empty());
+
+    // check that i -> i, is still here
+    assert_eq!(*graph.get_state(0).unwrap().get_transitions_to(0).first().unwrap(), &t3);
+}
+
+#[test]
+fn delete_node()
+{
+    let mut graph = TuringMachineGraph::new(2).unwrap();
+    let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
+    let t2 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
+    let t3 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
+
+    graph.add_state(&String::from("t"));
+    graph.add_state(&String::from("q"));
+
+    graph.append_rule_state_by_name(String::from("t"), t1.clone(), String::from("a")).unwrap(); // t -> a
+    graph.append_rule_state_by_name(String::from("r"), t2.clone(), String::from("t")).unwrap(); // r -> t
+    graph.append_rule_state_by_name(String::from("a"), t3.clone(), String::from("t")).unwrap(); // a -> t
+
+    expect_unk_name_error(graph.remove_state(&String::from("o")));
+    // remove 't'
+    graph.remove_state(&String::from("t")).unwrap();
+
+    // check that it was removed
+    expect_unk_name_error(graph.get_state_from_name(&String::from("t")));
+    if let Some(_) = graph.name_index_hashmap.get(&String::from("t")) {
+        panic!("No index should have been returned")
+    }
+
+    // Check all the related transitions are also gone
+    assert!(graph.get_state_from_name(&String::from("r")).unwrap().get_valid_transitions(vec!('ç', 'ç')).is_empty());
+    assert!(graph.get_state_from_name(&String::from("a")).unwrap().get_valid_transitions(vec!('ç', 'ç')).is_empty());
+
+
+    graph.remove_state(&String::from("q")).unwrap();
+    expect_unk_name_error(graph.remove_state(&String::from("q")));
+
+}
+
 
 fn expect_illegal_action_error<O>(res : Result<O, TuringError>)
 {

@@ -228,7 +228,7 @@ impl TuringMachineGraph {
         return Ok(vec);
     }
 
-    /// Removes all the transitions from this state to the given node
+    /// Removes **all** the transitions from this state to the given node
     pub fn remove_transitions(&mut self, from: &String, to: &String) -> Result<(), TuringError>
     {
         let val = self.fetch_n1_state_n2_index(from, to);
