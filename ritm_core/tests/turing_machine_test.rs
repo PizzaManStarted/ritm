@@ -1,4 +1,4 @@
-use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{TuringIterator, TuringMachine}, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
+use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{reset, TuringIterator, TuringMachine}, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
 
 
 #[test]
@@ -12,6 +12,7 @@ fn execution_non_deter()
     for tmp in turing_machine.as_iter() {
         println!("_______________\nExec. step ::\n{}", tmp)
     }
+
 
     
 

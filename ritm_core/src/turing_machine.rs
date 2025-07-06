@@ -27,37 +27,13 @@ pub trait TuringIterator
     /// Transforms the current struct to a [TuringIterator] in order to start 
     /// iterating.
     fn as_iter(&mut self) -> &mut dyn TuringIterator;
-}
-
-
-impl dyn TuringIterator {
     /// Resets the turing machine to its initial state and re-feeds it the current stored word.
-    pub fn reset(&mut self) -> Result<(), TuringError>
-    {
-        let word = self.get_word().clone();
-        return self.reset_word(&word);
-    }
-
+    fn reset(&mut self) -> Result<(), TuringError>;
     /// Resets the turing machine to its initial state and feeds it the given word.
-    pub fn reset_word(&mut self, word: &String) -> Result<(), TuringError>
-    {
-        if word.is_empty() {
-            return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
-        }
-        // Reset reading ribbon
-        self.get_reading_ribbon().feed_word(word.clone());
-
-        // Reset write ribbons
-        for i in 0..self.get_writting_ribbons().len() {
-            self.get_writting_ribbons()[i] = TuringWriteRibbon::new();
-        }
-
-        // Reset state pointers
-        self.set_state_pointer(0);
-
-        Ok(())
-    }
+    fn reset_word(&mut self, word: &String) -> Result<(), TuringError>;
 }
+
+
 
 
 
@@ -146,6 +122,14 @@ impl<'a> TuringIterator for TuringMachineWithRef<'a> {
     
     fn set_first_iteration(&mut self, set: bool) {
         self.is_first_state = set;
+    }
+    
+    fn reset(&mut self) -> Result<(), TuringError> {
+        reset(self)
+    }
+    
+    fn reset_word(&mut self, word: &String) -> Result<(), TuringError> {
+        reset_word(self, word)
     }
 }
 
@@ -237,6 +221,14 @@ impl TuringIterator for TuringMachine {
     fn set_first_iteration(&mut self, set: bool) {
         self.is_first_state = set;
     }
+    
+    fn reset(&mut self) -> Result<(), TuringError> {
+        reset(self)
+    }
+    
+    fn reset_word(&mut self, word: &String) -> Result<(), TuringError> {
+        reset_word(self, word)
+    }
 }
 
 
@@ -326,6 +318,39 @@ impl<'a> Iterator for &mut dyn TuringIterator
 }
 
 
+
+/// Resets the turing machine to its initial state and re-feeds it the current stored word.
+pub fn reset(iter: &mut dyn TuringIterator) -> Result<(), TuringError>
+{
+    let word = iter.get_word().clone();
+    return reset_word(iter, &word);
+}
+
+/// Resets the turing machine to its initial state and feeds it the given word.
+pub fn reset_word(iter: &mut dyn TuringIterator, word: &String) -> Result<(), TuringError>
+{
+    if word.is_empty() {
+        return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
+    }
+    // Reset reading ribbon
+    iter.get_reading_ribbon().feed_word(word.clone());
+
+    // Reset write ribbons
+    for i in 0..iter.get_writting_ribbons().len() {
+        iter.get_writting_ribbons()[i] = TuringWriteRibbon::new();
+    }
+
+    // Reset state pointers
+    iter.set_state_pointer(0);
+
+    // Reset first iteration
+    iter.set_first_iteration(true);
+    
+    Ok(())
+}
+
+
+
 impl<'a> Display for TuringExecutionStep{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
     {
@@ -346,3 +371,5 @@ impl<'a> Display for TuringExecutionStep{
         write!(f, "* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", trans_taken, self.read_ribbon, write_str_rib)
     }
 }
+
+
