@@ -86,9 +86,9 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachineGraph, T
                     // Adds all the collected transitions
                     for transition in transitions  
                     {
-                        if let Err(e) = mt.append_rule_state_by_name(to_from_vars.get(0).expect("A name state was expected").to_string(), 
+                        if let Err(e) = mt.append_rule_state_by_name(&to_from_vars.get(0).expect("A name state was expected").to_string(), 
                                             transition, 
-                                            to_from_vars.get(1).expect("Two name states were expected").to_string())
+                                            &to_from_vars.get(1).expect("Two name states were expected").to_string())
                         {
                             return Err(e);
                         }

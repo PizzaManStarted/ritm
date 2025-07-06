@@ -77,20 +77,20 @@ fn get_nodes_test() {
 #[test]
 fn add_transition()
 {
-    let mut graph = TuringMachineGraph::new(2).unwrap();
+    let mut graph = TuringMachineGraph::new(1).unwrap();
 
-    graph.append_rule_state_by_name(String::from("i"), 
+    graph.append_rule_state_by_name(&String::from("i"), 
                                 TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
-                                String::from("a")).expect("no errors were expected");
+                                &String::from("a")).expect("no errors were expected");
 
     // e, is not part of the graph
-    expect_unk_name_error(graph.append_rule_state_by_name(String::from("e"), 
+    expect_unk_name_error(graph.append_rule_state_by_name(&String::from("e"), 
                                 TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
-                                String::from("a")));
+                                &String::from("a")));
     // o, is not part of the graph
-    expect_unk_name_error(graph.append_rule_state_by_name(String::from("a"), 
+    expect_unk_name_error(graph.append_rule_state_by_name(&String::from("a"), 
                             TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
-                            String::from("o")));
+                            &String::from("o")));
     // add e and o to the graph
     graph.add_state(&String::from("e"));
     graph.add_state(&String::from("o"));
@@ -102,9 +102,9 @@ fn add_transition()
                         panic!("No values were expected");
     }
     // add transition
-    graph.append_rule_state_by_name(String::from("e"), 
+    graph.append_rule_state_by_name(&String::from("e"), 
                                 TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap(), 
-                                String::from("o")).expect("no errors were expected");
+                                &String::from("o")).expect("no errors were expected");
 
     // Check that the transition was really added
     if graph.get_transition_indexes_by_name(&String::from("e"), &String::from("o"))
@@ -120,12 +120,12 @@ fn add_transition()
 #[test]
 fn delete_transitions()
 {
-    let mut graph = TuringMachineGraph::new(2).unwrap();
+    let mut graph = TuringMachineGraph::new(1).unwrap();
     let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     let t2 = TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
 
-    graph.append_rule_state_by_name(String::from("i"), t1.clone(), String::from("a")).unwrap();
-    graph.append_rule_state_by_name(String::from("i"), t2.clone(), String::from("a")).unwrap();
+    graph.append_rule_state_by_name(&String::from("i"), t1.clone(), &String::from("a")).unwrap();
+    graph.append_rule_state_by_name(&String::from("i"), t2.clone(), &String::from("a")).unwrap();
 
     expect_unk_name_error(graph.remove_transition(&String::from("i"), &t1, &String::from("p")));
     expect_unk_name_error(graph.remove_transition(&String::from("d"), &t1, &String::from("a")));
@@ -143,14 +143,14 @@ fn delete_transitions()
 #[test]
 fn delete_all_transitions_two_nodes() 
 {
-    let mut graph = TuringMachineGraph::new(2).unwrap();
+    let mut graph = TuringMachineGraph::new(1).unwrap();
     let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     let t2 = TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     let t3 = TuringTransitionMultRibbons::create(vec!('_', '_'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
 
-    graph.append_rule_state_by_name(String::from("i"), t1.clone(), String::from("a")).unwrap();
-    graph.append_rule_state_by_name(String::from("i"), t2.clone(), String::from("a")).unwrap();
-    graph.append_rule_state_by_name(String::from("i"), t3.clone(), String::from("i")).unwrap(); // i -> i
+    graph.append_rule_state_by_name(&String::from("i"), t1.clone(), &String::from("a")).unwrap();
+    graph.append_rule_state_by_name(&String::from("i"), t2.clone(), &String::from("a")).unwrap();
+    graph.append_rule_state_by_name(&String::from("i"), t3.clone(), &String::from("i")).unwrap(); // i -> i
 
     // Removes all transitions btw 'i' and 'a'
     graph.remove_transitions(&String::from("i"), &String::from("a")).unwrap();
@@ -165,7 +165,7 @@ fn delete_all_transitions_two_nodes()
 #[test]
 fn delete_node()
 {
-    let mut graph = TuringMachineGraph::new(2).unwrap();
+    let mut graph = TuringMachineGraph::new(1).unwrap();
     let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     let t2 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     let t3 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
@@ -174,10 +174,10 @@ fn delete_node()
     let ind_p = graph.add_state(&String::from("p"));
     let ind_q = graph.add_state(&String::from("q"));
 
-    graph.append_rule_state_by_name(String::from("t"), t1.clone(), String::from("a")).unwrap(); // t -> a
-    graph.append_rule_state_by_name(String::from("r"), t2.clone(), String::from("t")).unwrap(); // r -> t
-    graph.append_rule_state_by_name(String::from("q"), t3.clone(), String::from("t")).unwrap(); // q -> t
-    graph.append_rule_state_by_name(String::from("q"), t3.clone(), String::from("p")).unwrap(); // q -> p
+    graph.append_rule_state_by_name(&String::from("t"), t1.clone(), &String::from("a")).unwrap(); // t -> a
+    graph.append_rule_state_by_name(&String::from("r"), t2.clone(), &String::from("t")).unwrap(); // r -> t
+    graph.append_rule_state_by_name(&String::from("q"), t3.clone(), &String::from("t")).unwrap(); // q -> t
+    graph.append_rule_state_by_name(&String::from("q"), t3.clone(), &String::from("p")).unwrap(); // q -> p
 
     expect_unk_name_error(graph.remove_state(&String::from("o")));
     // remove 't'

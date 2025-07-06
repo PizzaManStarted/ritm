@@ -198,21 +198,24 @@ impl<'a> Iterator for &mut dyn TuringIterator
     {
         // Fetch the current state
         let curr_state =  self.get_turing_machine_graph().get_state(self.get_state_pointer()).unwrap().clone();
-
         /* Checks if the state is accepting */
         if curr_state.is_final
         {
             return None;
         }
-        
+
+        println!("{}", self.get_reading_ribbon());
+        println!("{}", self.get_writting_ribbons().first().unwrap());
+
         // If one of the transition condition is true,
         // Get all current char read by **all** ribbons
         let mut char_vec = vec!(self.get_reading_ribbon().read_curr_char().clone());
         for ribbon in self.get_writting_ribbons() {
             char_vec.push(ribbon.read_curr_char());
         }
+        println!("char read : {:?}", char_vec);
         let transitions = curr_state.get_valid_transitions(char_vec); 
-        //println!("{:?}", curr_state);
+        println!("{:?}", transitions);
         
         // If no transitions can be provided
         if transitions.len() == 0 

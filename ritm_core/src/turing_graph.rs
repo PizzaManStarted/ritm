@@ -1,9 +1,8 @@
-use std::{collections::HashMap, f32::consts::E, fmt::{Debug, Display}, usize};
-use rand::{rand_core::le, rng, Rng};
-use crate::{turing_errors::TuringError, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringTransitionMultRibbons}};
+use std::{collections::HashMap, fmt::{Debug, Display}, usize};
+use crate::{turing_errors::TuringError, turing_state::{TuringState, TuringTransitionMultRibbons}};
 
 
-/// A struct representing a Turing Machine graph with k rubbons.
+/// A struct representing a Turing Machine graph with `k` **writting** ribbons (`k >= 1`).
 pub struct TuringMachineGraph
 {
     /// The hashmap containing a mapping of all nodes names and their related index in the `states` field.
@@ -18,7 +17,7 @@ pub struct TuringMachineGraph
 
 
 impl TuringMachineGraph {
-    /// Creates a new empty Turing Machine graph that has `k` writting rubbons.
+    /// Creates a new empty Turing Machine graph that has `k` writting ribbons (`k >= 1`).
     /// 
     /// Three default states will be created :
     /// * `q_i` : The initial state
@@ -27,7 +26,7 @@ impl TuringMachineGraph {
     pub fn new(k: u8) -> Result<Self, TuringError>
     {
         if k == 0 {
-            return Err(TuringError::IllegalActionError { cause: "Tried to create a turing machine graph with 0 ribbon".to_string() });
+            return Err(TuringError::IllegalActionError { cause: "Tried to create a turing machine graph with 0 writting ribbon".to_string() });
         }
         // Add the default states
         let init_state = TuringState::new(false, &String::from("i"));
@@ -54,23 +53,23 @@ impl TuringMachineGraph {
     /// Meaning, a new edge is added to the graph.
     /// 
     /// If one of the given state didn't already exists, a [TuringError::UnknownStateError] will be returned.
-    pub fn append_rule_state_by_name(&mut self, from: String, transition: TuringTransitionMultRibbons, to: String) -> Result<(), TuringError>
+    pub fn append_rule_state_by_name(&mut self, from: &String, transition: TuringTransitionMultRibbons, to: &String) -> Result<(), TuringError>
     {
         // Checks if the given number of ribbons is correct
-        if transition.get_number_of_affected_ribbons() != self.k as usize
+        if transition.get_number_of_affected_ribbons() != (self.k + 1) as usize
         {
             return Err(TuringError::ArgsSizeTransitionError);
         }
-        let from_index = self.name_index_hashmap.get(&from);
+        let from_index = self.name_index_hashmap.get(from);
         if let None = from_index {
-            return Err(TuringError::UnknownStateError { state_name: from });
+            return Err(TuringError::UnknownStateError { state_name: from.clone() });
         }
         let from_index = *from_index.unwrap();
 
 
-        let to_index = self.name_index_hashmap.get(&to);
+        let to_index = self.name_index_hashmap.get(to);
         if let None = to_index {
-            return Err(TuringError::UnknownStateError { state_name: to });
+            return Err(TuringError::UnknownStateError { state_name: to.clone() });
         }
         let to_index = *to_index.unwrap();
 
@@ -113,7 +112,7 @@ impl TuringMachineGraph {
     /// Adds a new rule to a state of the machine and returns the machine.
     /// 
     /// If the given state didn't already exists, the state will be created.
-    pub fn append_rule_state_self(mut self, from: String, transition: TuringTransitionMultRibbons, to: String) -> Result<Self, TuringError>
+    pub fn append_rule_state_self(mut self, from: &String, transition: TuringTransitionMultRibbons, to: &String) -> Result<Self, TuringError>
     {
         match self.append_rule_state_by_name(from, transition, to) {
             Ok(()) => return Ok(self),

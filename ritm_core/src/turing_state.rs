@@ -233,7 +233,7 @@ impl TuringTransitionMultRibbons {
         }
     }
 
-    /// Simplifies the creation of a new [TuringTransition] of the form : 
+    /// Simplifies the creation of a new [TuringTransitionMultRibbons] of the form : 
     /// * `a_0, a_1, ..., a_{n-1} -> D_0, b_1, D_1, b_2, D_2, ..., b_{n-1}, D_{n-1}`
     /// 
     /// ## Args :
