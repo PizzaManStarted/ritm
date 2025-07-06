@@ -18,13 +18,46 @@ pub trait TuringIterator
     fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon;
     /// Gets the writtings ribbons stored inside this struct.
     fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon>;
-
-    /// Transforms the current struct as a [TuringIterator] in order to start 
+    /// Gets the word that was feed to this machine.
+    fn get_word(&mut self) -> &String;
+    /// Checks if the current iteration is the first iteration or not.
+    fn is_first_iteration(&mut self) -> bool;
+    /// Sets the state of this turing machine to be considered or not its first iteration.
+    fn set_first_iteration(&mut self, set: bool);
+    /// Transforms the current struct to a [TuringIterator] in order to start 
     /// iterating.
     fn as_iter(&mut self) -> &mut dyn TuringIterator;
 }
 
 
+impl dyn TuringIterator {
+    /// Resets the turing machine to its initial state and re-feeds it the current stored word.
+    pub fn reset(&mut self) -> Result<(), TuringError>
+    {
+        let word = self.get_word().clone();
+        return self.reset_word(&word);
+    }
+
+    /// Resets the turing machine to its initial state and feeds it the given word.
+    pub fn reset_word(&mut self, word: &String) -> Result<(), TuringError>
+    {
+        if word.is_empty() {
+            return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
+        }
+        // Reset reading ribbon
+        self.get_reading_ribbon().feed_word(word.clone());
+
+        // Reset write ribbons
+        for i in 0..self.get_writting_ribbons().len() {
+            self.get_writting_ribbons()[i] = TuringWriteRibbon::new();
+        }
+
+        // Reset state pointers
+        self.set_state_pointer(0);
+
+        Ok(())
+    }
+}
 
 
 
@@ -41,6 +74,8 @@ pub struct TuringMachineWithRef<'a>
     word: String,
     /// The index of the current state of the turing machine
     state_pointer: u8,
+    /// Represents if the structs was just initialised or reset 
+    is_first_state: bool
 }
 
 impl<'a> TuringMachineWithRef<'a> {
@@ -63,6 +98,7 @@ impl<'a> TuringMachineWithRef<'a> {
             },
             word,
             graph: mt,
+            is_first_state: true
         };
         // Add the word to the reading ribbon
         s.reading_ribbon.feed_word(s.word.to_string());
@@ -99,6 +135,18 @@ impl<'a> TuringIterator for TuringMachineWithRef<'a> {
     {
         self as &mut dyn TuringIterator
     }
+    
+    fn get_word(&mut self) -> &String {
+        &self.word
+    }
+    
+    fn is_first_iteration(&mut self) -> bool {
+        self.is_first_state
+    }
+    
+    fn set_first_iteration(&mut self, set: bool) {
+        self.is_first_state = set;
+    }
 }
 
 
@@ -115,12 +163,17 @@ pub struct TuringMachine
     word: String,
     /// The index of the current state of the turing machine
     state_pointer: u8,
+    /// Represents if the structs was just initialised or reset 
+    is_first_state: bool
 }
 
 impl TuringMachine {
     /// Create a new [TuringMachine] for a given graph and word.
     pub fn new(mt: TuringMachineGraph, word: String) -> Result<Self, TuringError>
     {
+        if word.is_empty() {
+            return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
+        }
         let mut s = 
         Self 
         {
@@ -137,10 +190,11 @@ impl TuringMachine {
             },
             word,
             turing_machine: mt,
+            is_first_state: true,
         };
         // Add the word to the reading ribbon
         s.reading_ribbon.feed_word(s.word.to_string());
-
+        
         Ok(s)
     }
 }
@@ -171,6 +225,18 @@ impl TuringIterator for TuringMachine {
     {
         self as &mut dyn TuringIterator
     }
+
+    fn get_word(&mut self) -> &String {
+        &self.word
+    }
+    
+    fn is_first_iteration(&mut self) -> bool {
+        self.is_first_state
+    }
+    
+    fn set_first_iteration(&mut self, set: bool) {
+        self.is_first_state = set;
+    }
 }
 
 
@@ -179,9 +245,9 @@ impl TuringIterator for TuringMachine {
 pub struct TuringExecutionStep
 {
     /// The index of the transition taken from the current state to the next one.
-    pub transition_index_taken : usize,
+    pub transition_index_taken : Option<usize>,
     /// A clone of the transition that was just taken
-    pub transition_taken : TuringTransitionMultRibbons,
+    pub transition_taken : Option<TuringTransitionMultRibbons>,
     /// A clone representing the current state of the reading ribbon after taking that transition.
     pub read_ribbon: TuringReadRibbon,
     /// A clone representing the current state of the writting ribbons after taking that transition.
@@ -196,6 +262,18 @@ impl<'a> Iterator for &mut dyn TuringIterator
 
     fn next(&mut self) -> Option<Self::Item> 
     {
+        if self.is_first_iteration() {
+            self.set_first_iteration(false);
+
+            return Some(TuringExecutionStep {
+                transition_index_taken: None,
+                transition_taken: None,
+                read_ribbon: self.get_reading_ribbon().clone(),
+                write_ribbons: self.get_writting_ribbons().clone(),
+            });
+        }
+
+
         // Fetch the current state
         let curr_state =  self.get_turing_machine_graph().get_state(self.get_state_pointer()).unwrap().clone();
         /* Checks if the state is accepting */
@@ -204,16 +282,12 @@ impl<'a> Iterator for &mut dyn TuringIterator
             return None;
         }
 
-        println!("{}", self.get_reading_ribbon());
-        println!("{}", self.get_writting_ribbons().first().unwrap());
-
         // If one of the transition condition is true,
         // Get all current char read by **all** ribbons
         let mut char_vec = vec!(self.get_reading_ribbon().read_curr_char().clone());
         for ribbon in self.get_writting_ribbons() {
             char_vec.push(ribbon.read_curr_char());
         }
-        println!("char read : {:?}", char_vec);
         let transitions = curr_state.get_valid_transitions(char_vec); 
         println!("{:?}", transitions);
         
@@ -243,8 +317,8 @@ impl<'a> Iterator for &mut dyn TuringIterator
 
         Some(TuringExecutionStep
         {
-            transition_index_taken,
-            transition_taken: transition.clone(),
+            transition_index_taken : Some(transition_index_taken),
+            transition_taken: Some(transition.clone()),
             read_ribbon: self.get_reading_ribbon().clone(),
             write_ribbons: self.get_writting_ribbons().clone(),
         })
@@ -260,7 +334,15 @@ impl<'a> Display for TuringExecutionStep{
         {
             write_str_rib.push_str(format!("\n{}", self.write_ribbons[i]).as_str());
         }
+        let trans_taken = {
+            if let Some(val) = &self.transition_taken {
+                val.to_string()
+            }
+            else {
+                String::from("None")
+            }
+        };
 
-        write!(f, "* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", self.transition_taken, self.read_ribbon, write_str_rib)
+        write!(f, "* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", trans_taken, self.read_ribbon, write_str_rib)
     }
 }

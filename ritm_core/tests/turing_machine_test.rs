@@ -12,6 +12,9 @@ fn execution_non_deter()
     for tmp in turing_machine.as_iter() {
         println!("_______________\nExec. step ::\n{}", tmp)
     }
+
+    
+
 }
 
 
@@ -30,7 +33,7 @@ fn get_test_non_deter_graph() -> TuringMachineGraph
 
     // q_0 -> {ç, ç, => R, ç, R} -> q_1
     let mut transition = TuringTransitionMultRibbons::create(vec!('ç','ç'), vec!('ç'), vec!(TuringDirection::Right, TuringDirection::Right)).unwrap();
-    graph.append_rule_state_by_name(&String::from("i"), transition.clone(), &q2).unwrap();
+    graph.append_rule_state_by_name(&String::from("i"), transition.clone(), &q1).unwrap();
 
     // q_1 -> {0, _ => R, a, R} -> q_1
     transition = TuringTransitionMultRibbons::create(vec!('0','_'), vec!('a'), vec!(TuringDirection::Right, TuringDirection::Right)).unwrap();
