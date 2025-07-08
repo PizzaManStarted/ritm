@@ -1,4 +1,4 @@
-use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{reset, TuringIterator, TuringMachine}, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
+use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{TuringIterator, TuringMachine, Mode}, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
 
 
 #[test]
@@ -7,7 +7,7 @@ fn execution_non_deter()
     let tm_graph = get_test_non_deter_graph();
     //println!("{:?}", tm_graph);
 
-    let mut turing_machine = TuringMachine::new(tm_graph, String::from("00100")).unwrap();
+    let mut turing_machine = TuringMachine::new(tm_graph, String::from("00100"), Mode::SaveAll).unwrap();
 
     for tmp in turing_machine.as_iter() {
         println!("_______________\nExec. step ::\n{}", tmp)

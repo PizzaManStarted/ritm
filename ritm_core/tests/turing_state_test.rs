@@ -55,17 +55,17 @@ fn transition_eq()
 
 #[test]
 fn create_state() {
-    let s = TuringState::new(false,  &String::from("test"));
+    let s = TuringState::new(TuringStateType::Normal,  &String::from("test"));
     // name should be test
     assert_eq!(s.name, String::from("test"));
 
     // It should be false
-    assert!(!s.is_final);
+    assert_eq!(TuringStateType::Normal, s.state_type);
 
-    let s = TuringState::new(true,  &String::from("test2"));
+    let s = TuringState::new(TuringStateType::Accepting,  &String::from("test2"));
 
     // It should be true
-    assert!(s.is_final);
+    assert_eq!(TuringStateType::Accepting, s.state_type);
 
     // There should be no transitions
     assert!(s.transitions.is_empty());
@@ -73,7 +73,7 @@ fn create_state() {
 
 #[test]
 fn rename_state() {
-    let mut s = TuringState::new(false,  &String::from("test"));
+    let mut s = TuringState::new(TuringStateType::Normal,  &String::from("test"));
     s.rename("test2");
     // name should be test2
     assert_eq!(s.name, String::from("test2"));
@@ -83,7 +83,7 @@ fn rename_state() {
 
 #[test]
 fn add_transitions() {
-    let mut s = TuringState::new(false,  &String::from("test"));
+    let mut s = TuringState::new(TuringStateType::Normal,  &String::from("test"));
     let transition =  TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     s.add_transition(transition).expect("There shouldn't be an error here");
 
@@ -97,7 +97,7 @@ fn add_transitions() {
 
 #[test]
 fn remove_transitions_using_index() {
-    let mut s = TuringState::new(false,  &String::from("test"));
+    let mut s = TuringState::new(TuringStateType::Normal,  &String::from("test"));
     // add transitions
     s.add_transition(TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap()).expect("There shouldn't be an error");
     s.add_transition(TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('0'), vec!(TuringDirection::Left, TuringDirection::Left)).unwrap()).expect("There shouldn't be an error");
@@ -117,7 +117,7 @@ fn remove_transitions_using_index() {
 
 #[test]
 fn remove_transitions_using_ref() {
-    let mut s = TuringState::new(false,  &String::from("test"));
+    let mut s = TuringState::new(TuringStateType::Normal,  &String::from("test"));
     let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     let t2 = TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('0'), vec!(TuringDirection::Left, TuringDirection::Left)).unwrap();
 
@@ -128,39 +128,39 @@ fn remove_transitions_using_ref() {
     // Remove the first one
     s.remove_transition(&t1);
     // check that it was removed, but not the other one
-    assert!(s.get_valid_transitions(vec!('ç', 'ç')).is_empty());
-    assert!(!s.get_valid_transitions(vec!('ç', '_')).is_empty());
+    assert!(s.get_valid_transitions(&vec!('ç', 'ç')).is_empty());
+    assert!(!s.get_valid_transitions(&vec!('ç', '_')).is_empty());
     
     // Nothing should happen
     s.remove_transition(&t1);
 
     // Remove the second one
     s.remove_transition(&t2);
-    assert!(s.get_valid_transitions(vec!('ç', '_')).is_empty());
+    assert!(s.get_valid_transitions(&vec!('ç', '_')).is_empty());
 }
 
 #[test]
 fn get_valid_transitions() {
-    let mut s = TuringState::new(false,  &String::from("test"));
+    let mut s = TuringState::new(TuringStateType::Normal,  &String::from("test"));
     let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     let t2 = TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('0'), vec!(TuringDirection::Left, TuringDirection::Left)).unwrap();
     let t3 = TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('0'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     // there should be no values 
-    assert!(s.get_valid_transitions(vec!('ç')).is_empty());
+    assert!(s.get_valid_transitions(&vec!('ç')).is_empty());
     
     // add transitions
     s.add_transition(t1.clone()).expect("There shouldn't be an error");
     s.add_transition(t2.clone()).expect("There shouldn't be an error");
     s.add_transition(t3.clone()).expect("There shouldn't be an error");
 
-    assert_eq!(s.get_valid_transitions(vec!('ç', 'ç')), vec!(&t1));
-    assert_eq!(s.get_valid_transitions(vec!('ç', '_')), vec!(&t2, &t3));
+    assert_eq!(s.get_valid_transitions(&vec!('ç', 'ç')), vec!(&t1));
+    assert_eq!(s.get_valid_transitions(&vec!('ç', '_')), vec!(&t2, &t3));
 }
 
 
 #[test]
 fn update_transitions() {
-    let mut s = TuringState::new(false,  &String::from("test"));
+    let mut s = TuringState::new(TuringStateType::Normal,  &String::from("test"));
     let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::Left, TuringDirection::Right)).unwrap();
     let t2 = TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('c'), vec!(TuringDirection::None, TuringDirection::None)).unwrap();
     let t3 = TuringTransitionMultRibbons::create(vec!('_', '_'), vec!('b'), vec!(TuringDirection::Left, TuringDirection::Left)).unwrap();

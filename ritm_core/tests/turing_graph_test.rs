@@ -1,4 +1,4 @@
-use ritm_core::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_state::{TuringDirection::{self}, TuringTransitionMultRibbons}};
+use ritm_core::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_state::{TuringDirection::{self}, TuringStateType, TuringTransitionMultRibbons}};
 
 
 #[test]
@@ -12,12 +12,11 @@ fn create_graph_test()
 
     expect_illegal_action_error(TuringMachineGraph::new(0));
     // Check the final states
-    assert!(graph.get_state_from_name(&"a".to_string()).unwrap().is_final);
-    assert!(graph.get_state_from_name(&"r".to_string()).unwrap().is_final);
-    assert!(!graph.get_state_from_name(&"i".to_string()).unwrap().is_final);
+    assert_eq!(TuringStateType::Accepting, graph.get_state_from_name(&"a".to_string()).unwrap().state_type);
+    assert_eq!(TuringStateType::Rejecting,    graph.get_state_from_name(&"r".to_string()).unwrap().state_type);
+    assert_eq!(TuringStateType::Normal, graph.get_state_from_name(&"i".to_string()).unwrap().state_type);
 
     TuringMachineGraph::new(1).unwrap();
-
 }
 
 #[test]
@@ -68,9 +67,9 @@ fn get_nodes_test() {
     assert_eq!(graph.get_state_from_name(&"d".to_string()).unwrap().name.clone(), "d".to_string());
 
     // Check they aren't final
-    assert!(!graph.get_state_from_name(&"b".to_string()).unwrap().is_final);
-    assert!(!graph.get_state_from_name(&"c".to_string()).unwrap().is_final);
-    assert!(!graph.get_state_from_name(&"d".to_string()).unwrap().is_final);
+    assert_eq!(TuringStateType::Normal, graph.get_state_from_name(&"b".to_string()).unwrap().state_type);
+    assert_eq!(TuringStateType::Normal, graph.get_state_from_name(&"c".to_string()).unwrap().state_type);
+    assert_eq!(TuringStateType::Normal, graph.get_state_from_name(&"d".to_string()).unwrap().state_type);
 }
 
 
@@ -134,9 +133,9 @@ fn delete_transitions()
     graph.remove_transition(&String::from("i"), &t1, &String::from("a")).unwrap();
 
     // Check that it was indeed removed
-    assert!(graph.get_state(0).unwrap().get_valid_transitions(vec!('ç', 'ç')).is_empty());
+    assert!(graph.get_state(0).unwrap().get_valid_transitions(&vec!('ç', 'ç')).is_empty());
     // and that the other one is still present
-    assert_eq!(**graph.get_state(0).unwrap().get_valid_transitions(vec!('ç', '_')).first().unwrap(), t2);
+    assert_eq!(**graph.get_state(0).unwrap().get_valid_transitions(&vec!('ç', '_')).first().unwrap(), t2);
 }
 
 
@@ -190,12 +189,12 @@ fn delete_node()
     }
 
     // Check all the related transitions to 't' are also gone
-    assert!(graph.get_state_from_name(&String::from("r")).unwrap().get_valid_transitions(vec!('ç', 'ç')).is_empty());
-    assert!(graph.get_state_from_name(&String::from("a")).unwrap().get_valid_transitions(vec!('ç', 'ç')).is_empty());
+    assert!(graph.get_state_from_name(&String::from("r")).unwrap().get_valid_transitions(&vec!('ç', 'ç')).is_empty());
+    assert!(graph.get_state_from_name(&String::from("a")).unwrap().get_valid_transitions(&vec!('ç', 'ç')).is_empty());
 
     
-    assert_eq!(graph.get_state_from_name(&String::from("q")).unwrap().get_valid_transitions(vec!('ç', 'ç')).len(), 1);
-    assert_eq!(*graph.get_state_from_name(&String::from("q")).unwrap().get_valid_transitions(vec!('ç', 'ç')).first().unwrap(), &t3); // only q -> p, should be left
+    assert_eq!(graph.get_state_from_name(&String::from("q")).unwrap().get_valid_transitions(&vec!('ç', 'ç')).len(), 1);
+    assert_eq!(*graph.get_state_from_name(&String::from("q")).unwrap().get_valid_transitions(&vec!('ç', 'ç')).first().unwrap(), &t3); // only q -> p, should be left
 
     // Check that the indexes of 'q' and 'p' are also changed
     assert_eq!(graph.add_state(&String::from("p")), ind_p - 1);

@@ -1,5 +1,5 @@
 use std::{collections::HashMap, fmt::{Debug, Display}, usize};
-use crate::{turing_errors::TuringError, turing_state::{TuringState, TuringTransitionMultRibbons}};
+use crate::{turing_errors::TuringError, turing_state::{TuringStateType, TuringState, TuringTransitionMultRibbons}};
 
 
 /// A struct representing a Turing Machine graph with `k` **writting** ribbons (`k >= 1`).
@@ -29,9 +29,9 @@ impl TuringMachineGraph {
             return Err(TuringError::IllegalActionError { cause: "Tried to create a turing machine graph with 0 writting ribbon".to_string() });
         }
         // Add the default states
-        let init_state = TuringState::new(false, &String::from("i"));
-        let accepting_state = TuringState::new(true, &String::from("a"));
-        let rejecting_state = TuringState::new(true, &String::from("r"));
+        let init_state = TuringState::new(TuringStateType::Normal, &String::from("i"));
+        let accepting_state = TuringState::new(TuringStateType::Accepting, &String::from("a"));
+        let rejecting_state = TuringState::new(TuringStateType::Rejecting, &String::from("r"));
         
         // Create the hash map with the already known states
         let mut name_index_hashmap: HashMap<String, u8> = HashMap::new();
@@ -136,7 +136,7 @@ impl TuringMachineGraph {
             None => 
             {
                 // Pushes in the vector of states a new state with the given name 
-                self.states.push(TuringState::new(false, name));
+                self.states.push(TuringState::new(TuringStateType::Normal, name));
                 // Adds the index of this state to the hashmap 
                 self.name_index_hashmap.insert(name.to_string(), (self.states.len()-1) as u8);
                 // Returns the index of the newly created state

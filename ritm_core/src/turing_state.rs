@@ -4,10 +4,58 @@ use std::{
 
 use crate::turing_errors::TuringError;
 
+
+/// Represents the different types of states that can be found inside a turing machine graph
+pub enum TuringStateType {
+    /// A normal state, has no special effect.
+    Normal,
+    /// Accepts the given input.
+    Accepting,
+    /// Rejects the given input.
+    Rejecting
+}
+
+
+impl Debug for TuringStateType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Normal => write!(f, "Normal"),
+            Self::Accepting => write!(f, "Accepting"),
+            Self::Rejecting => write!(f, "Rejecting"),
+        }
+    }
+}
+impl Display for TuringStateType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            TuringStateType::Normal => "Normal",
+            TuringStateType::Accepting => "Accepting",
+            TuringStateType::Rejecting => "Rejecting",
+        })
+    }
+}
+
+impl Clone for TuringStateType {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Normal => Self::Normal,
+            Self::Accepting => Self::Accepting,
+            Self::Rejecting => Self::Rejecting,
+        }
+    }
+}
+
+impl PartialEq for TuringStateType {
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
+    }
+}
+
+
 /// Represents a state of a turing machine
 pub struct TuringState {
     /// Represents if the state is a final state or not
-    pub is_final: bool,
+    pub state_type: TuringStateType,
     /// The vector containing all the transitions to the neighboring states 
     pub transitions: Vec<TuringTransitionMultRibbons>,
     /// The name of this state
@@ -16,9 +64,9 @@ pub struct TuringState {
 
 impl TuringState {
     /// Creates a new [TuringState]
-    pub fn new(is_final: bool, name: &String) -> Self {
+    pub fn new(state_type: TuringStateType, name: &String) -> Self {
         Self {
-            is_final,
+            state_type,
             transitions: vec![],
             name: name.clone(),
         }
@@ -102,11 +150,24 @@ impl TuringState {
     }
 
     /// Checks for all transitions that can be taken when reading a char in this state
-    pub fn get_valid_transitions(&self, chars_read: Vec<char>) -> Vec<&TuringTransitionMultRibbons> {
+    pub fn get_valid_transitions(&self, chars_read: &Vec<char>) -> Vec<&TuringTransitionMultRibbons> {
         let mut res = vec![];
         for t in &self.transitions {
             if chars_read.eq(&t.chars_read) {
                 res.push(t);
+            }
+        }
+        return res;
+    }
+
+    /// Checks for all the indexes of the transitions that can be taken when reading a char in this state
+    pub fn get_valid_transitions_indexes(&self, chars_read: &Vec<char>) -> Vec<u8>
+    {
+        let mut res = vec![];
+        for i in 0..self.transitions.len() {
+            let t = &self.transitions[i];
+            if chars_read.eq(&t.chars_read) {
+                res.push(i as u8);
             }
         }
         return res;
@@ -132,7 +193,7 @@ impl Debug for TuringState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TuringState")
             .field("name", &self.name)
-            .field("is_final", &self.is_final)
+            .field("state_type", &self.state_type)
             .field("transitions", &self.transitions)
             .finish()
     }
@@ -140,7 +201,7 @@ impl Debug for TuringState {
 
 impl Clone for TuringState {
     fn clone(&self) -> Self {
-        Self { is_final: self.is_final.clone(), transitions: self.transitions.clone(), name: self.name.clone() }
+        Self { state_type: self.state_type.clone(), transitions: self.transitions.clone(), name: self.name.clone() }
     }
 }
 
