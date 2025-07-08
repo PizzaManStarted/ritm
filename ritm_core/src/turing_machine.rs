@@ -297,7 +297,9 @@ pub struct TuringExecutionStep
     /// A clone representing the current state of the reading ribbon after taking that transition.
     pub read_ribbon: TuringReadRibbon,
     /// A clone representing the current state of the writting ribbons after taking that transition.
-    pub write_ribbons: Vec<TuringWriteRibbon>
+    pub write_ribbons: Vec<TuringWriteRibbon>,
+    /// Is set to true when this step resulted directly from a backtrack compared to the previous state.
+    pub backtracked : bool,
 }
 
 
@@ -316,6 +318,7 @@ impl<'a> Iterator for &mut dyn TuringIterator
                 transition_taken: None,
                 read_ribbon: self.get_reading_ribbon().clone(),
                 write_ribbons: self.get_writting_ribbons().clone(),
+                backtracked: false
             });
         }
 
@@ -357,6 +360,7 @@ impl<'a> Iterator for &mut dyn TuringIterator
         {
             return None;
             // TODO change this to : *if pop is empty* then stop
+            // How do we signal to the user that we went back up ?
             /// If there are no saved states, this means that t
             if self.get_memory_mut().is_empty() {
                 return None;
@@ -388,6 +392,7 @@ impl<'a> Iterator for &mut dyn TuringIterator
             transition_taken: Some(transition.clone()),
             read_ribbon: self.get_reading_ribbon().clone(),
             write_ribbons: self.get_writting_ribbons().clone(),
+            backtracked: false,
         })
     }
 }
@@ -457,7 +462,7 @@ impl<'a> Display for TuringExecutionStep{
             }
         };
 
-        write!(f, "* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", trans_taken, self.read_ribbon, write_str_rib)
+        write!(f, "* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}\nBacktracked ? {}", trans_taken, self.read_ribbon, write_str_rib, self.backtracked)
     }
 }
 
