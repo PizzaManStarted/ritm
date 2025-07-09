@@ -328,31 +328,16 @@ impl<'a> Iterator for TuringMachines<'_>
         }
         
         println!("Currently reading : {:?}", char_vec);
-        let transitions = curr_state.get_valid_transitions(&char_vec);
-        println!("transitions possible : {:?}", transitions);
-        
+        let mut next_transitions = VecDeque::from(curr_state.get_valid_transitions_indexes(&char_vec));
+        println!("transitions possible : {:?}", next_transitions);
+    
         let mut transition_index_taken = 0 as u8;
-        // If there are more than 1 transition possible at a time, it means we are in a non deterministic situation.
-        // We must save the current state in order to explore all path.
-        if transitions.len() >= 2 {
-            // FIXME there is a problem with the logic of giving a transition
-            // take the first transition, save the rest
-            let mut next_transitions = VecDeque::from(curr_state.get_valid_transitions_indexes(&char_vec));
-            transition_index_taken = next_transitions.pop_front().unwrap();
-
-            let to_save = SavedState { saved_state_index:self.get_state_pointer(), 
-                                                    next_transitions: next_transitions, 
-                                                    saved_read_ribbon: self.get_reading_ribbon().clone(), 
-                                                    saved_write_ribbons: self.get_writting_ribbons().clone() };
-
-            self.push_to_memory_stack(to_save);
-        }
-
         
+    
         let mut backtracked = None;
         // If no transitions can be provided or the current state is rejecting,
         // we reached a *dead end*, go back in the exploration if possible
-        if transitions.len() == 0 || curr_state.state_type == TuringStateType::Rejecting
+        if next_transitions.is_empty() || curr_state.state_type == TuringStateType::Rejecting
         {
             // If there are no saved state, this means the backtracking is over, and the execution too
             if self.get_memory_mut().is_empty() {
@@ -363,7 +348,6 @@ impl<'a> Iterator for TuringMachines<'_>
             // While the memory still has a state saved
 
             while !self.get_memory_mut().is_empty() {
-                println!("{:?}\n\nFUCK\n", self.get_memory_mut());
                 {
                     let saved_state = self.get_memory_mut().front_mut().unwrap();
                     
@@ -391,6 +375,25 @@ impl<'a> Iterator for TuringMachines<'_>
                 backtracked = Some(saved_state.saved_state_index);
                 break;
             }
+        }
+    
+        // If there are more than 1 transition possible at a time, it means we are in a non deterministic situation.
+        // We must save the current state in order to explore all path.
+        else if next_transitions.len() >= 2 {
+            // FIXME there is a problem with the logic of giving a transition
+            // take the first transition, save the rest
+            transition_index_taken = next_transitions.pop_front().unwrap();
+            println!("transition taken : {}", transition_index_taken);
+
+            let to_save = SavedState { saved_state_index:self.get_state_pointer(), 
+                                                    next_transitions: next_transitions, 
+                                                    saved_read_ribbon: self.get_reading_ribbon().clone(), 
+                                                    saved_write_ribbons: self.get_writting_ribbons().clone() };
+
+            self.push_to_memory_stack(to_save);
+        }
+        else if next_transitions.len() == 1 {
+            transition_index_taken = next_transitions[0];
         }
 
         let transition = self.get_turing_machine_graph().get_state(self.get_state_pointer()).unwrap().transitions[transition_index_taken as usize].clone();
