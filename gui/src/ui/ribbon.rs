@@ -7,13 +7,13 @@ use crate::App;
 
 pub fn show(app: &mut App, ui: &mut Ui) {
     // TODO replace by TuringMachine value
-    let ribbon_count = 4;
+    let ribbon_count = 2;
 
     // Ribbons frame
     Frame::new()
-        .inner_margin(Margin::same(0))
+        .inner_margin(Margin::same(3))
         .outer_margin(Margin::same(0))
-        .fill(Color32::LIGHT_GRAY)
+        .fill(app.theme.color3)
         .show(ui, |ui| {
             ui.spacing_mut().item_spacing = (0.0, 5.0).into();
 

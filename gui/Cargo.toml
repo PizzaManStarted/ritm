@@ -20,7 +20,7 @@ egui_infinite_scroll = "0.7.0"
 egui_animation = "0.8.0"
 rand = "0.9.0"
 log = "0.4"
-turingrs = { path = "../turingrs" }
+ritm_core = { path = "../ritm_core" }
 egui-colorgradient = "0.2.0"
 
 
