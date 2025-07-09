@@ -7,10 +7,16 @@ fn execution_non_deter()
     let tm_graph = get_test_non_deter_graph();
     //println!("{:?}", tm_graph);
 
-    let mut turing_machine = TuringMachine::new(tm_graph, String::from("00100"), Mode::SaveAll).unwrap();
-
+    let mut turing_machine = TuringMachine::new(tm_graph, String::from("010"), Mode::SaveAll).unwrap();
+    // let mut turing_machine = TuringMachine::new(get_smaller_non_deter_graph(), String::from("00000001"), Mode::SaveAll).unwrap();
+    let mut counter = 0;
     for tmp in turing_machine.as_iter() {
-        println!("_______________\nExec. step ::\n{}", tmp)
+        println!("_______________\nExec. step ::\n{}", tmp);
+        counter += 1;
+
+        if counter == 12 {
+            return;
+        }
     }
 
 
@@ -18,6 +24,27 @@ fn execution_non_deter()
 
 }
 
+/// Gets a graph that forces one complete descent before doing one backtracking and finishing.
+/// Feed it `0...0` in order for it to suceed
+fn get_smaller_non_deter_graph() -> TuringMachineGraph 
+{
+    let q2 = &String::from("q2");
+    let mut graph = TuringMachineGraph::new(1).unwrap();
+
+    graph.add_state(&q2);
+
+    let mut transition = TuringTransitionMultRibbons::create(vec!('ç','ç'), vec!('ç'), vec!(TuringDirection::Right, TuringDirection::Right)).unwrap();
+    graph.append_rule_state_by_name(&String::from("i"), transition.clone(), &q2).unwrap();
+
+    transition = TuringTransitionMultRibbons::create(vec!('0','_'), vec!('_'), vec!(TuringDirection::Right, TuringDirection::None)).unwrap();
+    graph.append_rule_state_by_name(&q2, transition.clone(), &q2).unwrap();
+
+
+    transition = TuringTransitionMultRibbons::create(vec!('0','_'), vec!('_'), vec!(TuringDirection::Right, TuringDirection::None)).unwrap();
+    graph.append_rule_state_by_name(&q2, transition.clone(), &String::from("a")).unwrap();
+
+    graph
+}
 
 
 /// Gets a non determinist Turing machine graph.

@@ -205,6 +205,12 @@ impl Clone for TuringState {
     }
 }
 
+impl Display for TuringState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}: {})", self.name, self.state_type)
+    }
+}
+
 
 /// Represents the direction of a movement that the pointer of a ribbon can take after reading/writing a character
 pub enum TuringDirection {
