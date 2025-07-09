@@ -2,7 +2,7 @@ use pest::{iterators::Pair, Parser};
 use std::fs;
 use pest_derive::Parser;
 
-use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_machine::TuringMachine, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
+use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
 
 #[derive(Parser)]
 #[grammar = "turing_machine.pest"]

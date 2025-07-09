@@ -1,4 +1,4 @@
-use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{TuringIterator, TuringMachine, Mode}, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
+use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringIterator, TuringMachines, TuringMachine}, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
 
 
 #[test]
@@ -7,10 +7,14 @@ fn execution_non_deter()
     let tm_graph = get_test_non_deter_graph();
     //println!("{:?}", tm_graph);
 
-    let mut turing_machine = TuringMachine::new(tm_graph, String::from("010"), Mode::SaveAll).unwrap();
+    // let mut turing_machine = TuringMachine::new(tm_graph, String::from("010"), Mode::SaveAll).unwrap();
+
+    let mut turing_machine = TuringMachines::new(tm_graph, String::from("010"), Mode::SaveAll).unwrap();
+    
+
     // let mut turing_machine = TuringMachine::new(get_smaller_non_deter_graph(), String::from("00000001"), Mode::SaveAll).unwrap();
     let mut counter = 0;
-    for tmp in turing_machine.as_iter() {
+    for tmp in turing_machine {
         println!("_______________\nExec. step ::\n{}", tmp);
         counter += 1;
 
@@ -18,11 +22,10 @@ fn execution_non_deter()
             return;
         }
     }
-
-
-    
-
 }
+
+
+
 
 /// Gets a graph that forces one complete descent before doing one backtracking and finishing.
 /// Feed it `0...0` in order for it to suceed

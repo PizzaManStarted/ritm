@@ -1,4 +1,4 @@
-use std::{collections::{vec_deque, VecDeque}, fmt::{Debug, Display}, os::linux::raw::stat};
+use std::{collections::{vec_deque, VecDeque}, fmt::{Debug, Display}, os::linux::raw::stat, path::Iter};
 
 use rand::{rng, Rng};
 
@@ -38,53 +38,21 @@ impl Clone for SavedState {
 }
 
 
-/// A trait used to iterate over all the states of a turing machine.
-pub trait TuringIterator
+pub enum TuringMachines<'a>
 {
-    /// Gets the stored turing machine graph.
-    fn get_turing_machine_graph(&self) -> &TuringMachineGraph;
-    /// Gets the current state pointer of this struct. 
-    fn get_state_pointer(&self) -> u8;
-    /// Sets a new value to the state pointer.
-    fn set_state_pointer(&mut self, new_val: u8);
-    /// Gets the reading ribbon stored inside this struct.
-    fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon;
-    /// Sets the reading ribbon stored inside this struct.
-    fn set_reading_ribbon(&mut self, ribbon: TuringReadRibbon);
-    /// Gets the writtings ribbons stored inside this struct.
-    fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon>;
-    /// Sets the writting ribbons stored inside this struct.
-    fn set_writting_ribbons(&mut self, ribbons: Vec<TuringWriteRibbon>);
-    /// Gets the word that was feed to this machine.
-    fn get_word(&mut self) -> &String;
-    /// Checks if the current iteration is the first iteration or not.
-    fn is_first_iteration(&mut self) -> bool;
-    /// Sets the state of this turing machine to be considered or not its first iteration.
-    fn set_first_iteration(&mut self, set: bool);
-    /// Transforms the current struct to a [TuringIterator] in order to start 
-    /// iterating.
-    fn as_iter(&mut self) -> &mut dyn TuringIterator;
-    /// Resets the turing machine to its initial state and re-feeds it the current stored word.
-    fn reset(&mut self) -> Result<(), TuringError>;
-    /// Resets the turing machine to its initial state and feeds it the given word.
-    fn reset_word(&mut self, word: &String) -> Result<(), TuringError>;
-    /// Fetches the mode of the iterator
-    fn get_mode(&self) -> &Mode;
-
-
-    /// Get the **mutable** stack containing all the [SavedState].
-    fn get_memory_mut(&mut self) -> &mut VecDeque<SavedState>;
+    TuringMachineWithRef {
+        /// The **reference** to a turing machine graph that will execute a word
+        graph : &'a TuringMachineGraph,
+        data : IterationData
+    },
+    TuringMachine {
+        /// The turing machine graph that will execute a word
+        graph : TuringMachineGraph,
+        data : IterationData
+    }
 }
 
-
-
-
-
-/// A struct made to execute a word to a turing machine
-pub struct TuringMachineWithRef<'a>
-{
-    /// The **reference** to a turing machine that will execute a word
-    graph: &'a TuringMachineGraph,
+struct IterationData {
     /// The reading rubbon containing the word
     reading_ribbon:  TuringReadRibbon,
     /// A vector containing all writting rubbons
@@ -101,222 +69,204 @@ pub struct TuringMachineWithRef<'a>
     mode: Mode
 }
 
-impl<'a> TuringMachineWithRef<'a> {
-    /// Create a new [TuringMachineWithRef] for a given word.
-    pub fn new(mt: &'a TuringMachineGraph, word: String, mode: Mode) -> Result<Self, TuringError>
+impl<'a> TuringMachines<'a> 
+{
+    /// Create a new [TuringIteratorE::TuringMachineWithRef] for a given word.
+    pub fn new_with_ref(mt: &'a TuringMachineGraph, word: String, mode: Mode) -> Result<Self, TuringError>
     {
         let mut s = 
-        Self 
+        TuringMachines::TuringMachineWithRef
         {
-            state_pointer: 0,
-            reading_ribbon: TuringReadRibbon::new(),
-            write_ribbons: {
-                // Creates k ribbons
-                let mut v = vec!();
-                for _ in 0..mt.get_k()
-                {
-                    v.push(TuringWriteRibbon::new());
-                }
-                v
-            },
-            word,
             graph: mt,
-            is_first_state: true,
-            memory: VecDeque::new(),
-            mode
+            data : IterationData {
+                state_pointer: 0,
+                reading_ribbon: TuringReadRibbon::new(),
+                write_ribbons: {
+                    // Creates k ribbons
+                    let mut v = vec!();
+                    for _ in 0..mt.get_k()
+                    {
+                        v.push(TuringWriteRibbon::new());
+                    }
+                    v
+                },
+                word: word.clone(),
+                is_first_state: true,
+                memory: VecDeque::new(),
+                mode
+
+            }
         };
         // Add the word to the reading ribbon
-        s.reading_ribbon.feed_word(s.word.to_string());
+        s.get_reading_ribbon().feed_word(word);
 
         Ok(s)
     }
-}
 
-
-
-impl<'a> TuringIterator for TuringMachineWithRef<'a> {
-
-    fn get_turing_machine_graph(&self) -> &TuringMachineGraph {
-        self.graph
-    }
-
-    fn get_state_pointer(&self) -> u8 {
-        self.state_pointer
-    }
-
-    fn set_state_pointer(&mut self, new_val: u8) {
-        self.state_pointer = new_val;
-    }
-
-    fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon {
-        &mut self.reading_ribbon
-    }
-
-    fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon> {
-        &mut self.write_ribbons
-    }
-
-    fn as_iter(&mut self) -> &mut dyn TuringIterator
-    {
-        self as &mut dyn TuringIterator
-    }
-    
-    fn get_word(&mut self) -> &String {
-        &self.word
-    }
-    
-    fn is_first_iteration(&mut self) -> bool {
-        self.is_first_state
-    }
-    
-    fn set_first_iteration(&mut self, set: bool) {
-        self.is_first_state = set;
-    }
-    
-    fn reset(&mut self) -> Result<(), TuringError> {
-        reset(self)
-    }
-    
-    fn reset_word(&mut self, word: &String) -> Result<(), TuringError> {
-        reset_word(self, word)
-    }
-    
-    fn get_mode(&self) -> &Mode {
-        &self.mode
-    }
-    
-    fn get_memory_mut(&mut self) -> &mut VecDeque<SavedState> {
-        &mut self.memory
-    }
-    
-    fn set_reading_ribbon(&mut self, ribbon: TuringReadRibbon) {
-        self.reading_ribbon = ribbon;
-    }
-    
-    fn set_writting_ribbons(&mut self, ribbons: Vec<TuringWriteRibbon>) {
-        self.write_ribbons = ribbons;
-    }
-}
-
-/// A struct representing an executable turing machine.
-pub struct TuringMachine
-{
-    /// The turing machine that will execute a word
-    turing_machine: TuringMachineGraph,
-    /// The reading rubbon containing the word
-    reading_ribbon:  TuringReadRibbon,
-    /// A vector containing all writting rubbons
-    write_ribbons: Vec<TuringWriteRibbon>,
-    /// The current word to read
-    word: String,
-    /// The index of the current state of the turing machine
-    state_pointer: u8,
-    /// Represents if the structs was just initialised or reset 
-    is_first_state: bool,
-    /// A stack representing the memory of the exploration of this turing machine.
-    memory: VecDeque<SavedState>,
-    /// Represents the mode used for the execution of this turing machine
-    mode: Mode
-}
-
-impl TuringMachine {
-    /// Create a new [TuringMachine] for a given graph and word.
+    // Create a new [TuringMachineWithRef] for a given word.
     pub fn new(mt: TuringMachineGraph, word: String, mode: Mode) -> Result<Self, TuringError>
     {
         if word.is_empty() {
             return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
         }
         let mut s = 
-        Self 
+        TuringMachines::TuringMachine 
         {
-            state_pointer: 0,
-            reading_ribbon: TuringReadRibbon::new(),
-            write_ribbons: {
-                // Creates k ribbons
-                let mut v = vec!();
-                for _ in 0..mt.get_k()
-                {
-                    v.push(TuringWriteRibbon::new());
-                }
-                v
+            data : IterationData {
+                state_pointer: 0,
+                reading_ribbon: TuringReadRibbon::new(),
+                write_ribbons: {
+                    // Creates k ribbons
+                    let mut v = vec!();
+                    for _ in 0..mt.get_k()
+                    {
+                        v.push(TuringWriteRibbon::new());
+                    }
+                    v
+                },
+                word: word.clone(),
+                is_first_state: true,
+                memory: VecDeque::new(),
+                mode
             },
-            word,
-            turing_machine: mt,
-            is_first_state: true,
-            memory: VecDeque::new(),
-            mode
+            graph: mt
         };
         // Add the word to the reading ribbon
-        s.reading_ribbon.feed_word(s.word.to_string());
+        s.get_reading_ribbon().feed_word(word);
         
         Ok(s)
     }
-}
 
-
-impl TuringIterator for TuringMachine {
-    fn get_turing_machine_graph(&self) -> &TuringMachineGraph {
-        & self.turing_machine
-    }
-
-    fn get_state_pointer(&self) -> u8 {
-        self.state_pointer
-    }
-
-    fn set_state_pointer(&mut self, new_val: u8) {
-        self.state_pointer = new_val;
-    }
-
-    fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon {
-        &mut self.reading_ribbon
-    }
-
-    fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon> {
-        &mut self.write_ribbons
-    }
-    
-    fn as_iter(&mut self) -> &mut dyn TuringIterator
+    /// Adds a new [SavedState] to the front of the memory stack.
+    fn push_to_memory_stack(&mut self, to_save: SavedState)
     {
-        self as &mut dyn TuringIterator
+        self.get_memory_mut().push_front(to_save);
     }
 
-    fn get_word(&mut self) -> &String {
-        &self.word
-    }
-    
-    fn is_first_iteration(&mut self) -> bool {
-        self.is_first_state
-    }
-    
-    fn set_first_iteration(&mut self, set: bool) {
-        self.is_first_state = set;
-    }
-    
-    fn reset(&mut self) -> Result<(), TuringError> {
-        reset(self)
-    }
-    
-    fn reset_word(&mut self, word: &String) -> Result<(), TuringError> {
-        reset_word(self, word)
-    }
-    
-    fn get_mode(&self) -> &Mode {
-        &self.mode
+    /// Resets the turing machine to its initial state and re-feeds it the current stored word.
+    pub fn reset(&mut self) -> Result<(), TuringError>
+    {
+        let word = self.get_word().clone();
+        return self.reset_word(&word);
     }
 
-    fn get_memory_mut(&mut self) -> &mut VecDeque<SavedState> {
-        &mut self.memory
+    /// Resets the turing machine to its initial state and feeds it the given word.
+    pub fn reset_word(&mut self, word: &String) -> Result<(), TuringError>
+    {
+        if word.is_empty() {
+            return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
+        }
+        // Reset reading ribbon
+        self.get_reading_ribbon().feed_word(word.clone());
+
+        // Reset write ribbons
+        for i in 0..self.get_writting_ribbons().len() {
+            self.get_writting_ribbons()[i] = TuringWriteRibbon::new();
+        }
+
+        // Reset state pointers
+        self.set_state_pointer(0);
+
+        // Reset first iteration
+        self.set_first_iteration(true);
+        
+        Ok(())
     }
-    
-    fn set_reading_ribbon(&mut self, ribbon: TuringReadRibbon) {
-        self.reading_ribbon = ribbon;
-    }
-    
-    fn set_writting_ribbons(&mut self, ribbons: Vec<TuringWriteRibbon>) {
-        self.write_ribbons = ribbons;
-    }
+
 }
 
+
+impl TuringMachines<'_> {
+    /// Gets the stored turing machine graph.
+    fn get_turing_machine_graph(&self) -> &TuringMachineGraph {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph, data:_ } => &graph,
+            TuringMachines::TuringMachine { graph, data:_ } => &graph,
+        }
+    }
+    
+    /// Gets the current state pointer of this struct.
+    fn get_state_pointer(&self) -> u8 {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.state_pointer,
+        }
+        
+    }
+    
+    /// Sets a new value to the state pointer.
+    fn set_state_pointer(&mut self, new_val: u8) {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.state_pointer = new_val,
+        }
+    }
+    
+    /// Gets the reading ribbon stored inside this struct.
+    fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => &mut data.reading_ribbon,
+        }
+    }
+    
+
+    /// Sets the reading ribbon stored inside this struct.
+    fn set_reading_ribbon(&mut self, ribbon: TuringReadRibbon) {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.reading_ribbon = ribbon,
+        }
+    }
+    
+
+    /// Gets the writtings ribbons stored inside this struct.
+    fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon> {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => &mut data.write_ribbons,
+        }
+    }
+    
+
+    /// Sets the writting ribbons stored inside this struct.
+    fn set_writting_ribbons(&mut self, ribbons: Vec<TuringWriteRibbon>) {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.write_ribbons = ribbons,
+        }
+    }
+    
+    /// Gets the word that was feed to this machine.
+    fn get_word(&self) -> &String {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => &data.word,
+        }
+    }
+    
+
+    /// Checks if the current iteration is the first iteration or not.
+    fn is_first_iteration(&mut self) -> bool {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.is_first_state,
+        }
+    }
+    
+    /// Sets the state of this turing machine to be considered or not its first iteration.
+    fn set_first_iteration(&mut self, set: bool) {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.is_first_state = set,
+        }
+    }
+    
+    /// Fetches the mode of the iterator.
+    fn get_mode(&self) -> &Mode {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => &data.mode,
+        }
+    }
+    
+    /// Get the **mutable** stack containing all the [SavedState].
+    fn get_memory_mut(&mut self) -> &mut VecDeque<SavedState> {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => &mut data.memory,
+        }
+    }
+}
 
 
 
@@ -336,7 +286,7 @@ pub struct TuringExecutionStep
 }
 
 
-impl<'a> Iterator for &mut dyn TuringIterator
+impl<'a> Iterator for TuringMachines<'_>
 {
     type Item = TuringExecutionStep;
     
@@ -385,6 +335,7 @@ impl<'a> Iterator for &mut dyn TuringIterator
         // If there are more than 1 transition possible at a time, it means we are in a non deterministic situation.
         // We must save the current state in order to explore all path.
         if transitions.len() >= 2 {
+            // FIXME there is a problem with the logic of giving a transition
             // take the first transition, save the rest
             let mut next_transitions = VecDeque::from(curr_state.get_valid_transitions_indexes(&char_vec));
             transition_index_taken = next_transitions.pop_front().unwrap();
@@ -394,7 +345,7 @@ impl<'a> Iterator for &mut dyn TuringIterator
                                                     saved_read_ribbon: self.get_reading_ribbon().clone(), 
                                                     saved_write_ribbons: self.get_writting_ribbons().clone() };
 
-            add_to_memory_stack(self.get_memory_mut(), to_save);
+            self.push_to_memory_stack(to_save);
         }
 
         
@@ -443,7 +394,7 @@ impl<'a> Iterator for &mut dyn TuringIterator
         }
 
         let transition = self.get_turing_machine_graph().get_state(self.get_state_pointer()).unwrap().transitions[transition_index_taken as usize].clone();
-        
+        println!("Took : {}", transition);
         
         // Apply the transition
         // to the read ribbons
@@ -472,53 +423,6 @@ impl<'a> Iterator for &mut dyn TuringIterator
 
 
 }
-
-
-
-/// Resets the turing machine to its initial state and re-feeds it the current stored word.
-pub fn reset(iter: &mut dyn TuringIterator) -> Result<(), TuringError>
-{
-    let word = iter.get_word().clone();
-    return reset_word(iter, &word);
-}
-
-/// Resets the turing machine to its initial state and feeds it the given word.
-pub fn reset_word(iter: &mut dyn TuringIterator, word: &String) -> Result<(), TuringError>
-{
-    if word.is_empty() {
-        return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
-    }
-    // Reset reading ribbon
-    iter.get_reading_ribbon().feed_word(word.clone());
-
-    // Reset write ribbons
-    for i in 0..iter.get_writting_ribbons().len() {
-        iter.get_writting_ribbons()[i] = TuringWriteRibbon::new();
-    }
-
-    // Reset state pointers
-    iter.set_state_pointer(0);
-
-    // Reset first iteration
-    iter.set_first_iteration(true);
-    
-    Ok(())
-}
-
-
-/// Adds a new [SavedState] to a memory stack.
-fn add_to_memory_stack(stack: &mut VecDeque<SavedState>, to_save: SavedState)
-{
-    stack.push_front(to_save);
-}
-
-/// Pops a [SavedState] (if any exists) from this iterator. This means it also gets removed.
-fn pop_memory_stack(stack: &mut VecDeque<SavedState>) -> Option<SavedState>
-{
-    stack.pop_front()
-}
-
-
 
 
 impl<'a> Display for TuringExecutionStep{
