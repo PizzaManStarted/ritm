@@ -1,58 +1,134 @@
 use std::{
-    char,
-    fmt::{Debug, Display},
+    char, f32::consts::E, fmt::{Debug, Display}
 };
+
+use crate::turing_errors::TuringError;
+
+
+/// Represents the different types of states that can be found inside a turing machine graph
+pub enum TuringStateType {
+    /// A normal state, has no special effect.
+    Normal,
+    /// Accepts the given input.
+    Accepting,
+    /// Rejects the given input.
+    Rejecting
+}
+
+
+impl Debug for TuringStateType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Normal => write!(f, "Normal"),
+            Self::Accepting => write!(f, "Accepting"),
+            Self::Rejecting => write!(f, "Rejecting"),
+        }
+    }
+}
+impl Display for TuringStateType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            TuringStateType::Normal => "Normal",
+            TuringStateType::Accepting => "Accepting",
+            TuringStateType::Rejecting => "Rejecting",
+        })
+    }
+}
+
+impl Clone for TuringStateType {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Normal => Self::Normal,
+            Self::Accepting => Self::Accepting,
+            Self::Rejecting => Self::Rejecting,
+        }
+    }
+}
+
+impl PartialEq for TuringStateType {
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
+    }
+}
+
 
 /// Represents a state of a turing machine
 pub struct TuringState {
     /// Represents if the state is a final state or not
-    pub is_final: bool,
+    pub state_type: TuringStateType,
     /// The vector containing all the transitions to the neighboring states 
-    pub transitions: Vec<TuringTransition>,
+    pub transitions: Vec<TuringTransitionMultRibbons>,
     /// The name of this state
-    pub name: Option<String>,
+    pub name: String,
 }
 
 impl TuringState {
     /// Creates a new [TuringState]
-    pub fn new(is_final: bool) -> Self {
+    pub fn new(state_type: TuringStateType, name: &String) -> Self {
         Self {
-            is_final,
+            state_type,
             transitions: vec![],
-            name: None,
+            name: name.clone(),
         }
     }
 
-    /// Sets the name of a [TuringState]
-    /// 
-    /// Returns the given [TuringState]
-    pub fn set_name(mut self, name: &str) -> Self
+    /// Changes the name of a [TuringState]
+    pub fn rename(&mut self, name: &str)
     {
-        self.name = Some(name.to_string());
-        return self;
+        self.name = name.to_string();
     }
 
     /// Adds a new transition to the state
-    pub fn add_transition(&mut self, transition: TuringTransition) {
-        self.transitions.push(transition);
-    }
-
-    /// Removes the transition at the given index 
-    pub fn remove_transition(&mut self, transition_index: u8) -> TuringTransition
+    pub fn add_transition(&mut self, transition: TuringTransitionMultRibbons) -> Result<(), TuringError> 
     {
-        self.transitions.remove(transition_index.into())
+        // Check that the number of ribbon from a transition is the same for all added transitions
+        if ! self.transitions.is_empty() && self.transitions.first().unwrap().get_number_of_affected_ribbons() != transition.get_number_of_affected_ribbons() {
+            return Err(TuringError::ArgsSizeTransitionError);
+        }
+
+        Ok(self.transitions.push(transition))
     }
 
-    /// Removes all the transitions from this state that are pointing at the given index
+    /// Removes the transition ***at*** the given index and returns it if it was correctly returned
+    pub fn remove_transition_with_index(&mut self, transition_index: u8) -> Result<TuringTransitionMultRibbons, TuringError>
+    {
+        if self.transitions.len() <= transition_index as usize {
+            return Err(TuringError::OutOfRangeTransitionError { accessed_index: transition_index as usize, states_len: self.transitions.len() });
+        }
+        Ok(self.transitions.remove(transition_index.into()))
+    }
+
+    /// Removes all the transitions matching the given parameter. Beware that the `index_to_state` field will also be part of the evaluation.
+    /// 
+    /// If the transition wasn't part of this state, nothing will happen.
+    pub fn remove_transition(&mut self, transition: &TuringTransitionMultRibbons)
+    {
+        let mut res = vec!();
+
+        for t in &self.transitions {
+            if t != transition || t.index_to_state != transition.index_to_state {
+                res.push(t.clone());
+            }
+        }
+
+        self.transitions = res;
+        
+    }
+
+    /// Removes all the transitions from this state ***that are pointing*** at the given index
     pub fn remove_transitions(&mut self, to_index: u8)
     {
         let mut transitions = vec!();
         for t in &self.transitions 
         {
-            if t.index_to_state != to_index 
-            {
-                transitions.push(t.clone());
+            if let Some(index_to_state) = t.index_to_state {
+                // If it is pointing at the given index, we remove it
+                if index_to_state == to_index 
+                {
+                    continue;
+                }
             }
+            transitions.push(t.clone());
         }
         self.transitions = transitions;
     }
@@ -62,27 +138,53 @@ impl TuringState {
     {
         for t in &mut self.transitions
         {
-            if t.index_to_state == to_index_curr 
-            {
-                t.index_to_state = to_index_new;    
+            if let Some(index_to_state) = t.index_to_state {
+                // If it was pointing to the old index, update it
+                if index_to_state == to_index_curr 
+                {
+                    t.index_to_state = Some(to_index_new);
+                    println!("changing it : from {} to {}", index_to_state, to_index_new);    
+                }
             }
         }
     }
 
     /// Checks for all transitions that can be taken when reading a char in this state
-    pub fn get_valid_transitions(&self, chars_read: Vec<char>) -> Vec<&TuringTransition> {
+    pub fn get_valid_transitions(&self, chars_read: &Vec<char>) -> Vec<&TuringTransitionMultRibbons> {
         let mut res = vec![];
         for t in &self.transitions {
-            if chars_read.len() != t.chars_read.len() 
-            {
-                return res;    // FIXME add error here
-            }
-            //println!("Let me check for : {} | chars read: {:?} and tr.read : {:?}", t, chars_read, t.chars_read);
             if chars_read.eq(&t.chars_read) {
-                //println!("\t*Adding it !");
                 res.push(t);
             }
         }
+        return res;
+    }
+
+    /// Checks for all the indexes of the transitions that can be taken when reading a char in this state
+    pub fn get_valid_transitions_indexes(&self, chars_read: &Vec<char>) -> Vec<u8>
+    {
+        let mut res = vec![];
+        for i in 0..self.transitions.len() {
+            let t = &self.transitions[i];
+            if chars_read.eq(&t.chars_read) {
+                res.push(i as u8);
+            }
+        }
+        return res;
+    }
+
+    /// Gets all the transitions that can be taken to reach the given index.
+    pub fn get_transitions_to(&self, to_index: u8) -> Vec<&TuringTransitionMultRibbons> {
+        let mut res = vec!();
+
+        for t in &self.transitions {
+            if let Some(i) = t.index_to_state {
+                if i == to_index {
+                    res.push(t);
+                }
+            }
+        }
+
         return res;
     }
 }
@@ -91,7 +193,7 @@ impl Debug for TuringState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TuringState")
             .field("name", &self.name)
-            .field("is_final", &self.is_final)
+            .field("state_type", &self.state_type)
             .field("transitions", &self.transitions)
             .finish()
     }
@@ -99,7 +201,13 @@ impl Debug for TuringState {
 
 impl Clone for TuringState {
     fn clone(&self) -> Self {
-        Self { is_final: self.is_final.clone(), transitions: self.transitions.clone(), name: self.name.clone() }
+        Self { state_type: self.state_type.clone(), transitions: self.transitions.clone(), name: self.name.clone() }
+    }
+}
+
+impl Display for TuringState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}: {})", self.name, self.state_type)
     }
 }
 
@@ -153,14 +261,20 @@ impl Clone for TuringDirection {
     }
 }
 
+impl PartialEq for TuringDirection {
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
+    }
+}
 
-/// A struct representing a turing transition of the form : 
+
+/// A struct representing a transition for a turing machine that has strictly more than **1 ribbon** : 
 /// * `a_0, a_1, ..., a_{n-1} -> D_0, b_1, D_1, b_2, D_2, ..., b_{n-1}, D_{n-1}`
-/// With :
-/// * `a_i` : The character *i* being read.
-/// * `D_i` : Direction to take by taking this transition, see [TuringDirection] for more information.
-/// * `b_i` : The character to replace the character *i* with.
-pub struct TuringTransition {
+/// - With :
+///     * `a_i` : The character *i* being read.
+///     * `D_i` : Direction to take by taking this transition, see [TuringDirection] for more information.
+///     * `b_i` : The character to replace the character *i* with.
+pub struct TuringTransitionMultRibbons {
     /// The chars that have to be read in order apply the rest of the transition : `a_0,..., a_{n-1}`
     pub chars_read: Vec<char>,
     /// The move to take after writing/reading the character : `D_0`
@@ -168,10 +282,10 @@ pub struct TuringTransition {
     /// The character to replace the character just read : `(b_0, D_0),..., (b_{n-1}, D_{n-1})`
     pub chars_write: Vec<(char, TuringDirection)>,
     /// The index of the state to go to after passing through this state.
-    pub index_to_state: u8,
+    pub index_to_state: Option<u8>,
 }
 
-impl TuringTransition {
+impl TuringTransitionMultRibbons {
     /// Creates a new [TuringTransition].
     pub fn new(
         char_read: Vec<char>,
@@ -182,56 +296,62 @@ impl TuringTransition {
             chars_read: char_read,
             move_read,
             chars_write: chars_read_write,
-            index_to_state: 0,
+            index_to_state: None,
         }
     }
 
-    /// Simplifies the creationf of a new [TuringTransition] of the form : 
+    /// Simplifies the creation of a new [TuringTransitionMultRibbons] of the form : 
     /// * `a_0, a_1, ..., a_{n-1} -> D_0, b_1, D_1, b_2, D_2, ..., b_{n-1}, D_{n-1}`
     /// 
     /// ## Args :
     /// * **chars_read** : The characters that have to be read in order to take this transition : `a_0,..., a_{n-1}`
     /// * **chars_write** : The characters to replace the characters read : `b_0, ..., b_{n-1}` 
     /// * **directions** : The directions to move the pointers of the ribbons : `D_0, ..., D_{n-1}`
-    pub fn create(chars_read: Vec<char>, chars_write: Vec<char>, directions: Vec<TuringDirection>) -> Self
+    pub fn create(chars_read: Vec<char>, chars_write: Vec<char>, directions: Vec<TuringDirection>) -> Result<Self, TuringError>
     {
         let mut chars_write_dir: Vec<(char, TuringDirection)> = vec!();
-        let move_read: TuringDirection = directions.get(0).expect("There must be at least one direction").clone();
+        let move_read = directions.get(0);
+        
+        if let None = move_read {
+            return Err(TuringError::ArgsSizeTransitionError);
+        }
+        let move_read = move_read.unwrap().clone();
 
-        // TODO : Replace panics with real errors
-        if chars_write.len() != directions.len() -1 {
-            panic!("chars_write must have the same size as (directions - 1) in order to create couples of (char, TuringDirection)");
+        if chars_write.len() + 1 != directions.len(){
+            return Err(TuringError::ArgsSizeTransitionError);
         }
         if chars_read.len() != directions.len() {
-            panic!("The number of chars to read must be equal to the number of (char, directions) to replace them with")
+            return Err(TuringError::ArgsSizeTransitionError);
         }
         for i in 1..directions.len() 
         {
             chars_write_dir.push((*chars_write.get(i-1).unwrap(), directions.get(i).unwrap().clone()));        
         }
-        Self {
-            chars_read,
-            move_read,
-            chars_write: chars_write_dir,
-            index_to_state : 0,
-        }
+        Ok(
+            Self {
+                chars_read,
+                move_read,
+                chars_write: chars_write_dir,
+                index_to_state : None,
+            }
+        )
     }
-
+    
     /// Returns the number of ribbons that are going to be affected by this transition.
     pub fn get_number_of_affected_ribbons(&self) -> usize
     {
-        return self.chars_write.len();
+        return self.chars_write.len() + 1;
     }
 }
 
 
-impl Clone for TuringTransition {
+impl Clone for TuringTransitionMultRibbons {
     fn clone(&self) -> Self {
         Self { chars_read: self.chars_read.clone(), move_read: self.move_read.clone(), chars_write: self.chars_write.clone(), index_to_state: self.index_to_state.clone() }
     }
 }
 
-impl Debug for TuringTransition {
+impl Debug for TuringTransitionMultRibbons {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TuringTransition")
             .field("char_read", &self.chars_read)
@@ -242,7 +362,7 @@ impl Debug for TuringTransition {
     }
 }
 
-impl Display for TuringTransition {
+impl Display for TuringTransitionMultRibbons {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
     {
         let mut char_read = String::from(self.chars_read[0]);
@@ -260,5 +380,12 @@ impl Display for TuringTransition {
 
 
         write!(f, "[{} -> {}]", char_read, char_written)
+    }
+}
+
+impl PartialEq for TuringTransitionMultRibbons {
+    /// Checks if two [TuringTransitionMultRibbons] are equivalent. Note that the `index_to_state` field is not part of this comparison.
+    fn eq(&self, other: &Self) -> bool {
+        self.chars_read == other.chars_read && self.move_read == other.move_read && self.chars_write == other.chars_write
     }
 }

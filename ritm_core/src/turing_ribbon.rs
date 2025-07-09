@@ -23,8 +23,9 @@ pub trait TuringRibbon : Display + Clone
 
     /// Returns the current character being read by the ribbon
     fn read_curr_char(&self) -> char;
-
 }
+
+
 
 /// Represents a ribbon made to write and read characters.
 pub struct TuringWriteRibbon
@@ -206,6 +207,7 @@ impl Clone for TuringWriteRibbon {
 }
 
 
+// Keeping the unit test here because we need to access private fields
 #[cfg(test)]
 mod tests{
     use super::*;
