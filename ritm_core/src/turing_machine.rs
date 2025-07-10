@@ -274,26 +274,46 @@ impl TuringMachines<'_> {
 }
 
 
-
-pub struct TuringExecutionStep
+pub enum TuringExecutionSteps
 {
-    pub reached_state : TuringState,
-    /// The index of the transition taken from the current state to the next one.
-    pub transition_index_taken : Option<usize>,
-    /// A clone of the transition that was just taken
-    pub transition_taken : Option<TuringTransitionMultRibbons>,
-    /// A clone representing the current state of the reading ribbon after taking that transition.
-    pub read_ribbon: TuringReadRibbon,
-    /// A clone representing the current state of the writting ribbons after taking that transition.
-    pub write_ribbons: Vec<TuringWriteRibbon>,
-    /// Is set to true when this step resulted directly from a backtrack compared to the previous state.
-    pub backtracked : Option<usize>,
+    FirstIteration {
+        /// A clone of the initial state
+        init_state: TuringState,
+        /// A clone representing the initial state of the reading ribbon.
+        init_read_ribbon: TuringReadRibbon,
+        /// A clone representing the initial state of the writting ribbons.
+        init_write_ribbons: Vec<TuringWriteRibbon>,
+    },
+    TransitionTaken
+    {
+        /// A clone of the state that was just left
+        previous_state : TuringState,
+        /// A clone of the state that was just reached
+        reached_state : TuringState,
+        /// The index of the transition taken from the current state to the next one.
+        transition_index_taken : usize,
+        /// A clone of the transition that was just taken
+        transition_taken : TuringTransitionMultRibbons,
+        /// A clone representing the current state of the reading ribbon after taking that transition.
+        read_ribbon: TuringReadRibbon,
+        /// A clone representing the current state of the writting ribbons after taking that transition.
+        write_ribbons: Vec<TuringWriteRibbon>,
+    },
+    Backtracked 
+    {
+        /// A clone of the state that was just left
+        previous_state : TuringState,
+        /// A clone of the state that was backtracked to
+        reached_state : TuringState,
+    }
 }
+
+
 
 
 impl<'a> Iterator for TuringMachines<'_>
 {
-    type Item = TuringExecutionStep;
+    type Item = TuringExecutionSteps;
 
     fn next(&mut self) -> Option<Self::Item> 
     {
@@ -303,14 +323,9 @@ impl<'a> Iterator for TuringMachines<'_>
         if self.is_first_iteration() {
             self.set_first_iteration(false);
 
-            return Some(TuringExecutionStep {
-                reached_state: curr_state,
-                transition_index_taken: None,
-                transition_taken: None,
-                read_ribbon: self.get_reading_ribbon().clone(),
-                write_ribbons: self.get_writting_ribbons().clone(),
-                backtracked: None
-            });
+            return Some(TuringExecutionSteps::FirstIteration { init_state: curr_state, 
+                init_read_ribbon: self.get_reading_ribbon().clone(), 
+                init_write_ribbons: self.get_writting_ribbons().clone() });
         }
 
         /* Checks if the state is accepting */
@@ -409,37 +424,46 @@ impl<'a> Iterator for TuringMachines<'_>
         // Move to the next state
         self.set_state_pointer(transition.index_to_state.unwrap());
         
-        Some(TuringExecutionStep
+        Some(TuringExecutionSteps::TransitionTaken
         {
+            previous_state: curr_state.clone(),
             reached_state: self.get_turing_machine_graph().get_state(self.get_state_pointer()).unwrap().clone(),
-            transition_index_taken : Some(transition_index_taken as usize),
-            transition_taken: Some(transition.clone()),
+            transition_index_taken : transition_index_taken as usize,
+            transition_taken: transition.clone(),
             read_ribbon: self.get_reading_ribbon().clone(),
             write_ribbons: self.get_writting_ribbons().clone(),
-            backtracked,
         })
     }
 }
 
 
-impl<'a> Display for TuringExecutionStep{
+impl<'a> Display for TuringExecutionSteps{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
     {
-        let mut write_str_rib = String::from(format!("{}",self.write_ribbons[0]));
-        for i in 1..self.write_ribbons.len() 
-        {
-            write_str_rib.push_str(format!("\n{}", self.write_ribbons[i]).as_str());
-        }
-        let trans_taken = {
-            if let Some(val) = &self.transition_taken {
-                val.to_string()
-            }
-            else {
-                String::from("None")
-            }
-        };
+        return match self {
+            TuringExecutionSteps::FirstIteration { init_state, init_read_ribbon, init_write_ribbons } => {
+                let mut write_str_rib = String::from(format!("{}", init_write_ribbons[0]));
+                for i in 1..init_write_ribbons.len() 
+                {
+                    write_str_rib.push_str(format!("\n{}", init_write_ribbons[i]).as_str());
+                }
 
-        write!(f, "* Current state : {}\n* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}\nBacktracked ? {:?}", self.reached_state, trans_taken, self.read_ribbon, write_str_rib, self.backtracked)
+                write!(f, "* Initial state : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", init_state, init_read_ribbon, write_str_rib)
+            },
+            TuringExecutionSteps::TransitionTaken { previous_state, reached_state, transition_index_taken:_, transition_taken, read_ribbon, write_ribbons } => {
+                    let mut write_str_rib = String::from(format!("{}", write_ribbons[0]));
+                    for i in 1..write_ribbons.len() 
+                    {
+                        write_str_rib.push_str(format!("\n{}", write_ribbons[i]).as_str());
+                    }
+
+                    write!(f, "* Left state : {}\n* Current state : {}\n* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", previous_state, reached_state, transition_taken, read_ribbon, write_str_rib)
+            },
+            TuringExecutionSteps::Backtracked { previous_state, reached_state } => {
+                write!(f, "** Backtracked from : {}\n* To  : {}",previous_state, reached_state)
+            },
+        };
+        
     }
 }
 
