@@ -1,6 +1,5 @@
-use std::{collections::{vec_deque, VecDeque}, fmt::{Debug, Display}, os::linux::raw::stat, path::Iter};
+use std::{collections::VecDeque, fmt::{Debug, Display}};
 
-use rand::{rng, Rng};
 
 use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringStateType, TuringTransitionMultRibbons}};
 
@@ -16,9 +15,9 @@ pub enum Mode {
 
 pub struct SavedState {
     /// The index of the saved state
-    saved_state_index : u8,
+    saved_state_index : usize,
     /// A stack containing all the indexes of the transitions left to take 
-    next_transitions : VecDeque<u8>,
+    next_transitions : VecDeque<usize>,
     /// The value of the [TuringReadRibbon] when it was saved
     saved_read_ribbon : TuringReadRibbon,
     /// The value of the [TuringWriteRibbon] when they were saved
@@ -60,13 +59,14 @@ struct IterationData {
     /// The current word to read
     word: String,
     /// The index of the current state of the turing machine
-    state_pointer: u8,
+    state_pointer: usize,
     /// Represents if the structs was just initialised or reset 
     is_first_state: bool,
     /// A stack representing the memory of the exploration of this turing machine.
     memory: VecDeque<SavedState>,
     /// Represents the mode used for the execution of this turing machine
-    mode: Mode
+    mode: Mode,
+    backtracked_state: Option<SavedState>
 }
 
 impl<'a> TuringMachines<'a> 
@@ -74,6 +74,9 @@ impl<'a> TuringMachines<'a>
     /// Create a new [TuringIteratorE::TuringMachineWithRef] for a given word.
     pub fn new_with_ref(mt: &'a TuringMachineGraph, word: String, mode: Mode) -> Result<Self, TuringError>
     {
+        if word.is_empty() {
+            return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
+        }
         let mut s = 
         TuringMachines::TuringMachineWithRef
         {
@@ -93,7 +96,8 @@ impl<'a> TuringMachines<'a>
                 word: word.clone(),
                 is_first_state: true,
                 memory: VecDeque::new(),
-                mode
+                mode,
+                backtracked_state: None
 
             }
         };
@@ -127,7 +131,8 @@ impl<'a> TuringMachines<'a>
                 word: word.clone(),
                 is_first_state: true,
                 memory: VecDeque::new(),
-                mode
+                mode,
+                backtracked_state: None
             },
             graph: mt
         };
@@ -186,7 +191,7 @@ impl TuringMachines<'_> {
     }
     
     /// Gets the current state pointer of this struct.
-    fn get_state_pointer(&self) -> u8 {
+    fn get_state_pointer(&self) -> usize {
         match self {
             TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.state_pointer,
         }
@@ -194,7 +199,7 @@ impl TuringMachines<'_> {
     }
     
     /// Sets a new value to the state pointer.
-    fn set_state_pointer(&mut self, new_val: u8) {
+    fn set_state_pointer(&mut self, new_val: usize) {
         match self {
             TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.state_pointer = new_val,
         }
@@ -282,14 +287,13 @@ pub struct TuringExecutionStep
     /// A clone representing the current state of the writting ribbons after taking that transition.
     pub write_ribbons: Vec<TuringWriteRibbon>,
     /// Is set to true when this step resulted directly from a backtrack compared to the previous state.
-    pub backtracked : Option<u8>,
+    pub backtracked : Option<usize>,
 }
 
 
 impl<'a> Iterator for TuringMachines<'_>
 {
     type Item = TuringExecutionStep;
-    
 
     fn next(&mut self) -> Option<Self::Item> 
     {
@@ -316,9 +320,7 @@ impl<'a> Iterator for TuringMachines<'_>
             return None;
         }
 
-
         // If it's rejecting or normal
-
 
         // If one of the transition condition is true,
         // Get all current char read by **all** ribbons
@@ -327,11 +329,9 @@ impl<'a> Iterator for TuringMachines<'_>
             char_vec.push(ribbon.read_curr_char());
         }
         
-        println!("Currently reading : {:?}", char_vec);
         let mut next_transitions = VecDeque::from(curr_state.get_valid_transitions_indexes(&char_vec));
-        println!("transitions possible : {:?}", next_transitions);
     
-        let mut transition_index_taken = 0 as u8;
+        let mut transition_index_taken = 0;
         
     
         let mut backtracked = None;
@@ -344,9 +344,7 @@ impl<'a> Iterator for TuringMachines<'_>
                 return None;
             }
 
-
             // While the memory still has a state saved
-
             while !self.get_memory_mut().is_empty() {
                 {
                     let saved_state = self.get_memory_mut().front_mut().unwrap();
@@ -360,7 +358,6 @@ impl<'a> Iterator for TuringMachines<'_>
                         // If no transition is left to take for this state, we move on to the next one
                         continue;
                     }
-                    println!("Saved state after next transitions : {:?}", saved_state.next_transitions);
                 }
                 // obliged to clone because of the mutable nature
                 let saved_state = self.get_memory_mut().front().unwrap().clone();
@@ -380,7 +377,6 @@ impl<'a> Iterator for TuringMachines<'_>
         // If there are more than 1 transition possible at a time, it means we are in a non deterministic situation.
         // We must save the current state in order to explore all path.
         else if next_transitions.len() >= 2 {
-            // FIXME there is a problem with the logic of giving a transition
             // take the first transition, save the rest
             transition_index_taken = next_transitions.pop_front().unwrap();
             println!("transition taken : {}", transition_index_taken);
@@ -423,8 +419,6 @@ impl<'a> Iterator for TuringMachines<'_>
             backtracked,
         })
     }
-
-
 }
 
 

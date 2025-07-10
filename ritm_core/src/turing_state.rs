@@ -90,7 +90,7 @@ impl TuringState {
     }
 
     /// Removes the transition ***at*** the given index and returns it if it was correctly returned
-    pub fn remove_transition_with_index(&mut self, transition_index: u8) -> Result<TuringTransitionMultRibbons, TuringError>
+    pub fn remove_transition_with_index(&mut self, transition_index: usize) -> Result<TuringTransitionMultRibbons, TuringError>
     {
         if self.transitions.len() <= transition_index as usize {
             return Err(TuringError::OutOfRangeTransitionError { accessed_index: transition_index as usize, states_len: self.transitions.len() });
@@ -116,7 +116,7 @@ impl TuringState {
     }
 
     /// Removes all the transitions from this state ***that are pointing*** at the given index
-    pub fn remove_transitions(&mut self, to_index: u8)
+    pub fn remove_transitions(&mut self, to_index: usize)
     {
         let mut transitions = vec!();
         for t in &self.transitions 
@@ -134,7 +134,7 @@ impl TuringState {
     }
 
     /// Updates the transition index to a new one
-    pub fn update_transitions(&mut self, to_index_curr: u8, to_index_new: u8)
+    pub fn update_transitions(&mut self, to_index_curr: usize, to_index_new: usize)
     {
         for t in &mut self.transitions
         {
@@ -161,20 +161,20 @@ impl TuringState {
     }
 
     /// Checks for all the indexes of the transitions that can be taken when reading a char in this state
-    pub fn get_valid_transitions_indexes(&self, chars_read: &Vec<char>) -> Vec<u8>
+    pub fn get_valid_transitions_indexes(&self, chars_read: &Vec<char>) -> Vec<usize>
     {
         let mut res = vec![];
         for i in 0..self.transitions.len() {
             let t = &self.transitions[i];
             if chars_read.eq(&t.chars_read) {
-                res.push(i as u8);
+                res.push(i as usize);
             }
         }
         return res;
     }
 
     /// Gets all the transitions that can be taken to reach the given index.
-    pub fn get_transitions_to(&self, to_index: u8) -> Vec<&TuringTransitionMultRibbons> {
+    pub fn get_transitions_to(&self, to_index: usize) -> Vec<&TuringTransitionMultRibbons> {
         let mut res = vec!();
 
         for t in &self.transitions {
@@ -282,7 +282,7 @@ pub struct TuringTransitionMultRibbons {
     /// The character to replace the character just read : `(b_0, D_0),..., (b_{n-1}, D_{n-1})`
     pub chars_write: Vec<(char, TuringDirection)>,
     /// The index of the state to go to after passing through this state.
-    pub index_to_state: Option<u8>,
+    pub index_to_state: Option<usize>,
 }
 
 impl TuringTransitionMultRibbons {

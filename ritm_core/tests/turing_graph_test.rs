@@ -6,9 +6,9 @@ fn create_graph_test()
 {
     let graph = TuringMachineGraph::new(2).unwrap();
     
-    assert_eq!(*graph.name_index_hashmap.get("i").unwrap(), 0 as u8);
-    assert_eq!(*graph.name_index_hashmap.get("a").unwrap(), 1 as u8);
-    assert_eq!(*graph.name_index_hashmap.get("r").unwrap(), 2 as u8);
+    assert_eq!(*graph.name_index_hashmap.get("i").unwrap(), 0);
+    assert_eq!(*graph.name_index_hashmap.get("a").unwrap(), 1);
+    assert_eq!(*graph.name_index_hashmap.get("r").unwrap(), 2);
 
     expect_illegal_action_error(TuringMachineGraph::new(0));
     // Check the final states
@@ -206,7 +206,7 @@ fn delete_node()
 
     // Important to also make sure that the transition also changed 
     
-    assert_eq!(graph.get_transitions_to(ind_q, ind_p).unwrap(), vec!(&t3));
+    assert_eq!(graph.get_transitions_by_index(ind_q, ind_p).unwrap(), vec!(&t3));
 }
 
 
