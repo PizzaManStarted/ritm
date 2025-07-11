@@ -24,9 +24,9 @@ fn delete_init_nodes_test()
 {
     let mut graph = TuringMachineGraph::new(2).unwrap();
        
-    expect_illegal_action_error(graph.remove_state(&"i".to_string()));
-    expect_illegal_action_error(graph.remove_state(&"a".to_string()));
-    expect_illegal_action_error(graph.remove_state(&"r".to_string()));
+    expect_illegal_action_error(graph.remove_state_with_name(&"i".to_string()));
+    expect_illegal_action_error(graph.remove_state_with_name(&"a".to_string()));
+    expect_illegal_action_error(graph.remove_state_with_name(&"r".to_string()));
 }
 
 #[test]
@@ -178,9 +178,9 @@ fn delete_node()
     graph.append_rule_state_by_name(&String::from("q"), t3.clone(), &String::from("t")).unwrap(); // q -> t
     graph.append_rule_state_by_name(&String::from("q"), t3.clone(), &String::from("p")).unwrap(); // q -> p
 
-    expect_unk_name_error(graph.remove_state(&String::from("o")));
+    expect_unk_name_error(graph.remove_state_with_name(&String::from("o")));
     // remove 't'
-    graph.remove_state(&String::from("t")).unwrap();
+    graph.remove_state_with_name(&String::from("t")).unwrap();
 
     // check that it was removed
     expect_unk_name_error(graph.get_state_from_name(&String::from("t")));
@@ -209,12 +209,14 @@ fn delete_node()
     assert_eq!(graph.get_transitions_by_index(ind_q, ind_p).unwrap(), vec!(&t3));
 }
 
+// TODO : add test for removing states with indexes 
+
 
 fn expect_illegal_action_error<O>(res : Result<O, TuringError>)
 {
     if let Err(e) = res {
         match e {
-            TuringError::IllegalActionError { cause } => (),
+            TuringError::IllegalActionError { cause:_ } => (),
             _ => panic!("Wrong error was returned"),
         }
     }
@@ -228,7 +230,7 @@ fn expect_unk_name_error<O>(res : Result<O, TuringError>)
 {
     if let Err(e) = res {
         match e {
-            TuringError::UnknownStateError { state_name } => (),
+            TuringError::UnknownStateError { state_name:_ } => (),
             _ => panic!("Wrong error was returned"),
         }
     }

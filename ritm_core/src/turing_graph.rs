@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::{Debug, Display}, usize};
+use std::{collections::HashMap, fmt::{Debug, Display}, os::linux::raw::stat, usize};
 use crate::{turing_errors::TuringError, turing_state::{TuringStateType, TuringState, TuringTransitionMultRibbons}};
 
 
@@ -319,8 +319,8 @@ impl TuringMachineGraph {
         return Ok((n1_state, *n2_index));
     }
 
-    /// Removes a state and **all** mentions of it in **all** transitions of **all** the other states of the TuringMachine
-    pub fn remove_state(&mut self, state_name: &String) -> Result<(), TuringError>
+    /// Removes a state and **all** mentions of it in **all** transitions of **all** the other states of the TuringMachine using its name.
+    pub fn remove_state_with_name(&mut self, state_name: &String) -> Result<(), TuringError>
     {
         // First keep the index for later
         let index = self.name_index_hashmap.get(state_name);
@@ -328,10 +328,25 @@ impl TuringMachineGraph {
             return Err(TuringError::UnknownStateError { state_name: state_name.to_string() });
         }
         let index = *index.unwrap();
+        // Use that index to remove that state
+        self.remove_state_with_index(index)
+    }
+
+
+    /// Removes a state and **all** mentions of it in **all** transitions of **all** the other states of the TuringMachine using its index.
+    fn remove_state_with_index(&mut self, state_index: usize) -> Result<(), TuringError>
+    {
         // if the node is one of the 3 initial nodes, throw an error
-        if index <= 2  {
-            return Err(TuringError::IllegalActionError { cause: format!("Tried to delete the state {state_name}.") });
+        if state_index <= 2  {
+            return Err(TuringError::IllegalActionError { cause: format!("Tried to delete the state {}.", self.get_state(state_index).unwrap().name) });
         }
+
+        // get state name
+        let state_name = self.get_state(state_index).cloned();
+        if let Err(e) = state_name {
+            return Err(e);
+        }
+        let state_name = &state_name.unwrap().name;
         
         /* Remove references to this state from *all* other nodes transitions */
         let mut states = vec!();
@@ -346,21 +361,21 @@ impl TuringMachineGraph {
         let mut to_notify_neigh = vec!();
 
         // Remove the node
-        self.states.remove(index.into()); // this means that other indexes might have shifted too
+        self.states.remove(state_index.into()); // this means that other indexes might have shifted too
         // Collect all values that are gonna change
 
         let mut prev_val;
         for name in &states {
             prev_val = *self.name_index_hashmap.get_mut(name).unwrap();
             // If this node had a bigger index, we lower it by one in the hashmap (it moved in the `states` vector)
-            if prev_val >= index {
+            if prev_val >= state_index {
                 *self.name_index_hashmap.get_mut(name).unwrap() -= 1;
                 // Save this state for later use
                 to_notify_neigh.push(prev_val);
             }
 
             // Remove all transitions to the removed node
-            if let Err(e) = self.remove_transitions_with_index(&name, index) {
+            if let Err(e) = self.remove_transitions_with_index(&name, state_index) {
                 return Err(e);
             }
         }
