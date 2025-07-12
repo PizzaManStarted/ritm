@@ -1,6 +1,5 @@
-use std::{collections::{vec_deque, VecDeque}, fmt::{Debug, Display}, os::linux::raw::stat, path::Iter};
+use std::{collections::VecDeque, fmt::{Debug, Display}};
 
-use rand::{rng, Rng};
 
 use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringStateType, TuringTransitionMultRibbons}};
 
@@ -16,9 +15,9 @@ pub enum Mode {
 
 pub struct SavedState {
     /// The index of the saved state
-    saved_state_index : u8,
+    saved_state_index : usize,
     /// A stack containing all the indexes of the transitions left to take 
-    next_transitions : VecDeque<u8>,
+    next_transitions : VecDeque<usize>,
     /// The value of the [TuringReadRibbon] when it was saved
     saved_read_ribbon : TuringReadRibbon,
     /// The value of the [TuringWriteRibbon] when they were saved
@@ -60,13 +59,14 @@ struct IterationData {
     /// The current word to read
     word: String,
     /// The index of the current state of the turing machine
-    state_pointer: u8,
+    state_pointer: usize,
     /// Represents if the structs was just initialised or reset 
     is_first_state: bool,
     /// A stack representing the memory of the exploration of this turing machine.
     memory: VecDeque<SavedState>,
     /// Represents the mode used for the execution of this turing machine
-    mode: Mode
+    mode: Mode,
+    backtracked_info: Option<usize>
 }
 
 impl<'a> TuringMachines<'a> 
@@ -74,6 +74,9 @@ impl<'a> TuringMachines<'a>
     /// Create a new [TuringIteratorE::TuringMachineWithRef] for a given word.
     pub fn new_with_ref(mt: &'a TuringMachineGraph, word: String, mode: Mode) -> Result<Self, TuringError>
     {
+        if word.is_empty() {
+            return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
+        }
         let mut s = 
         TuringMachines::TuringMachineWithRef
         {
@@ -93,7 +96,8 @@ impl<'a> TuringMachines<'a>
                 word: word.clone(),
                 is_first_state: true,
                 memory: VecDeque::new(),
-                mode
+                mode,
+                backtracked_info: None
 
             }
         };
@@ -127,7 +131,8 @@ impl<'a> TuringMachines<'a>
                 word: word.clone(),
                 is_first_state: true,
                 memory: VecDeque::new(),
-                mode
+                mode,
+                backtracked_info: None
             },
             graph: mt
         };
@@ -186,7 +191,7 @@ impl TuringMachines<'_> {
     }
     
     /// Gets the current state pointer of this struct.
-    fn get_state_pointer(&self) -> u8 {
+    fn get_state_pointer(&self) -> usize {
         match self {
             TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.state_pointer,
         }
@@ -194,7 +199,7 @@ impl TuringMachines<'_> {
     }
     
     /// Sets a new value to the state pointer.
-    fn set_state_pointer(&mut self, new_val: u8) {
+    fn set_state_pointer(&mut self, new_val: usize) {
         match self {
             TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.state_pointer = new_val,
         }
@@ -266,139 +271,169 @@ impl TuringMachines<'_> {
             TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => &mut data.memory,
         }
     }
+
+    fn get_backtracking_info(&self) -> Option<usize> {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.backtracked_info,
+        }
+    }
+    fn set_backtracking_info(&mut self, val: Option<usize>) {
+        match self {
+            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.backtracked_info = val,
+        }
+    }
 }
 
 
-
-pub struct TuringExecutionStep
+pub enum TuringExecutionSteps
 {
-    pub reached_state : TuringState,
-    /// The index of the transition taken from the current state to the next one.
-    pub transition_index_taken : Option<usize>,
-    /// A clone of the transition that was just taken
-    pub transition_taken : Option<TuringTransitionMultRibbons>,
-    /// A clone representing the current state of the reading ribbon after taking that transition.
-    pub read_ribbon: TuringReadRibbon,
-    /// A clone representing the current state of the writting ribbons after taking that transition.
-    pub write_ribbons: Vec<TuringWriteRibbon>,
-    /// Is set to true when this step resulted directly from a backtrack compared to the previous state.
-    pub backtracked : Option<u8>,
+    FirstIteration {
+        /// A clone of the initial state
+        init_state: TuringState,
+        /// A clone representing the initial state of the reading ribbon.
+        init_read_ribbon: TuringReadRibbon,
+        /// A clone representing the initial state of the writting ribbons.
+        init_write_ribbons: Vec<TuringWriteRibbon>,
+    },
+    TransitionTaken
+    {
+        /// A clone of the state that was just left
+        previous_state : TuringState,
+        /// A clone of the state that was just reached
+        reached_state : TuringState,
+        /// The index of the transition taken from the current state to the next one.
+        transition_index_taken : usize,
+        /// A clone of the transition that was just taken
+        transition_taken : TuringTransitionMultRibbons,
+        /// A clone representing the current state of the reading ribbon after taking that transition.
+        read_ribbon: TuringReadRibbon,
+        /// A clone representing the current state of the writting ribbons after taking that transition.
+        write_ribbons: Vec<TuringWriteRibbon>,
+    },
+    Backtracked 
+    {
+        /// A clone of the state that was just left
+        previous_state : TuringState,
+        /// A clone of the state that was backtracked to
+        reached_state : TuringState,
+        /// A clone representing the current state of the reading ribbon after backtracking.
+        read_ribbon: TuringReadRibbon,
+        /// A clone representing the current state of the writting ribbons after backtracking.
+        write_ribbons: Vec<TuringWriteRibbon>,
+    }
 }
+
+
 
 
 impl<'a> Iterator for TuringMachines<'_>
 {
-    type Item = TuringExecutionStep;
-    
+    type Item = TuringExecutionSteps;
 
     fn next(&mut self) -> Option<Self::Item> 
     {
         // Fetch the current state
         let curr_state =  self.get_turing_machine_graph().get_state(self.get_state_pointer()).unwrap().clone();
 
-        if self.is_first_iteration() {
-            self.set_first_iteration(false);
+        let mut transition_index_taken = 0;
 
-            return Some(TuringExecutionStep {
-                reached_state: curr_state,
-                transition_index_taken: None,
-                transition_taken: None,
-                read_ribbon: self.get_reading_ribbon().clone(),
-                write_ribbons: self.get_writting_ribbons().clone(),
-                backtracked: None
-            });
+        // If this iteration is a follow up to a backtracking
+        // we simply take the index found at the previous iteration
+        if let Some(bracktrack_transition_index) = self.get_backtracking_info() {
+            self.set_backtracking_info(None);
+            transition_index_taken = bracktrack_transition_index
         }
+        else{
+            if self.is_first_iteration() {
+                self.set_first_iteration(false);
 
-        /* Checks if the state is accepting */
-        if let TuringStateType::Accepting = curr_state.state_type
-        {
-            // The iteration is over
-            return None;
-        }
+                return Some(TuringExecutionSteps::FirstIteration { init_state: curr_state, 
+                    init_read_ribbon: self.get_reading_ribbon().clone(), 
+                    init_write_ribbons: self.get_writting_ribbons().clone() });
+            }
 
-
-        // If it's rejecting or normal
-
-
-        // If one of the transition condition is true,
-        // Get all current char read by **all** ribbons
-        let mut char_vec = vec!(self.get_reading_ribbon().read_curr_char().clone());
-        for ribbon in self.get_writting_ribbons() {
-            char_vec.push(ribbon.read_curr_char());
-        }
-        
-        println!("Currently reading : {:?}", char_vec);
-        let mut next_transitions = VecDeque::from(curr_state.get_valid_transitions_indexes(&char_vec));
-        println!("transitions possible : {:?}", next_transitions);
-    
-        let mut transition_index_taken = 0 as u8;
-        
-    
-        let mut backtracked = None;
-        // If no transitions can be provided or the current state is rejecting,
-        // we reached a *dead end*, go back in the exploration if possible
-        if next_transitions.is_empty() || curr_state.state_type == TuringStateType::Rejecting
-        {
-            // If there are no saved state, this means the backtracking is over, and the execution too
-            if self.get_memory_mut().is_empty() {
+            /* Checks if the state is accepting */
+            if let TuringStateType::Accepting = curr_state.state_type
+            {
+                // The iteration is over
                 return None;
             }
 
+            // If it's rejecting or normal
 
-            // While the memory still has a state saved
-
-            while !self.get_memory_mut().is_empty() {
-                {
-                    let saved_state = self.get_memory_mut().front_mut().unwrap();
-                    
-                    
-                    // Get the next transition to take
-                    if let Some(t_i) = saved_state.next_transitions.pop_front() {
-                        transition_index_taken = t_i;
-                    }
-                    else {
-                        // If no transition is left to take for this state, we move on to the next one
-                        continue;
-                    }
-                    println!("Saved state after next transitions : {:?}", saved_state.next_transitions);
+            // If one of the transition condition is true,
+            // Get all current char read by **all** ribbons
+            let mut char_vec = vec!(self.get_reading_ribbon().read_curr_char().clone());
+            for ribbon in self.get_writting_ribbons() {
+                char_vec.push(ribbon.read_curr_char());
+            }
+            
+            let mut next_transitions = VecDeque::from(curr_state.get_valid_transitions_indexes(&char_vec));
+        
+            // If no transitions can be provided or the current state is rejecting,
+            // we reached a *dead end*, go back in the exploration if possible
+            if next_transitions.is_empty() || curr_state.state_type == TuringStateType::Rejecting
+            {
+                // If there are no saved state, this means the backtracking is over, and the execution too
+                if self.get_memory_mut().is_empty() {
+                    return None;
                 }
-                // obliged to clone because of the mutable nature
-                let saved_state = self.get_memory_mut().front().unwrap().clone();
-                
-                // Go back to the state
-                self.set_state_pointer(saved_state.saved_state_index);
-                
-                // Change the context for the reading and writing ribbons
-                self.set_reading_ribbon(saved_state.saved_read_ribbon);
-                self.set_writting_ribbons(saved_state.saved_write_ribbons);
-                
-                backtracked = Some(saved_state.saved_state_index);
-                break;
+
+                // While the memory still has a state saved
+                while !self.get_memory_mut().is_empty() {
+                    {
+                        let saved_state = self.get_memory_mut().front_mut().unwrap();
+                        
+                        
+                        // Get the next transition to take
+                        if let Some(t_i) = saved_state.next_transitions.pop_front() {
+                            transition_index_taken = t_i;
+                        }
+                        else {
+                            // If no transition is left to take for this state, we move on to the next one
+                            continue;
+                        }
+                    }
+                    // obliged to clone because of the mutable nature
+                    let saved_state = self.get_memory_mut().front().unwrap().clone();
+                    
+                    // Go back to the state
+                    self.set_state_pointer(saved_state.saved_state_index);
+                    
+                    // Change the context for the reading and writing ribbons
+                    self.set_reading_ribbon(saved_state.saved_read_ribbon);
+                    self.set_writting_ribbons(saved_state.saved_write_ribbons);
+                    // Save the index of the transition found for the next call to `.next()`
+                    self.set_backtracking_info(Some(transition_index_taken));
+
+                    // Return backtracking info
+                    return Some(TuringExecutionSteps::Backtracked { 
+                        previous_state: curr_state, 
+                        reached_state: self.get_turing_machine_graph().get_state(saved_state.saved_state_index).unwrap().clone(),
+                        read_ribbon: self.get_reading_ribbon().clone(),
+                        write_ribbons: self.get_writting_ribbons().clone()  });
+                }
+            }
+        
+            // If there are more than 1 transition possible at a time, it means we are in a non deterministic situation.
+            // We must save the current state in order to explore all path.
+            else if next_transitions.len() >= 2 {
+                // take the first transition, save the rest
+                transition_index_taken = next_transitions.pop_front().unwrap();
+
+                let to_save = SavedState { saved_state_index:self.get_state_pointer(), 
+                                                        next_transitions: next_transitions, 
+                                                        saved_read_ribbon: self.get_reading_ribbon().clone(), 
+                                                        saved_write_ribbons: self.get_writting_ribbons().clone() };
+
+                self.push_to_memory_stack(to_save);
+            }
+            else if next_transitions.len() == 1 {
+                transition_index_taken = next_transitions[0];
             }
         }
-    
-        // If there are more than 1 transition possible at a time, it means we are in a non deterministic situation.
-        // We must save the current state in order to explore all path.
-        else if next_transitions.len() >= 2 {
-            // FIXME there is a problem with the logic of giving a transition
-            // take the first transition, save the rest
-            transition_index_taken = next_transitions.pop_front().unwrap();
-            println!("transition taken : {}", transition_index_taken);
-
-            let to_save = SavedState { saved_state_index:self.get_state_pointer(), 
-                                                    next_transitions: next_transitions, 
-                                                    saved_read_ribbon: self.get_reading_ribbon().clone(), 
-                                                    saved_write_ribbons: self.get_writting_ribbons().clone() };
-
-            self.push_to_memory_stack(to_save);
-        }
-        else if next_transitions.len() == 1 {
-            transition_index_taken = next_transitions[0];
-        }
-
         let transition = self.get_turing_machine_graph().get_state(self.get_state_pointer()).unwrap().transitions[transition_index_taken as usize].clone();
-        println!("Took : {}", transition);
-        
+
         // Apply the transition
         // to the read ribbons
         self.get_reading_ribbon().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
@@ -413,40 +448,52 @@ impl<'a> Iterator for TuringMachines<'_>
         // Move to the next state
         self.set_state_pointer(transition.index_to_state.unwrap());
         
-        Some(TuringExecutionStep
+        Some(TuringExecutionSteps::TransitionTaken
         {
+            previous_state: curr_state.clone(),
             reached_state: self.get_turing_machine_graph().get_state(self.get_state_pointer()).unwrap().clone(),
-            transition_index_taken : Some(transition_index_taken as usize),
-            transition_taken: Some(transition.clone()),
+            transition_index_taken : transition_index_taken as usize,
+            transition_taken: transition.clone(),
             read_ribbon: self.get_reading_ribbon().clone(),
             write_ribbons: self.get_writting_ribbons().clone(),
-            backtracked,
         })
     }
-
-
 }
 
 
-impl<'a> Display for TuringExecutionStep{
+impl<'a> Display for TuringExecutionSteps{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
     {
-        let mut write_str_rib = String::from(format!("{}",self.write_ribbons[0]));
-        for i in 1..self.write_ribbons.len() 
-        {
-            write_str_rib.push_str(format!("\n{}", self.write_ribbons[i]).as_str());
-        }
-        let trans_taken = {
-            if let Some(val) = &self.transition_taken {
-                val.to_string()
-            }
-            else {
-                String::from("None")
-            }
-        };
+        match self {
+            TuringExecutionSteps::FirstIteration { init_state, init_read_ribbon, init_write_ribbons } => {
+                let mut write_str_rib = String::from(format!("{}", init_write_ribbons[0]));
+                for i in 1..init_write_ribbons.len() 
+                {
+                    write_str_rib.push_str(format!("\n{}", init_write_ribbons[i]).as_str());
+                }
 
-        write!(f, "* Current state : {}\n* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}\nBacktracked ? {:?}", self.reached_state, trans_taken, self.read_ribbon, write_str_rib, self.backtracked)
+                write!(f, "* Initial state : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", init_state, init_read_ribbon, write_str_rib)
+            },
+            TuringExecutionSteps::TransitionTaken { previous_state, reached_state, transition_index_taken:_, transition_taken, read_ribbon, write_ribbons } => {
+                    let mut write_str_rib = String::from(format!("{}", write_ribbons[0]));
+                    for i in 1..write_ribbons.len() 
+                    {
+                        write_str_rib.push_str(format!("\n{}", write_ribbons[i]).as_str());
+                    }
+
+                    write!(f, "* Left state : {}\n* Current state : {}\n* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", previous_state, reached_state, transition_taken, read_ribbon, write_str_rib)
+            },
+            TuringExecutionSteps::Backtracked { previous_state, reached_state, read_ribbon, write_ribbons } => {
+                let mut write_str_rib = String::from(format!("{}", write_ribbons[0]));
+                for i in 1..write_ribbons.len() 
+                {
+                    write_str_rib.push_str(format!("\n{}", write_ribbons[i]).as_str());
+                }
+
+                write!(f, "* Backtracked from : {}\n* To  : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", previous_state, reached_state, read_ribbon, write_str_rib)
+            },
+        }
+        
     }
 }
-
 
