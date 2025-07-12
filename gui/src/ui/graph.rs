@@ -23,7 +23,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     let ui_rect = ui.available_rect_before_wrap();
 
     // Compute the force applied on every node
-    // apply_force(app);
+    apply_force(app);
 
     let scene_response = Frame::new()
         .fill(app.theme.color5)
@@ -68,7 +68,9 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     edit::show(app, ui, ui_rect);
 
     // Repaint the canvas
-    ui.ctx().request_repaint();
+    if !app.event.is_stable {
+        ui.ctx().request_repaint();
+    }
 }
 
 
@@ -76,7 +78,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
 ///
 /// If 2 nodes are too close, they repulse each other to reach a distance L
 /// If 2 nodes are linked by a transition, they attract each other to reach a distance L
-pub fn apply_force(app: &mut App) -> bool {
+pub fn apply_force(app: &mut App) {
     let mut forces: HashMap<u8, Vec2> = HashMap::new();
 
     // register the max force applied on a state to check if the system is stable
@@ -95,11 +97,11 @@ pub fn apply_force(app: &mut App) -> bool {
             // true if there is a transition between the two states
             let are_adjacent = app
                 .turing
-                .get_transition_index(*i, *j)
+                .get_transitions_to(*i, *j)
                 .is_ok_and(|v| !v.is_empty())
                 || app
                     .turing
-                    .get_transition_index(*j, *i)
+                    .get_transitions_to(*j, *i)
                     .is_ok_and(|v| !v.is_empty());
 
             let distance = utils::distance(state_1.position, state_2.position);
@@ -117,8 +119,8 @@ pub fn apply_force(app: &mut App) -> bool {
         }
 
         // save the highest force applied
-        if force > max_force_applied {
-            max_force_applied = force;
+        if force.abs() > max_force_applied {
+            max_force_applied = force.abs();
         }
 
         // store the compute force to not alter the current physical state
@@ -130,5 +132,5 @@ pub fn apply_force(app: &mut App) -> bool {
         state.position += *forces.get(&i).unwrap();
     }
 
-    max_force_applied < Constant::STABILITY_TRESHOLD
+    app.event.is_stable = max_force_applied < Constant::STABILITY_TRESHOLD;
 }

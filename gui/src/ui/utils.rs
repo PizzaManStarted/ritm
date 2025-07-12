@@ -11,13 +11,21 @@ pub fn distance(p1: Pos2, p2: Pos2) -> f32 {
 /// Compute the repulsion force of the node
 pub fn rep_force(p1: Pos2, p2: Pos2) -> f32 {
     let force = Constant::CREP / distance(p1, p2).powi(2);
-    f32::max(-Constant::MAX_FORCE, f32::min(Constant::MAX_FORCE, force))
+    if force > Constant::MAX_FORCE {
+        Constant::MAX_FORCE * force.signum()
+    } else {
+        force
+    }
 }
 
 /// Compute the attraction force of the node
 pub fn attract_force(p1: Pos2, p2: Pos2) -> f32 {
     let force = Constant::CSPRING * (distance(p1, p2) / (Constant::L)).log(10.0);
-    f32::max(-Constant::MAX_FORCE, f32::min(Constant::MAX_FORCE, force))
+    if force > Constant::MAX_FORCE {
+        Constant::MAX_FORCE * force.signum()
+    } else {
+        force
+    }
 }
 
 /// Compute the direction between 2 points
@@ -51,23 +59,14 @@ pub fn text_size(ui: &Ui, fond_id: FontId, text: &str) -> Vec2 {
     vec2(rect.width(), rect.height())
 }
 
-/// Access to the different font used in the application
-pub struct Font;
+pub fn get_heigth(ui: &Ui, fond_id: &FontId) -> f32 {
+    ui.fonts(|f| {
+        f.row_height(fond_id)
+    })
+}
 
-/// Font are accessed by function
-/// 
-/// To add one, first load it in the app.rs
-impl Font {
-
-    const BIG_SIZE: f32 = 20.0;
-    const MEDIUM_SIZE: f32 = 16.0;
-    const SMALL_SIZE: f32 = 12.0;
-
-    /// The default font
-    pub fn default() -> FontId {
-        FontId {
-            family: FontFamily::Name("RobotoMono-regular".into()),
-            size: Font::MEDIUM_SIZE
-        }
-    }
+pub fn get_width(ui: &Ui, fond_id: &FontId) -> f32 {
+    ui.fonts(|f| {
+        f.glyph_width(fond_id, 'M')
+    })
 }

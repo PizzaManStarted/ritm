@@ -1,20 +1,20 @@
 
 
-use std::collections::{BTreeMap, HashMap};
+use std::{collections::{BTreeMap, HashMap}, process::exit};
 
-use egui::{Color32, FontData, FontDefinitions, FontFamily, Pos2, Rect};
+use egui::{FontData, FontDefinitions, FontFamily, Pos2, Rect};
 use egui_extras::install_image_loaders;
-use ritm_core::turing_machine::{TuringExecutionStep, TuringMachine};
+use ritm_core::{parser::parse_turing_machine_file, turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringExecutionStep, TuringMachines}, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
 
 use crate::{turing::{State, Transition}, ui::{self, theme::{Theme}}};
 
 /// The only structure that is persistent each redraw of the application
 pub struct App {
     /// The turing machine itself
-    pub turing: TuringMachine,
+    pub turing: TuringMachineGraph,
 
     /// Current step of the turing machine or None if no step
-    pub step: Option<TuringExecutionStep>,
+    pub step: TuringExecutionStep,
 
     /// User input for the turing machine
     pub input: String,
@@ -38,7 +38,7 @@ pub struct App {
     pub selected_state: Option<u8>,
 
     /// Selected transition
-    pub selected_transition: Option<u8>,
+    pub selected_transition: Option<(u8, u8)>,
 }
 
 
@@ -67,12 +67,12 @@ pub struct Event {
 impl Default for App {
     fn default() -> Self {
 
-        let mut turing = TuringMachine::new(2);
-        turing.add_state(&"test".to_string());
+        let turing = parse_turing_machine_file("../ritm_core/resources/turing2.tm".to_string()).unwrap();
+        let step = TuringMachines::new_with_ref(&turing, "".to_string(), Mode::StopFirstReject).unwrap().next().unwrap();
 
         let mut sf = Self {
             turing: turing,
-            step: None,
+            step: step,
             input: "".to_string(),
             graph_rect: Rect::ZERO,
             states: HashMap::new(),
@@ -131,6 +131,32 @@ impl App {
         });
     }
 
+    pub fn remove_state(&mut self) {
+        for (_, state) in self.states.iter_mut() {
+            state.transitions.retain(|t| t.target_id != self.selected_state.unwrap());
+        }
+        self.states.remove(&self.selected_state.unwrap());
+
+        self.selected_state = None;
+    }
+
+    pub fn add_transition(&mut self, target: u8) {
+
+        let transition = TuringTransitionMultRibbons::new(
+            vec!['ç'; self.turing.get_k() as usize],
+            TuringDirection::None,
+            vec![('ç', TuringDirection::None); self.turing.get_k() as usize]
+        );
+
+        let transition_rule = transition.to_string();
+        self.turing.append_rule_state(self.selected_state.unwrap(), transition, target).ok();
+
+        let source = State::get_mut(self, self.selected_state.unwrap());
+        let transition =  Transition::new(transition_rule, source.transitions.len() as u8, source.id, target);
+        source.transitions.push(transition);
+        self.event.is_adding_transition = false;
+    }
+
 
     /// Create a graphical representation of a turing machine by copying each states and transitions information into GUI-oriented struct
     pub fn turing_to_graph(&mut self) {
@@ -139,12 +165,12 @@ impl App {
 
         for (name, index) in self.turing.name_index_hashmap.iter() {
 
-            let transitions: Vec<Transition> = self.turing.get_state(*index).unwrap().transitions.iter().enumerate().map(|(i, f)| Transition {
-                text: f.to_string(),
-                id: i as u8,
-                parent_id: *index,
-                target_id: f.index_to_state 
-            }).collect();
+            let transitions: Vec<Transition> = self.turing.get_state(*index).unwrap().transitions.iter().enumerate().map(|(i, f)| Transition::new(
+                f.to_string(),
+                i as u8,
+                *index,
+                f.index_to_state.unwrap() 
+            )).collect();
 
             self.states.insert(
                 *index,

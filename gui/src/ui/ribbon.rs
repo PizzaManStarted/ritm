@@ -1,13 +1,16 @@
+use std::i32;
+
 use egui::{
     Color32, Frame, Label, Margin, RichText, ScrollArea, Sense, Stroke, Ui, epaint::PathShape,
     scroll_area::ScrollBarVisibility,
 };
+use ritm_core::turing_ribbon::TuringRibbon;
 
 use crate::App;
 
 pub fn show(app: &mut App, ui: &mut Ui) {
     // TODO replace by TuringMachine value
-    let ribbon_count = 2;
+    let ribbon_count = app.turing.get_k();
 
     // Ribbons frame
     Frame::new()
@@ -32,12 +35,12 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                 .horizontal_scroll_offset(55.0 + (ribbon_size - ui.available_width()) / 2.0)// this offset center the symbol
                 .show(ui, |ui| {
                     // Draw each ribbon
-                    for _ in 0..ribbon_count {
+                    for i in 0..ribbon_count {
                         // Get the top of the current ribbon to draw the arrow
                         let top = ui.available_rect_before_wrap().top() - 2.0;
 
                         // Draw the ribbon
-                        ribbon(app, ui);
+                        ribbon(app, ui, i);
 
                         // Draw the arrow on top of the ribbon
                         ui.painter().add(PathShape::convex_polygon(
@@ -55,20 +58,31 @@ pub fn show(app: &mut App, ui: &mut Ui) {
         });
 }
 
-fn ribbon(app: &mut App, ui: &mut Ui) {
+fn ribbon(app: &mut App, ui: &mut Ui, ribbon_id: u8) {
     ui.horizontal(|ui| {
         ui.style_mut().spacing.item_spacing = (5.0, 0.0).into();
 
-        let square_count = ((ui.available_width() + 5.0) / (5.0 + 50.0)) as usize + 2;
+        let square_count: i32 = ((ui.available_width() + 5.0) / (5.0 + 50.0)) as i32 + 2;
 
-        for _ in 0..square_count {
-            square(app, ui);
+        let (chars, pointer): (&Vec<char>, i32) = if ribbon_id == 0 {
+            (&app.step.read_ribbon.chars_vec, app.step.read_ribbon.pointer as i32)
+        } else {
+            let write_ribbon = &app.step.write_ribbons[ribbon_id as usize];
+            (&write_ribbon.chars_vec, write_ribbon.pointer as i32)
+        };
+
+        let ribbon_center = square_count/2;
+        let mut ribbon_vec = vec![' '; (ribbon_center - pointer).max(0) as usize];
+        ribbon_vec.append(&mut chars[(pointer-ribbon_center).max(0) as usize..(pointer+ribbon_center).min(chars.len() as i32) as usize].to_vec());
+        ribbon_vec.append(&mut vec![' '; (ribbon_center-(chars.len() as i32-pointer-1)).max(0)as usize]);
+
+        for i in 0..square_count {
+            square(app, ui, ribbon_vec[i as usize]);
         }
     });
 }
 
-fn square(app: &mut App, ui: &mut Ui) {
-    let character = '0';
+fn square(app: &mut App, ui: &mut Ui, character: char) {
 
     Frame::new()
         .fill(Color32::WHITE)

@@ -7,6 +7,7 @@ pub mod edit;
 pub mod constant;
 pub mod theme;
 pub mod utils;
+pub mod font;
 use crate::App;
 
 pub fn show(app: &mut App, ctx: &egui::Context) {

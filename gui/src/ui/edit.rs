@@ -123,8 +123,7 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                         )
                                         .clicked()
                                     {
-
-                                        // Delete the selected state/transition
+                                        app.remove_state();
                                     }
                                 }
                             },

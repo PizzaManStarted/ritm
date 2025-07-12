@@ -6,10 +6,10 @@ pub struct Constant {}
 impl Constant {
 
     // Graph
-    pub const CREP: f32 = 10000.0;
+    pub const CREP: f32 = 30000.0;
     pub const CSPRING: f32 = 50.0;
     pub const L: f32 = 250.0;
-    pub const MAX_FORCE: f32 = 100.0;
+    pub const MAX_FORCE: f32 = 10.0;
     pub const STATE_RADIUS: f32 = 40.0;
     pub const TRANSITION_THICKNESS: f32 = 1.0;
     pub const STABILITY_TRESHOLD: f32 = 0.001;

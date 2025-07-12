@@ -1,7 +1,7 @@
 use egui::{vec2, Color32, Label, Rect, RichText, Sense, Stroke, Ui};
 
 use crate::{
-    ui::{constant::Constant, utils::{self, constrast_color, Font}}, App
+    ui::{constant::Constant, font::Font, utils::{self, constrast_color}}, App
 };
 
 pub fn show(app: &mut App, ui: &mut Ui) {
@@ -54,8 +54,13 @@ fn draw_node(app: &mut App, ui: &mut Ui, state_id: u8) {
 
 
     if response.clicked() {
-        app.selected_transition = None;
-        app.selected_state = Some(state_id)
+
+        if app.event.is_adding_transition {
+            app.add_transition(state_id);
+        } else {
+            app.selected_transition = None;
+            app.selected_state = Some(state_id)
+        }
     }
 
     // If dragged, make the node follow the pointer
