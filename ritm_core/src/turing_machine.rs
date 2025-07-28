@@ -330,10 +330,10 @@ impl<'a> Iterator for  &mut TuringMachines
     fn next(&mut self) -> Option<Self::Item> 
     {
         let prev_iter = self.get_iteration();
-        // TODO : Add stop
+        
         if let Mode::StopAfter(nb) = self.get_mode() {
             if *nb == prev_iter {
-                
+                return None;
             }
         }
 
@@ -383,7 +383,7 @@ impl<'a> Iterator for  &mut TuringMachines
             if next_transitions.is_empty() || curr_state.state_type == TuringStateType::Rejecting
             {
                 if let Mode::StopFirstReject = self.get_mode() {
-                    // TODO : Add stop
+                    return None;
                 }
                 // If there are no saved state, this means the backtracking is over, and the execution too
                 if self.get_memory_mut().is_empty() {
