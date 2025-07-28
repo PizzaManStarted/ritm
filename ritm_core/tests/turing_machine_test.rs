@@ -2,7 +2,7 @@ use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringE
 
 
 #[test]
-fn execution_non_deter()
+fn save_all()
 {
     let tm_graph = get_test_non_deter_graph();
     //println!("{:?}", tm_graph);
