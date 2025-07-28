@@ -10,13 +10,13 @@ fn main() {
     //mt.remove_state(&"a".to_string());
     //println!("{:?}", mt);
     // FIXME : Fix the bug of index being wrong when removing something like a !
-    let exec= TuringMachines::new_with_ref(&mt, "0010011".to_string(), Mode::SaveAll).unwrap();
+    let mut exec= TuringMachines::new(mt, "0010011".to_string(), Mode::SaveAll).unwrap();
 
     //&et mut exec = TuringMachineExecutor::new(mt, "1010101010".to_string()).unwrap();
-    for tmp in exec {
+    for tmp in &mut exec {
         println!("_______________\nExec. step ::\n{}", tmp)
     }
     
-    println!("{:?}", mt);
+    println!("{:?}", exec.get_turing_machine_graph());
 
 }

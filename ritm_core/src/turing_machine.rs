@@ -37,13 +37,8 @@ impl Clone for SavedState {
 }
 
 
-pub enum TuringMachines<'a>
+pub enum TuringMachines
 {
-    TuringMachineWithRef {
-        /// The **reference** to a turing machine graph that will execute a word
-        graph : &'a TuringMachineGraph,
-        data : IterationData
-    },
     TuringMachine {
         /// The turing machine graph that will execute a word
         graph : TuringMachineGraph,
@@ -69,43 +64,8 @@ struct IterationData {
     backtracked_info: Option<usize>
 }
 
-impl<'a> TuringMachines<'a> 
+impl TuringMachines
 {
-    /// Create a new [TuringIteratorE::TuringMachineWithRef] for a given word.
-    pub fn new_with_ref(mt: &'a TuringMachineGraph, word: String, mode: Mode) -> Result<Self, TuringError>
-    {
-        if word.is_empty() {
-            return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
-        }
-        let mut s = 
-        TuringMachines::TuringMachineWithRef
-        {
-            graph: mt,
-            data : IterationData {
-                state_pointer: 0,
-                reading_ribbon: TuringReadRibbon::new(),
-                write_ribbons: {
-                    // Creates k ribbons
-                    let mut v = vec!();
-                    for _ in 0..mt.get_k()
-                    {
-                        v.push(TuringWriteRibbon::new());
-                    }
-                    v
-                },
-                word: word.clone(),
-                is_first_state: true,
-                memory: VecDeque::new(),
-                mode,
-                backtracked_info: None
-
-            }
-        };
-        // Add the word to the reading ribbon
-        s.get_reading_ribbon().feed_word(word);
-
-        Ok(s)
-    }
 
     // Create a new [TuringMachineWithRef] for a given word.
     pub fn new(mt: TuringMachineGraph, word: String, mode: Mode) -> Result<Self, TuringError>
@@ -181,19 +141,36 @@ impl<'a> TuringMachines<'a>
 }
 
 
-impl TuringMachines<'_> {
-    /// Gets the stored turing machine graph.
-    fn get_turing_machine_graph(&self) -> &TuringMachineGraph {
+impl TuringMachines {
+    /// Gets *reference* of the stored turing machine graph.
+    pub fn get_turing_machine_graph_ref(&self) -> &TuringMachineGraph {
         match self {
-            TuringMachines::TuringMachineWithRef { graph, data:_ } => &graph,
             TuringMachines::TuringMachine { graph, data:_ } => &graph,
         }
     }
+
+    /// Gets *mutable reference* of the stored turing machine graph.
+    pub fn get_turing_machine_graph_mut_ref(&mut self) -> &mut TuringMachineGraph {
+        match self {
+            TuringMachines::TuringMachine { graph, data:_ } => graph,
+        }
+    }
+
+    /// Gets the stored turing machine graph.
+    /// 
+    /// This will free the turing machine since it will drop the ownership
+    pub fn get_turing_machine_graph(self) -> TuringMachineGraph {
+        match self {
+            TuringMachines::TuringMachine { graph, data:_ } => graph,
+        }
+    }
+
+    
     
     /// Gets the current state pointer of this struct.
     fn get_state_pointer(&self) -> usize {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.state_pointer,
+            TuringMachines::TuringMachine { graph:_, data } => data.state_pointer,
         }
         
     }
@@ -201,14 +178,14 @@ impl TuringMachines<'_> {
     /// Sets a new value to the state pointer.
     fn set_state_pointer(&mut self, new_val: usize) {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.state_pointer = new_val,
+            TuringMachines::TuringMachine { graph:_, data } => data.state_pointer = new_val,
         }
     }
     
     /// Gets the reading ribbon stored inside this struct.
     fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => &mut data.reading_ribbon,
+            TuringMachines::TuringMachine { graph:_, data } => &mut data.reading_ribbon,
         }
     }
     
@@ -216,7 +193,7 @@ impl TuringMachines<'_> {
     /// Sets the reading ribbon stored inside this struct.
     fn set_reading_ribbon(&mut self, ribbon: TuringReadRibbon) {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.reading_ribbon = ribbon,
+            TuringMachines::TuringMachine { graph:_, data } => data.reading_ribbon = ribbon,
         }
     }
     
@@ -224,7 +201,7 @@ impl TuringMachines<'_> {
     /// Gets the writtings ribbons stored inside this struct.
     fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon> {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => &mut data.write_ribbons,
+            TuringMachines::TuringMachine { graph:_, data } => &mut data.write_ribbons,
         }
     }
     
@@ -232,14 +209,14 @@ impl TuringMachines<'_> {
     /// Sets the writting ribbons stored inside this struct.
     fn set_writting_ribbons(&mut self, ribbons: Vec<TuringWriteRibbon>) {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.write_ribbons = ribbons,
+            TuringMachines::TuringMachine { graph:_, data } => data.write_ribbons = ribbons,
         }
     }
     
     /// Gets the word that was feed to this machine.
     fn get_word(&self) -> &String {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => &data.word,
+            TuringMachines::TuringMachine { graph:_, data } => &data.word,
         }
     }
     
@@ -247,41 +224,42 @@ impl TuringMachines<'_> {
     /// Checks if the current iteration is the first iteration or not.
     fn is_first_iteration(&mut self) -> bool {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.is_first_state,
+            TuringMachines::TuringMachine { graph:_, data } => data.is_first_state,
         }
     }
     
     /// Sets the state of this turing machine to be considered or not its first iteration.
     fn set_first_iteration(&mut self, set: bool) {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.is_first_state = set,
+            TuringMachines::TuringMachine { graph:_, data } => data.is_first_state = set,
         }
     }
     
     /// Fetches the mode of the iterator.
     fn get_mode(&self) -> &Mode {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => &data.mode,
+            TuringMachines::TuringMachine { graph:_, data } => &data.mode,
         }
     }
     
     /// Get the **mutable** stack containing all the [SavedState].
     fn get_memory_mut(&mut self) -> &mut VecDeque<SavedState> {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => &mut data.memory,
+            TuringMachines::TuringMachine { graph:_, data } => &mut data.memory,
         }
     }
 
     fn get_backtracking_info(&self) -> Option<usize> {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.backtracked_info,
+            TuringMachines::TuringMachine { graph:_, data } => data.backtracked_info,
         }
     }
     fn set_backtracking_info(&mut self, val: Option<usize>) {
         match self {
-            TuringMachines::TuringMachineWithRef { graph:_, data } | TuringMachines::TuringMachine { graph:_, data } => data.backtracked_info = val,
+            TuringMachines::TuringMachine { graph:_, data } => data.backtracked_info = val,
         }
     }
+
 }
 
 
@@ -326,14 +304,14 @@ pub enum TuringExecutionSteps
 
 
 
-impl<'a> Iterator for TuringMachines<'_>
+impl<'a> Iterator for  &mut TuringMachines
 {
     type Item = TuringExecutionSteps;
 
     fn next(&mut self) -> Option<Self::Item> 
     {
         // Fetch the current state
-        let curr_state =  self.get_turing_machine_graph().get_state(self.get_state_pointer()).unwrap().clone();
+        let curr_state =  self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().clone();
 
         let mut transition_index_taken = 0;
 
@@ -409,7 +387,7 @@ impl<'a> Iterator for TuringMachines<'_>
                     // Return backtracking info
                     return Some(TuringExecutionSteps::Backtracked { 
                         previous_state: curr_state, 
-                        reached_state: self.get_turing_machine_graph().get_state(saved_state.saved_state_index).unwrap().clone(),
+                        reached_state: self.get_turing_machine_graph_ref().get_state(saved_state.saved_state_index).unwrap().clone(),
                         read_ribbon: self.get_reading_ribbon().clone(),
                         write_ribbons: self.get_writting_ribbons().clone()  });
                 }
@@ -432,14 +410,14 @@ impl<'a> Iterator for TuringMachines<'_>
                 transition_index_taken = next_transitions[0];
             }
         }
-        let transition = self.get_turing_machine_graph().get_state(self.get_state_pointer()).unwrap().transitions[transition_index_taken as usize].clone();
+        let transition = self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().transitions[transition_index_taken as usize].clone();
 
         // Apply the transition
         // to the read ribbons
         self.get_reading_ribbon().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
         
         // to the write ribbons
-        for i in 0..self.get_turing_machine_graph().get_k()
+        for i in 0..self.get_turing_machine_graph_ref().get_k()
         {
             self.get_writting_ribbons()[i as usize].try_apply_transition(transition.chars_read[(i+1) as usize],
                                                                                     transition.chars_write[i as usize].0, &transition.chars_write[i as usize].1).unwrap();
@@ -451,7 +429,7 @@ impl<'a> Iterator for TuringMachines<'_>
         Some(TuringExecutionSteps::TransitionTaken
         {
             previous_state: curr_state.clone(),
-            reached_state: self.get_turing_machine_graph().get_state(self.get_state_pointer()).unwrap().clone(),
+            reached_state: self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().clone(),
             transition_index_taken : transition_index_taken as usize,
             transition_taken: transition.clone(),
             read_ribbon: self.get_reading_ribbon().clone(),

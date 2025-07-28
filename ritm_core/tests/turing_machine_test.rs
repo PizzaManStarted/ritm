@@ -9,11 +9,11 @@ fn execution_non_deter()
 
     // let mut turing_machine = TuringMachine::new(tm_graph, String::from("010"), Mode::SaveAll).unwrap();
 
-    let turing_machine = TuringMachines::new(tm_graph, String::from("010"), Mode::SaveAll).unwrap();
+    let mut turing_machine = TuringMachines::new(tm_graph, String::from("010"), Mode::SaveAll).unwrap();
 
     // let mut turing_machine = TuringMachines::new(get_smaller_non_deter_graph(), String::from("0000000000000001"), Mode::SaveAll).unwrap();
     let mut counter = 0;
-    for steps in turing_machine {
+    for steps in &mut turing_machine {
         println!("_______________\nExec. step ::\n{}", steps);
         counter += 1;
 
