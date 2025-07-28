@@ -6,9 +6,11 @@ use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing
 
 /// Represents the different mode a turing machine can have during it's execution
 pub enum Mode {
+    /// Explores all possible paths (and possibilities using backtracking) until an accepting state is found or no path is left is to take. 
     SaveAll, // May god bless your ram
+    /// Stops after the specified amount of iteration is reached even if the execution is not over.
     StopAfter(usize),
-    OverwriteAfter(usize),
+    /// Stops after meeting the first rejecting state or when the execution is blocked, even if backtracking is possible 
     StopFirstReject,
 }
 
@@ -42,7 +44,9 @@ pub enum TuringMachines
     TuringMachine {
         /// The turing machine graph that will execute a word
         graph : TuringMachineGraph,
-        data : IterationData
+        data : IterationData,
+        /// The current number of iterations already done
+        iteration : usize
     }
 }
 
@@ -94,7 +98,8 @@ impl TuringMachines
                 mode,
                 backtracked_info: None
             },
-            graph: mt
+            graph: mt,
+            iteration : 0
         };
         // Add the word to the reading ribbon
         s.get_reading_ribbon().feed_word(word);
@@ -111,6 +116,7 @@ impl TuringMachines
     /// Resets the turing machine to its initial state and re-feeds it the current stored word.
     pub fn reset(&mut self) -> Result<(), TuringError>
     {
+        self.set_iteration(0);
         let word = self.get_word().clone();
         return self.reset_word(&word);
     }
@@ -118,6 +124,7 @@ impl TuringMachines
     /// Resets the turing machine to its initial state and feeds it the given word.
     pub fn reset_word(&mut self, word: &String) -> Result<(), TuringError>
     {
+        
         if word.is_empty() {
             return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
         }
@@ -145,14 +152,14 @@ impl TuringMachines {
     /// Gets *reference* of the stored turing machine graph.
     pub fn get_turing_machine_graph_ref(&self) -> &TuringMachineGraph {
         match self {
-            TuringMachines::TuringMachine { graph, data:_ } => &graph,
+            TuringMachines::TuringMachine { graph, data:_, iteration:_ } => &graph,
         }
     }
 
     /// Gets *mutable reference* of the stored turing machine graph.
     pub fn get_turing_machine_graph_mut_ref(&mut self) -> &mut TuringMachineGraph {
         match self {
-            TuringMachines::TuringMachine { graph, data:_ } => graph,
+            TuringMachines::TuringMachine { graph, data:_, iteration:_ } => graph,
         }
     }
 
@@ -161,7 +168,7 @@ impl TuringMachines {
     /// This will free the turing machine since it will drop the ownership
     pub fn get_turing_machine_graph(self) -> TuringMachineGraph {
         match self {
-            TuringMachines::TuringMachine { graph, data:_ } => graph,
+            TuringMachines::TuringMachine { graph, data:_, iteration:_ } => graph,
         }
     }
 
@@ -170,7 +177,7 @@ impl TuringMachines {
     /// Gets the current state pointer of this struct.
     fn get_state_pointer(&self) -> usize {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => data.state_pointer,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.state_pointer,
         }
         
     }
@@ -178,14 +185,14 @@ impl TuringMachines {
     /// Sets a new value to the state pointer.
     fn set_state_pointer(&mut self, new_val: usize) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => data.state_pointer = new_val,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.state_pointer = new_val,
         }
     }
     
     /// Gets the reading ribbon stored inside this struct.
     fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => &mut data.reading_ribbon,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &mut data.reading_ribbon,
         }
     }
     
@@ -193,7 +200,7 @@ impl TuringMachines {
     /// Sets the reading ribbon stored inside this struct.
     fn set_reading_ribbon(&mut self, ribbon: TuringReadRibbon) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => data.reading_ribbon = ribbon,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.reading_ribbon = ribbon,
         }
     }
     
@@ -201,7 +208,7 @@ impl TuringMachines {
     /// Gets the writtings ribbons stored inside this struct.
     fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon> {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => &mut data.write_ribbons,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &mut data.write_ribbons,
         }
     }
     
@@ -209,14 +216,14 @@ impl TuringMachines {
     /// Sets the writting ribbons stored inside this struct.
     fn set_writting_ribbons(&mut self, ribbons: Vec<TuringWriteRibbon>) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => data.write_ribbons = ribbons,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.write_ribbons = ribbons,
         }
     }
     
     /// Gets the word that was feed to this machine.
     fn get_word(&self) -> &String {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => &data.word,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &data.word,
         }
     }
     
@@ -224,39 +231,51 @@ impl TuringMachines {
     /// Checks if the current iteration is the first iteration or not.
     fn is_first_iteration(&mut self) -> bool {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => data.is_first_state,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.is_first_state,
         }
     }
     
     /// Sets the state of this turing machine to be considered or not its first iteration.
     fn set_first_iteration(&mut self, set: bool) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => data.is_first_state = set,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.is_first_state = set,
         }
     }
     
     /// Fetches the mode of the iterator.
     fn get_mode(&self) -> &Mode {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => &data.mode,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &data.mode,
         }
     }
     
     /// Get the **mutable** stack containing all the [SavedState].
     fn get_memory_mut(&mut self) -> &mut VecDeque<SavedState> {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => &mut data.memory,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &mut data.memory,
         }
     }
 
     fn get_backtracking_info(&self) -> Option<usize> {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => data.backtracked_info,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.backtracked_info,
         }
     }
     fn set_backtracking_info(&mut self, val: Option<usize>) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data } => data.backtracked_info = val,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.backtracked_info = val,
+        }
+    }
+
+    fn set_iteration(&mut self, val: usize) {
+        match self {
+            TuringMachines::TuringMachine { graph:_, data:_, iteration } => *iteration = val,
+        }
+    }
+
+    fn get_iteration(&self) -> usize {
+        match self {
+            TuringMachines::TuringMachine { graph:_, data:_, iteration } => *iteration,
         }
     }
 
@@ -310,6 +329,17 @@ impl<'a> Iterator for  &mut TuringMachines
 
     fn next(&mut self) -> Option<Self::Item> 
     {
+        let prev_iter = self.get_iteration();
+        // TODO : Add stop
+        if let Mode::StopAfter(nb) = self.get_mode() {
+            if *nb == prev_iter {
+                
+            }
+        }
+
+        // Increment nb of iterations already treated
+        self.set_iteration(prev_iter + 1);
+
         // Fetch the current state
         let curr_state =  self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().clone();
 
@@ -337,7 +367,7 @@ impl<'a> Iterator for  &mut TuringMachines
                 return None;
             }
 
-            // If it's rejecting or normal
+            // if it's normal or rejecting
 
             // If one of the transition condition is true,
             // Get all current char read by **all** ribbons
@@ -352,6 +382,9 @@ impl<'a> Iterator for  &mut TuringMachines
             // we reached a *dead end*, go back in the exploration if possible
             if next_transitions.is_empty() || curr_state.state_type == TuringStateType::Rejecting
             {
+                if let Mode::StopFirstReject = self.get_mode() {
+                    // TODO : Add stop
+                }
                 // If there are no saved state, this means the backtracking is over, and the execution too
                 if self.get_memory_mut().is_empty() {
                     return None;

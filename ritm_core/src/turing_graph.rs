@@ -222,7 +222,7 @@ impl TuringMachineGraph {
         return Ok(res);
     }
 
-    /// Get all the transitions indexes between two nodes.
+    /// Get all the transitions between two nodes.
     pub fn get_transitions_by_index(&self, n1: usize, n2: usize) -> Result<Vec<&TuringTransitionMultRibbons>, TuringError>
     {
         let mut vec = vec!();
