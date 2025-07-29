@@ -1,8 +1,10 @@
-use ritm_core::{
-    parser::*, turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringMachines}, turing_state::{TuringDirection, TuringTransitionMultRibbons}
-};
+use ritm_core::{parser::parse_turing_machine_string, turing_machine::TuringMachines};
 
-fn main() {
+
+#[test]
+fn test_parse()
+{
+
     let machine = String::from("q_i {ç, ç -> R, ç, R} q_1;
                                         q1 {0, _ -> R, a, R 
                                           | 1, _ -> R, a, R} q1;
@@ -17,11 +19,10 @@ fn main() {
     let res = parse_turing_machine_string(machine);
 
 
-    let mut t = TuringMachines::new(res.unwrap(), String::from("0100"), ritm_core::turing_machine::Mode::StopAfter(20)).unwrap();
+    let mut t = TuringMachines::new(res.unwrap(), String::from("0100"), ritm_core::turing_machine::Mode::StopAfter(2000)).unwrap();
 
     // println!("{:?}", res);
     for steps in &mut t {
         println!("{}", steps);   
     }
-
 }

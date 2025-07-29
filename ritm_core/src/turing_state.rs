@@ -279,7 +279,7 @@ pub struct TuringTransitionMultRibbons {
     pub chars_read: Vec<char>,
     /// The move to take after writing/reading the character : `D_0`
     pub move_read: TuringDirection,
-    /// The character to replace the character just read : `(b_0, D_0),..., (b_{n-1}, D_{n-1})`
+    /// The character to replace the character just read : `(b_1, D_1),..., (b_{n-1}, D_{n-1})`
     pub chars_write: Vec<(char, TuringDirection)>,
     /// The index of the state to go to after passing through this state.
     pub index_to_state: Option<usize>,
@@ -305,7 +305,7 @@ impl TuringTransitionMultRibbons {
     /// 
     /// ## Args :
     /// * **chars_read** : The characters that have to be read in order to take this transition : `a_0,..., a_{n-1}`
-    /// * **chars_write** : The characters to replace the characters read : `b_0, ..., b_{n-1}` 
+    /// * **chars_write** : The characters to replace the characters read : `b_1, ..., b_{n-1}` 
     /// * **directions** : The directions to move the pointers of the ribbons : `D_0, ..., D_{n-1}`
     pub fn create(chars_read: Vec<char>, chars_write: Vec<char>, directions: Vec<TuringDirection>) -> Result<Self, TuringError>
     {

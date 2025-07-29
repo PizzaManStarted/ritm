@@ -343,13 +343,13 @@ impl<'a> Iterator for  &mut TuringMachines
         // Fetch the current state
         let curr_state =  self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().clone();
 
-        let mut transition_index_taken = 0;
+        let mut transition_index_taken = None;
 
         // If this iteration is a follow up to a backtracking
         // we simply take the index found at the previous iteration
         if let Some(bracktrack_transition_index) = self.get_backtracking_info() {
             self.set_backtracking_info(None);
-            transition_index_taken = bracktrack_transition_index
+            transition_index_taken = Some(bracktrack_transition_index)
         }
         else{
             if self.is_first_iteration() {
@@ -395,13 +395,13 @@ impl<'a> Iterator for  &mut TuringMachines
                     {
                         let saved_state = self.get_memory_mut().front_mut().unwrap();
                         
-                        
                         // Get the next transition to take
                         if let Some(t_i) = saved_state.next_transitions.pop_front() {
-                            transition_index_taken = t_i;
+                            transition_index_taken = Some(t_i);
                         }
                         else {
-                            // If no transition is left to take for this state, we move on to the next one
+                            // If no transition is left to take for this state, we move on to the next one and remove it
+                            self.get_memory_mut().pop_front();
                             continue;
                         }
                     }
@@ -415,7 +415,7 @@ impl<'a> Iterator for  &mut TuringMachines
                     self.set_reading_ribbon(saved_state.saved_read_ribbon);
                     self.set_writting_ribbons(saved_state.saved_write_ribbons);
                     // Save the index of the transition found for the next call to `.next()`
-                    self.set_backtracking_info(Some(transition_index_taken));
+                    self.set_backtracking_info(transition_index_taken);
 
                     // Return backtracking info
                     return Some(TuringExecutionSteps::Backtracked { 
@@ -430,7 +430,7 @@ impl<'a> Iterator for  &mut TuringMachines
             // We must save the current state in order to explore all path.
             else if next_transitions.len() >= 2 {
                 // take the first transition, save the rest
-                transition_index_taken = next_transitions.pop_front().unwrap();
+                transition_index_taken = Some(next_transitions.pop_front().unwrap());
 
                 let to_save = SavedState { saved_state_index:self.get_state_pointer(), 
                                                         next_transitions: next_transitions, 
@@ -440,34 +440,41 @@ impl<'a> Iterator for  &mut TuringMachines
                 self.push_to_memory_stack(to_save);
             }
             else if next_transitions.len() == 1 {
-                transition_index_taken = next_transitions[0];
+                transition_index_taken = Some(next_transitions[0]);
             }
         }
-        let transition = self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().transitions[transition_index_taken as usize].clone();
-
-        // Apply the transition
-        // to the read ribbons
-        self.get_reading_ribbon().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
-        
-        // to the write ribbons
-        for i in 0..self.get_turing_machine_graph_ref().get_k()
-        {
-            self.get_writting_ribbons()[i as usize].try_apply_transition(transition.chars_read[(i+1) as usize],
-                                                                                    transition.chars_write[i as usize].0, &transition.chars_write[i as usize].1).unwrap();
+        // if a viable transition was found
+        if let Some(ind) = transition_index_taken {
+            let transition = self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().transitions[ind as usize].clone();
+            // Apply the transition
+            // to the read ribbons
+            self.get_reading_ribbon().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
+            
+            // to the write ribbons
+            for i in 0..self.get_turing_machine_graph_ref().get_k()
+            {
+                self.get_writting_ribbons()[i as usize].try_apply_transition(transition.chars_read[(i+1) as usize],
+                                                                                        transition.chars_write[i as usize].0, &transition.chars_write[i as usize].1).unwrap();
+            }
+    
+            // Move to the next state
+            self.set_state_pointer(transition.index_to_state.unwrap());
+            
+            Some(TuringExecutionSteps::TransitionTaken
+            {
+                previous_state: curr_state.clone(),
+                reached_state: self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().clone(),
+                transition_index_taken : ind as usize,
+                transition_taken: transition.clone(),
+                read_ribbon: self.get_reading_ribbon().clone(),
+                write_ribbons: self.get_writting_ribbons().clone(),
+            })
+            
         }
-
-        // Move to the next state
-        self.set_state_pointer(transition.index_to_state.unwrap());
-        
-        Some(TuringExecutionSteps::TransitionTaken
-        {
-            previous_state: curr_state.clone(),
-            reached_state: self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().clone(),
-            transition_index_taken : transition_index_taken as usize,
-            transition_taken: transition.clone(),
-            read_ribbon: self.get_reading_ribbon().clone(),
-            write_ribbons: self.get_writting_ribbons().clone(),
-        })
+        // otherwise it's also the end
+        else {
+            None
+        }
     }
 }
 

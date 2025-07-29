@@ -2,21 +2,27 @@ WHITESPACE = _{ " " | "\t" | NEWLINE }
 
 turing_machine = { (WHITESPACE* ~ (rule ~ ";")+ ~ EOI)? }
 
-rule = { (var) ~ ("{" ~ transition ~ ("|" ~ transition)* ~ "}")+ ~ (var) }
+rule = { (state_name) ~ ("{" ~ transition ~ ("|" ~ transition)* ~ "}")+ ~ (state_name) }
 
 transition = { to_read ~ "->" ~ to_write_move }
 
-to_read       = { char ~ ("," ~ char)* }
-to_write_move = { move ~ ("," ~ char ~ "," ~ move)* }
+to_read = { char_special ~ ("," ~ char_special)* }
+
+to_write_move = { move ~ ("," ~ char_special ~ "," ~ move)* }
 
 move      = _{ dir_left | dir_right | dir_none }
 dir_left  =  { "L" }
 dir_right =  { "R" }
 dir_none  =  { "N" }
 
-var = { "q_" ~ (char) }
-// FIXME : It should be a string here but
+state_name = { "q" ~ ("_")? ~ (str) }
 
-int  = { ASCII_DIGIT+ }
-str  = { (ASCII_ALPHA | "_")+ }
-char = { ("ç" | "#" | "$" | ASCII_DIGIT | ASCII_ALPHA | "_") }
+str = { (char)+ }
+
+// Char + special characters
+char_special = _{ (char | special_chars) }
+
+// Default characters
+char = { (ASCII_DIGIT | ASCII_ALPHA) }
+// Special characters
+special_chars = { ("ç" | "#" | "$" | "_") }

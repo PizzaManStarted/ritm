@@ -12,26 +12,29 @@ pub struct TuringGrammar;
 pub fn parse_turing_machine_file(file_path: String) -> Result<TuringMachineGraph, TuringError>
 {
     let unparsed_file = fs::read_to_string(&file_path).expect("cannot read file");
-    return parse_turing_machine(unparsed_file);
+    return parse_turing_machine_string(unparsed_file);
 }
 
 
-pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachineGraph, TuringError>
+pub fn parse_turing_machine_string(turing_mach: String) -> Result<TuringMachineGraph, TuringError>
 {
-    let file: Pair<'_, Rule> = TuringGrammar::parse(Rule::turing_machine, &turing_mach)
-        .expect("unsuccessful parse") // unwrap the parse result
-        .next().unwrap(); // get and unwrap the `file` rule; never fails
+    let file = TuringGrammar::parse(Rule::turing_machine, &turing_mach);
+    if let Err(e) = file {
+        // TODO Add help here
+        return Err(TuringError::ParseError { reason: String::from("Couldn't parse") });
+    }
+    let file = file.unwrap().next().unwrap(); // get and unwrap the `file` rule; never fails
     
     let mut turing_machine: Option<TuringMachineGraph> = None;
 
     let mut to_from_vars : Vec<String>;
-    let mut transition: TuringTransitionMultRibbons;
     let mut transitions: Vec<TuringTransitionMultRibbons>;
 
-    let mut nb_of_ribbons: Option<usize> = None;
 
     for turing_machine_rule in file.into_inner() {
+        // Inside the 'turing_machine' rule, only two things can be matched : rule, and EOI
         match turing_machine_rule.as_rule() {
+            // For every rule matched :
             Rule::rule => 
             {
                 transitions = vec!();
@@ -39,10 +42,12 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachineGraph, T
                 let mut from_var = String::new();
                 
                 for rule in turing_machine_rule.into_inner() {
-                    // println!("Showing : {}", rule.as_str());
+                    // Inside a rule, there are :
+                    // * two state names (var1 & var2)
+                    // * one or more transitions btw them
                     match rule.as_rule() {
                         // Get var1 & var2
-                        Rule::var =>
+                        Rule::state_name =>
                         {
                             if from_var.eq("")
                             {
@@ -56,18 +61,11 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachineGraph, T
                         // Read all transitions
                         Rule::transition => {
                             // Add the transition
-                            transition = parse_transition(rule);
-                            if let Some(k) = nb_of_ribbons
-                            {
-                                if k != transition.get_number_of_affected_ribbons() 
-                                {
-                                    return Err(TuringError::ArgsSizeTransitionError);
-                                }
+                            let tr_res = parse_transition(rule);
+                            if let Err(e) = tr_res {
+                                return Err(e); // FIXME wrap with parsing error
                             }
-                            else {
-                                nb_of_ribbons = Some(transition.get_number_of_affected_ribbons());
-                            }
-                            transitions.push(transition);
+                            transitions.push(tr_res.unwrap());
                         },
                         _ => unreachable!(), 
                     }
@@ -78,24 +76,31 @@ pub fn parse_turing_machine(turing_mach: String) -> Result<TuringMachineGraph, T
                 if let None = turing_machine 
                 {
                     // With the collected number of ribbons
-                    turing_machine = Some(TuringMachineGraph::new(transitions.get(0).expect("At least one rule should be given in a transition").get_number_of_affected_ribbons()).unwrap());    
+                    let tm = TuringMachineGraph::new(transitions.get(0).expect("At least one rule should be given in a transition").get_number_of_affected_ribbons() - 1);
+
+                    if let Err(e) = tm {
+                        // FIXME wrap with parsing error
+                        return Err(e);
+                    }
+                    turing_machine = Some(tm.unwrap());
                 }
                 // If the MT existed
                 if let Some(mt) = &mut turing_machine 
                 {
-                    // Adds all the collected transitions
+                    // Add the states to the mt (if they didn't already exists)
+                    // and get their index
+                    let var1 = mt.add_state(&to_from_vars.get(0).unwrap().to_string());
+                    let var2 = mt.add_state(&to_from_vars.get(1).unwrap().to_string());
+                    // Adds all the collected transitions for these states
                     for transition in transitions  
                     {
-                        if let Err(e) = mt.append_rule_state_by_name(&to_from_vars.get(0).expect("A name state was expected").to_string(), 
-                                            transition, 
-                                            &to_from_vars.get(1).expect("Two name states were expected").to_string())
-                        {
+                        if let Err(e) = mt.append_rule_state(var1, transition, var2) {
                             return Err(e);
                         }
                     }
                 }
             },
-            // The file has ended, we can stop reading
+            // The file has ended, we can stop reading/parsing
             Rule::EOI => {},
             _ => unreachable!(),
         }
@@ -113,7 +118,7 @@ fn parse_str_token(rule: Pair<Rule>) -> String
 {
     match rule.as_rule() 
     {
-        Rule::var | Rule::int | Rule::str => 
+        Rule::state_name | Rule::str => 
         {
             rule.into_inner().as_str().trim().to_string()
         },
@@ -121,7 +126,7 @@ fn parse_str_token(rule: Pair<Rule>) -> String
     }
 }
 
-fn parse_transition(rule: Pair<Rule>) -> TuringTransitionMultRibbons
+fn parse_transition(rule: Pair<Rule>) -> Result<TuringTransitionMultRibbons, TuringError>
 {
     let mut chars_read: Vec<char> = vec!();
     let mut directions: Vec<TuringDirection> = vec!();
@@ -135,6 +140,7 @@ fn parse_transition(rule: Pair<Rule>) -> TuringTransitionMultRibbons
             {
                 // Parse all the characters to read
                 for chars_rule in transition_rule.into_inner() {
+                    // turns the rule into a string, then gets the first (and only) char
                     chars_read.push(chars_rule.as_str().chars().next().unwrap());
                 }
             },
@@ -155,7 +161,7 @@ fn parse_transition(rule: Pair<Rule>) -> TuringTransitionMultRibbons
                         {
                             directions.push(TuringDirection::None);
                         },
-                        Rule::char =>
+                        Rule::char | Rule::special_chars =>
                         {
                             chars_written.push(write_move_rule.as_str().chars().next().unwrap());
                         },
@@ -168,5 +174,7 @@ fn parse_transition(rule: Pair<Rule>) -> TuringTransitionMultRibbons
         }
     }
 
-    TuringTransitionMultRibbons::create(chars_read, chars_written, directions).unwrap()
+    TuringTransitionMultRibbons::create(chars_read, chars_written, directions)
+
+    
 }

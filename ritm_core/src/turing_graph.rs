@@ -84,7 +84,7 @@ impl TuringMachineGraph {
         };
     }
 
-    /// Adds a new rule to a state of the machine of the form : `from {transition} to`.
+    /// Adds a new rule/transition to a state of the machine of the form : `from {transition} to`.
     /// Meaning, a new edge is added to the graph.
     /// 
     /// ## Returns
@@ -97,7 +97,6 @@ impl TuringMachineGraph {
         {
             return Err(TuringError::ArgsSizeTransitionError);
         }
-
         match self.add_rule_state_ind(from_index, transition, to_index) {
             Ok(()) => {
                 return Ok(());
@@ -397,6 +396,6 @@ impl TuringMachineGraph {
 
 impl Debug for TuringMachineGraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuringMachine").field("states", &self.states).field("hashmap", &self.name_index_hashmap).finish()
+        f.debug_struct("TuringMachine").field("k", &self.k).field("states", &self.states).field("hashmap", &self.name_index_hashmap).finish()
     }
 }

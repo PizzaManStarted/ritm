@@ -2,23 +2,59 @@ use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringE
 
 
 #[test]
-fn save_all()
+fn save_all_accept()
 {
     let tm_graph = get_test_non_deter_graph();
     //println!("{:?}", tm_graph);
 
     // let mut turing_machine = TuringMachine::new(tm_graph, String::from("010"), Mode::SaveAll).unwrap();
 
-    let mut turing_machine = TuringMachines::new(tm_graph, String::from("010"), Mode::SaveAll).unwrap();
+    let mut turing_machine = TuringMachines::new(tm_graph, String::from("11111"), Mode::SaveAll).unwrap();
 
     // let mut turing_machine = TuringMachines::new(get_smaller_non_deter_graph(), String::from("0000000000000001"), Mode::SaveAll).unwrap();
+    let mut saved_state = None;
     let mut counter = 0;
     for steps in &mut turing_machine {
         println!("_______________\nExec. step ::\n{}", steps);
         counter += 1;
-
+        
         if counter == 1000 {
             return;
+        }
+        saved_state = Some(steps);
+    }
+
+    if let Some(state) = saved_state {
+        match state {
+            TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => panic!("Wrong outcome"),
+            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_ } => {
+                assert_eq!(TuringStateType::Accepting, reached_state.state_type)
+            },
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, read_ribbon:_, write_ribbons:_ } => panic!("Wrong outcome"),
+        }
+    }
+}
+
+#[test]
+fn save_all_not_accept()
+{
+    let tm_graph = get_test_non_deter_graph();
+
+    let mut turing_machine = TuringMachines::new(tm_graph, String::from("0100"), Mode::SaveAll).unwrap();
+
+    let mut saved_state = None;
+    for steps in &mut turing_machine {
+        println!("_______________\nExec. step ::\n{}", steps);
+        saved_state = Some(steps);
+    }
+
+    if let Some(state) = saved_state {
+        match state {
+            TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => panic!("Wrong outcome"),
+            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_ } => {
+                assert_ne!(TuringStateType::Accepting, reached_state.state_type)
+            },
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, read_ribbon:_, write_ribbons:_ } => panic!("Wrong outcome"),
         }
     }
 }
