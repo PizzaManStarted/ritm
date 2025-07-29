@@ -19,7 +19,7 @@ fn test_parse()
     let res = parse_turing_graph_string(machine);
 
 
-    let mut t = TuringMachines::new(res.unwrap(), String::from("0100"), ritm_core::turing_machine::Mode::StopAfter(2000)).unwrap();
+    let mut t = TuringMachines::new(res.unwrap(), String::from("01100"), ritm_core::turing_machine::Mode::StopAfter(2000)).unwrap();
 
     // println!("{:?}", res);
     for steps in &mut t {
@@ -31,7 +31,7 @@ fn test_parse()
 fn test_parse_transition()
 {
     let transition_str = String::from("q_2 { 0, a -> R, a, L
-                                            | 1, a -> R, a, L} q_2");
+                                            | 1 -> R, a, L} q_2");
 
 
     println!("{:?}", parse_transition_string(transition_str));

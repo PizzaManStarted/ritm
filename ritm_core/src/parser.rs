@@ -83,6 +83,14 @@ pub fn parse_turing_graph_string(turing_mach: String) -> Result<TuringMachineGra
 
 
 
+/// Parses a string containing a transition of the form : 
+/// * `q_i { transition } q_j`
+/// * Or even :  `q_i { transition_0 | ... | transition_n } q_j`
+/// 
+/// Where each `transition` follows the form :  `a_0, a_1, ..., a_{n-1} -> D_0, b_1, D_1, b_2, D_2, ..., b_{n-1}, D_{n-1}`.
+/// For more information look at the documentation of the structure [TuringTransitionMultRibbons].
+/// 
+/// When giving multiple transitions, each one must affect the same number of ribbons or an error will be returned.
 pub fn parse_transition_string(to_parse: String) -> Result<(String, Vec<TuringTransitionMultRibbons>, String), TuringError>
 {
     let parsed = TuringGrammar::parse(Rule::transition_only, &to_parse);
@@ -94,6 +102,18 @@ pub fn parse_transition_string(to_parse: String) -> Result<(String, Vec<TuringTr
 }
 
 
+
+/// Parses a string containing the content of a transition of the form : `a_0, a_1, ..., a_{n-1} -> D_0, b_1, D_1, b_2, D_2, ..., b_{n-1}, D_{n-1}`
+/// For more information look at the documentation of the structure [TuringTransitionMultRibbons]
+pub fn parse_transition_content_string(transition: String) -> Result<TuringTransitionMultRibbons, TuringError>
+{
+    let parsed = TuringGrammar::parse(Rule::turing_machine, &transition);
+    if let Err(e) = parsed {
+        // TODO Add help here
+        return Err(TuringError::ParseError { reason: String::from("Couldn't parse") });
+    }
+    todo!("test");
+}
 
 
 
@@ -153,17 +173,6 @@ fn parse_str_token(rule: Pair<Rule>) -> String
 
 
 
-pub fn parse_transition_content_string(transition: String) -> Result<TuringTransitionMultRibbons, TuringError>
-{
-    let parsed = TuringGrammar::parse(Rule::turing_machine, &transition);
-    if let Err(e) = parsed {
-        // TODO Add help here
-        return Err(TuringError::ParseError { reason: String::from("Couldn't parse") });
-    }
-    todo!("test");
-}
-
-
 fn parse_transition_content(rule: Pair<Rule>) -> Result<TuringTransitionMultRibbons, TuringError>
 {
     let mut chars_read: Vec<char> = vec!();
@@ -213,6 +222,4 @@ fn parse_transition_content(rule: Pair<Rule>) -> Result<TuringTransitionMultRibb
     }
 
     TuringTransitionMultRibbons::create(chars_read, chars_written, directions)
-
-    
 }
