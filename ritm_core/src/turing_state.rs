@@ -286,7 +286,7 @@ pub struct TuringTransitionMultRibbons {
 }
 
 impl TuringTransitionMultRibbons {
-    /// Creates a new [TuringTransition].
+    /// Creates a new [TuringTransitionMultRibbons].
     pub fn new(
         char_read: Vec<char>,
         move_read: TuringDirection,
