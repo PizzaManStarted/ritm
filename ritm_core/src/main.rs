@@ -14,10 +14,10 @@ fn main() {
                                         
                                         q_2 {$, ç -> N, ç, N} q_a;");
 
-    let res = parse_turing_machine_string(machine);
+    let res = parse_turing_graph_string(machine);
 
 
-    let mut t = TuringMachines::new(res.unwrap(), String::from("0100"), ritm_core::turing_machine::Mode::StopAfter(20)).unwrap();
+    let mut t = TuringMachines::new(res.unwrap(), String::from("01101"), ritm_core::turing_machine::Mode::StopAfter(20000)).unwrap();
 
     // println!("{:?}", res);
     for steps in &mut t {

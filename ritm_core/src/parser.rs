@@ -9,14 +9,14 @@ use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing
 pub struct TuringGrammar;
 
 
-pub fn parse_turing_machine_file(file_path: String) -> Result<TuringMachineGraph, TuringError>
+pub fn parse_turing_graph_file(file_path: String) -> Result<TuringMachineGraph, TuringError>
 {
     let unparsed_file = fs::read_to_string(&file_path).expect("cannot read file");
-    return parse_turing_machine_string(unparsed_file);
+    return parse_turing_graph_string(unparsed_file);
 }
 
 
-pub fn parse_turing_machine_string(turing_mach: String) -> Result<TuringMachineGraph, TuringError>
+pub fn parse_turing_graph_string(turing_mach: String) -> Result<TuringMachineGraph, TuringError>
 {
     let file = TuringGrammar::parse(Rule::turing_machine, &turing_mach);
     if let Err(e) = file {
@@ -27,49 +27,16 @@ pub fn parse_turing_machine_string(turing_mach: String) -> Result<TuringMachineG
     
     let mut turing_machine: Option<TuringMachineGraph> = None;
 
-    let mut to_from_vars : Vec<String>;
-    let mut transitions: Vec<TuringTransitionMultRibbons>;
 
 
     for turing_machine_rule in file.into_inner() {
-        // Inside the 'turing_machine' rule, only two things can be matched : rule, and EOI
+        // Inside the 'turing_machine' rule, only two things can be matched : a transition (or multiple in one), and EOI
         match turing_machine_rule.as_rule() {
             // For every rule matched :
-            Rule::rule => 
+            Rule::transition => 
             {
-                transitions = vec!();
-                to_from_vars = vec!();
-                let mut from_var = String::new();
-                
-                for rule in turing_machine_rule.into_inner() {
-                    // Inside a rule, there are :
-                    // * two state names (var1 & var2)
-                    // * one or more transitions btw them
-                    match rule.as_rule() {
-                        // Get var1 & var2
-                        Rule::state_name =>
-                        {
-                            if from_var.eq("")
-                            {
-                                from_var = parse_str_token(rule);
-                            }
-                            else {
-                                to_from_vars.push(from_var.clone());
-                                to_from_vars.push(parse_str_token(rule));
-                            }
-                        },
-                        // Read all transitions
-                        Rule::transition => {
-                            // Add the transition
-                            let tr_res = parse_transition(rule);
-                            if let Err(e) = tr_res {
-                                return Err(e); // FIXME wrap with parsing error
-                            }
-                            transitions.push(tr_res.unwrap());
-                        },
-                        _ => unreachable!(), 
-                    }
-                };
+                let (from_var, transitions, to_var) = parse_transition(turing_machine_rule).unwrap();
+
                 /* Add the colected transitions to the MT */
 
                 // If the MT doesn't already exists, create it
@@ -89,8 +56,8 @@ pub fn parse_turing_machine_string(turing_mach: String) -> Result<TuringMachineG
                 {
                     // Add the states to the mt (if they didn't already exists)
                     // and get their index
-                    let var1 = mt.add_state(&to_from_vars.get(0).unwrap().to_string());
-                    let var2 = mt.add_state(&to_from_vars.get(1).unwrap().to_string());
+                    let var1 = mt.add_state(&from_var);
+                    let var2 = mt.add_state(&to_var);
                     // Adds all the collected transitions for these states
                     for transition in transitions  
                     {
@@ -114,6 +81,64 @@ pub fn parse_turing_machine_string(turing_mach: String) -> Result<TuringMachineG
 
 
 
+
+
+pub fn parse_transition_string(to_parse: String) -> Result<(String, Vec<TuringTransitionMultRibbons>, String), TuringError>
+{
+    let parsed = TuringGrammar::parse(Rule::transition_only, &to_parse);
+    if let Err(e) = parsed {
+        // TODO Add help here
+        return Err(TuringError::ParseError { reason: String::from("Couldn't parse") });
+    }
+    parse_transition(parsed.unwrap().next().unwrap())
+}
+
+
+
+
+
+
+
+fn parse_transition(rule: Pair<Rule>) -> Result<(String, Vec<TuringTransitionMultRibbons>, String), TuringError>
+{
+    let mut transitions = vec!();
+    let mut to_var = String::new();
+    let mut from_var = String::new();
+    
+    for rule in rule.into_inner() {
+        // Inside a rule, there are :
+        // * two state names (var1 & var2)
+        // * one or more transitions btw them
+        match rule.as_rule() {
+            // Get var1 & var2
+            Rule::state_name =>
+            {
+                if from_var.eq("")
+                {
+                    from_var = parse_str_token(rule);
+                }
+                else {
+                    to_var = parse_str_token(rule);
+                }
+            },
+            // Read all transitions
+            Rule::transition_content => {
+                // Add the transition
+                let tr_res = parse_transition_content(rule);
+                if let Err(e) = tr_res {
+                    return Err(e); // FIXME wrap with parsing error
+                }
+                transitions.push(tr_res.unwrap());
+            },
+            _ => unreachable!(), 
+        }
+    };
+
+    Ok((from_var, transitions, to_var))
+}
+
+
+
 fn parse_str_token(rule: Pair<Rule>) -> String
 {
     match rule.as_rule() 
@@ -126,7 +151,20 @@ fn parse_str_token(rule: Pair<Rule>) -> String
     }
 }
 
-fn parse_transition(rule: Pair<Rule>) -> Result<TuringTransitionMultRibbons, TuringError>
+
+
+pub fn parse_transition_content_string(transition: String) -> Result<TuringTransitionMultRibbons, TuringError>
+{
+    let parsed = TuringGrammar::parse(Rule::turing_machine, &transition);
+    if let Err(e) = parsed {
+        // TODO Add help here
+        return Err(TuringError::ParseError { reason: String::from("Couldn't parse") });
+    }
+    todo!("test");
+}
+
+
+fn parse_transition_content(rule: Pair<Rule>) -> Result<TuringTransitionMultRibbons, TuringError>
 {
     let mut chars_read: Vec<char> = vec!();
     let mut directions: Vec<TuringDirection> = vec!();

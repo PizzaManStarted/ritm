@@ -1,10 +1,13 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 
-turing_machine = { (WHITESPACE* ~ (rule ~ ";")+ ~ EOI)? }
+turing_machine = { (WHITESPACE* ~ (transition ~ ";")+ ~ EOI)? }
 
-rule = { (state_name) ~ ("{" ~ transition ~ ("|" ~ transition)* ~ "}")+ ~ (state_name) }
+// Used when only reading a transition
+transition_only = _{ transition ~ EOI }
 
-transition = { to_read ~ "->" ~ to_write_move }
+transition = { (state_name) ~ ("{" ~ transition_content ~ ("|" ~ transition_content)* ~ "}")+ ~ (state_name) }
+
+transition_content = { to_read ~ "->" ~ to_write_move }
 
 to_read = { char_special ~ ("," ~ char_special)* }
 
