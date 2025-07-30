@@ -141,6 +141,15 @@ impl TuringMachines
 
         // Reset first iteration
         self.set_first_iteration(true);
+
+        // Sets the number of iterations to 0
+        self.set_iteration(0);
+
+        // Reset backtracking info
+        self.set_backtracking_info(None);
+
+        // And clear memory
+        self.get_memory_mut().clear();
         
         Ok(())
     }

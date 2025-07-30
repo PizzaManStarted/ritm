@@ -1,4 +1,4 @@
-use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringExecutionSteps, TuringMachines}, turing_state::{TuringDirection, TuringStateType, TuringTransitionMultRibbons}};
+use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringExecutionSteps, TuringMachines}, turing_ribbon::TuringRibbon, turing_state::{TuringDirection, TuringStateType, TuringTransitionMultRibbons}};
 
 
 #[test]

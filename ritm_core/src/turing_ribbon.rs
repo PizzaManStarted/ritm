@@ -155,6 +155,7 @@ impl TuringReadRibbon
             self.chars_vec.push(ch);
         }
         self.chars_vec.push('$');
+        self.pointer = 0;
     }
 }
 
