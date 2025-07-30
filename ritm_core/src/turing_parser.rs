@@ -9,10 +9,10 @@ use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing
 pub struct TuringGrammar;
 
 
-/// Parses a turing machine graph.
+/// Parses a turing machine graph from the content of a file.
 /// 
 /// Important to note that if the given string is empty, then an empty [TuringMachineGraph] with a *k* of 1 is returned.
-pub fn parse_turing_graph_file(file_path: String) -> Result<TuringMachineGraph, TuringError>
+pub fn parse_turing_graph_file_path(file_path: String) -> Result<TuringMachineGraph, TuringError>
 {
     if file_path.trim().is_empty() {
         return TuringMachineGraph::new(1);
@@ -22,6 +22,10 @@ pub fn parse_turing_graph_file(file_path: String) -> Result<TuringMachineGraph, 
 }
 
 
+
+/// Parses a turing machine graph from the content of a string.
+/// 
+/// Important to note that if the given string is empty, then an empty [TuringMachineGraph] with a *k* of 1 is returned.
 pub fn parse_turing_graph_string(turing_mach: String) -> Result<TuringMachineGraph, TuringError>
 {
     let file = TuringGrammar::parse(Rule::turing_machine, &turing_mach);
@@ -32,8 +36,6 @@ pub fn parse_turing_graph_string(turing_mach: String) -> Result<TuringMachineGra
     let file = file.unwrap().next().unwrap(); // get and unwrap the `file` rule; never fails
     
     let mut turing_machine: Option<TuringMachineGraph> = None;
-
-
 
     for turing_machine_rule in file.into_inner() {
         // Inside the 'turing_machine' rule, only two things can be matched : a transition (or multiple in one), and EOI

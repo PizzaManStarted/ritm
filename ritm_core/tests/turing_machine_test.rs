@@ -27,10 +27,10 @@ fn save_all_accept()
     if let Some(state) = saved_state {
         match state {
             TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => panic!("Wrong outcome"),
-            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_ } => {
+            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_ , iteration:_, state_pointer:_ } => {
                 assert_eq!(TuringStateType::Accepting, reached_state.state_type)
             },
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, read_ribbon:_, write_ribbons:_ } => panic!("Wrong outcome"),
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, read_ribbon:_, write_ribbons:_ , iteration:_, state_pointer:_ } => panic!("Wrong outcome"),
         }
     }
 }
@@ -50,11 +50,11 @@ fn save_all_not_accept()
 
     if let Some(state) = saved_state {
         match state {
-            TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => panic!("Wrong outcome"),
-            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_ } => {
+            TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_  } => panic!("Wrong outcome"),
+            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_ , iteration:_, state_pointer:_ } => {
                 assert_ne!(TuringStateType::Accepting, reached_state.state_type)
             },
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, read_ribbon:_, write_ribbons:_ } => panic!("Wrong outcome"),
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, read_ribbon:_, write_ribbons:_ , iteration:_ , state_pointer:_ } => panic!("Wrong outcome"),
         }
     }
 }
@@ -66,7 +66,7 @@ fn stop_after()
     
     let mut counter = 0;
     for _steps in &mut turing_machine {
-        // println!("_______________\nExec. step ::\n{}", steps);
+        
         counter += 1;
     }
 
@@ -95,7 +95,7 @@ fn stop_first_reject()
     }
 
     if let Some(step) = last_step {
-        if let TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_ } = step {
+        if let TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_, iteration:_, state_pointer:_ } = step {
             assert_ne!(reached_state.state_type, TuringStateType::Accepting);
             return;
             
