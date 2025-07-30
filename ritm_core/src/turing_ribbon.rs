@@ -23,6 +23,12 @@ pub trait TuringRibbon : Display + Clone
 
     /// Returns the current character being read by the ribbon
     fn read_curr_char(&self) -> char;
+
+    /// Returns the vector of char as stored by the ribbon 
+    fn get_contents(&self) -> &Vec<char>;
+
+    /// Returns the index of the char being pointed by the ribbon
+    fn get_pointer(&self) -> usize;
 }
 
 
@@ -82,6 +88,14 @@ impl TuringRibbon for TuringWriteRibbon
     fn read_curr_char(&self) -> char {
         return self.chars_vec[self.pointer];
     }
+    
+    fn get_contents(&self) -> &Vec<char> {
+        &self.chars_vec
+    }
+    
+    fn get_pointer(&self) -> usize {
+        self.pointer
+    }
 }
 
 
@@ -118,6 +132,14 @@ impl TuringRibbon for TuringReadRibbon
     
     fn read_curr_char(&self) -> char {
         return self.chars_vec[self.pointer];
+    }
+
+    fn get_contents(&self) -> &Vec<char> {
+        &self.chars_vec
+    }
+
+    fn get_pointer(&self) -> usize {
+        self.pointer
     }
 } 
 
