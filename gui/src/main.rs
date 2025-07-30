@@ -15,11 +15,11 @@ fn main() {
             .with_min_inner_size([500.0, 600.0]),
         ..Default::default()
     };
-    let _ = eframe::run_native(
+    eframe::run_native(
         "eframe template",
         native_options,
         Box::new(|cc| Ok(Box::new(App::new(cc)))),
-    );
+    ).ok();
 }
 
 
@@ -28,7 +28,7 @@ fn main() {
 #[cfg(target_arch = "wasm32")]
 fn main() {
     use eframe::wasm_bindgen::JsCast as _;
-    use turingrs_gui::TuringApp;
+    use gui::App;
 
     // Redirect `log` message to `console.log` and friends:
     eframe::WebLogger::init(log::LevelFilter::Debug).ok();
@@ -51,7 +51,7 @@ fn main() {
             .start(
                 canvas,
                 web_options,
-                Box::new(|cc| Ok(Box::new(TuringApp::new(cc)))),
+                Box::new(|cc| Ok(Box::new(App::new(cc)))),
             )
             .await;
 

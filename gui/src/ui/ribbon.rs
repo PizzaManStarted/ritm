@@ -1,46 +1,56 @@
 use std::i32;
 
 use egui::{
-    Color32, Frame, Label, Margin, RichText, ScrollArea, Sense, Stroke, Ui, epaint::PathShape,
-    scroll_area::ScrollBarVisibility,
+    epaint::PathShape, scroll_area::{ScrollBarVisibility, ScrollSource}, vec2, Align, Color32, Frame, Label, Layout, Margin, RichText, ScrollArea, Sense, Stroke, StrokeKind, Ui
 };
-use ritm_core::turing_ribbon::TuringRibbon;
+use ritm_core::turing_machine::Ribbon;
 
-use crate::App;
+use crate::{
+    App,
+    ui::constant::Constant,
+};
 
 pub fn show(app: &mut App, ui: &mut Ui) {
-    // TODO replace by TuringMachine value
-    let ribbon_count = app.turing.get_k();
+    let ribbon_count = app.turing.graph().get_k() + 1;
 
     // Ribbons frame
     Frame::new()
         .inner_margin(Margin::same(3))
         .outer_margin(Margin::same(0))
-        .fill(app.theme.color3)
+        .fill(app.theme.ribbon)
         .show(ui, |ui| {
-            ui.spacing_mut().item_spacing = (0.0, 5.0).into();
+            ui.spacing_mut().item_spacing = (0.0, Constant::VERTICAL_SPACE).into();
 
             // Get the center of the ribbons layout
             let center = ui.available_rect_before_wrap().left() + ui.available_width() / 2.0;
-            let mut square_count = ((ui.available_width() + 5.0) / (5.0 + 50.0)) as usize;
+            let mut square_count = ((ui.available_width() + Constant::HORIZONTAL_SPACE)
+                / (Constant::HORIZONTAL_SPACE + Constant::SQUARE_SIZE))
+                as usize;
             if square_count % 2 == 0 {
                 square_count += 1
             }
-            let ribbon_size = square_count as f32 * (50.0 + 5.0) - 5.0;
+            let ribbon_size = square_count as f32
+                * (Constant::SQUARE_SIZE + Constant::HORIZONTAL_SPACE)
+                - Constant::HORIZONTAL_SPACE;
 
             // Scroll area to center and display the ribbon
             ScrollArea::horizontal()
-                .enable_scrolling(false)
+                .scroll_source(ScrollSource::NONE)
                 .scroll_bar_visibility(ScrollBarVisibility::AlwaysHidden)
-                .horizontal_scroll_offset(55.0 + (ribbon_size - ui.available_width()) / 2.0)// this offset center the symbol
+                .horizontal_scroll_offset(3.0 + // 3.0 is the margin of the center square
+                    Constant::SQUARE_SIZE
+                        + Constant::HORIZONTAL_SPACE
+                        + (ribbon_size - ui.available_width()) / 2.0,
+                ) // this offset center the symbol
                 .show(ui, |ui| {
+                    let width = ui.available_width();
                     // Draw each ribbon
                     for i in 0..ribbon_count {
                         // Get the top of the current ribbon to draw the arrow
-                        let top = ui.available_rect_before_wrap().top() - 2.0;
+                        let top = ui.available_rect_before_wrap().top();
 
                         // Draw the ribbon
-                        ribbon(app, ui, i);
+                        ribbon(app, ui, width, i);
 
                         // Draw the arrow on top of the ribbon
                         ui.painter().add(PathShape::convex_polygon(
@@ -49,51 +59,90 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                 (center + 9.0, top).into(),
                                 (center, top + 12.0).into(),
                             ],
-                            Color32::from_gray(100),
+                            app.theme.gray,
                             Stroke::NONE,
                         ));
                     }
                 });
-            
         });
 }
 
-fn ribbon(app: &mut App, ui: &mut Ui, ribbon_id: u8) {
-    ui.horizontal(|ui| {
-        ui.style_mut().spacing.item_spacing = (5.0, 0.0).into();
+/// Draw a ribbon with the correct spacing and character
+fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
+    ui.allocate_ui_with_layout(
+        vec2(0.0, Constant::SQUARE_SIZE + 6.0),
+        Layout::left_to_right(Align::Center)
+            .with_cross_justify(false)
+            .with_cross_align(Align::Center),
+        |ui| {
+            ui.style_mut().spacing.item_spacing = (Constant::HORIZONTAL_SPACE, 0.0).into();
 
-        let square_count: i32 = ((ui.available_width() + 5.0) / (5.0 + 50.0)) as i32 + 2;
+            let square_count: i32 = ((width + Constant::HORIZONTAL_SPACE)
+                / (Constant::HORIZONTAL_SPACE + Constant::SQUARE_SIZE))
+                as i32
+                + 2;
 
-        let (chars, pointer): (&Vec<char>, i32) = if ribbon_id == 0 {
-            (&app.step.read_ribbon.chars_vec, app.step.read_ribbon.pointer as i32)
-        } else {
-            let write_ribbon = &app.step.write_ribbons[ribbon_id as usize];
-            (&write_ribbon.chars_vec, write_ribbon.pointer as i32)
-        };
+            // Get the chars and pointer from reading or writing ribbon
+            let (chars, pointer): (&Vec<char>, i32) = if ribbon_id == 0 {
+                (
+                    &app.step.0.get_reading_ribbon().chars_vec,
+                    app.step.0.get_reading_ribbon().pointer as i32,
+                )
+            } else {
+                let write_ribbon = &app.step.0.get_write_ribbon()[ribbon_id - 1 as usize];
+                (&write_ribbon.chars_vec, write_ribbon.pointer as i32)
+            };
 
-        let ribbon_center = square_count/2;
-        let mut ribbon_vec = vec![' '; (ribbon_center - pointer).max(0) as usize];
-        ribbon_vec.append(&mut chars[(pointer-ribbon_center).max(0) as usize..(pointer+ribbon_center).min(chars.len() as i32) as usize].to_vec());
-        ribbon_vec.append(&mut vec![' '; (ribbon_center-(chars.len() as i32-pointer-1)).max(0)as usize]);
-
-        for i in 0..square_count {
-            square(app, ui, ribbon_vec[i as usize]);
-        }
-    });
-}
-
-fn square(app: &mut App, ui: &mut Ui, character: char) {
-
-    Frame::new()
-        .fill(Color32::WHITE)
-        .stroke(Stroke::new(0.0, Color32::from_gray(191)))
-        .corner_radius(2.0)
-        .show(ui, |ui| {
-            let (rect, _res) = ui.allocate_exact_size((50.0, 50.0).into(), Sense::empty());
-
-            ui.put(
-                rect,
-                Label::new(RichText::new(character).size(25.0).color(Color32::BLACK)),
+            // Create a vector with the character that are needed
+            let ribbon_center = square_count / 2;
+            let mut ribbon_vec = vec![' '; (ribbon_center - pointer).max(0) as usize];
+            ribbon_vec.append(
+                &mut chars[(pointer - ribbon_center).max(0) as usize
+                    ..(pointer + ribbon_center + 1).min(chars.len() as i32) as usize]
+                    .to_vec(),
             );
-        });
+            ribbon_vec.append(&mut vec![
+                ' ';
+                (ribbon_center - (chars.len() as i32 - pointer - 1)).max(0)
+                    as usize
+            ]);
+
+            for i in 0..square_count {
+                square(
+                    app,
+                    ui,
+                    ribbon_vec[i as usize],
+                    i == ribbon_center,
+                );
+            }
+        },
+    );
+}
+
+// Draw a single square with the character wanted
+fn square(app: &mut App, ui: &mut Ui, character: char, is_current: bool) {
+    Frame::new().show(ui, |ui| {
+        let size = Constant::SQUARE_SIZE + if is_current {6.0} else {0.0};
+        let (rect, _res) = ui.allocate_exact_size((size, size).into(), Sense::empty());
+
+        ui.painter().rect(
+            rect,
+            Constant::SQUARE_CORNER,
+            app.theme.white,
+            if is_current {
+                Stroke::new(3.0, app.theme.gray)
+            } else {
+                Stroke::NONE
+            },
+            StrokeKind::Inside
+        );
+        ui.put(
+            rect,
+            Label::new(
+                RichText::new(character)
+                    .size(Constant::SQUARE_SIZE / 2.0)
+                    .color(Color32::BLACK),
+            ),
+        );
+    });
 }

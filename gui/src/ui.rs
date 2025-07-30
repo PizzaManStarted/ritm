@@ -1,4 +1,4 @@
-use egui::{panel::Side, CentralPanel, Color32, CornerRadius, Frame, Margin, SidePanel, TopBottomPanel};
+use egui::{CentralPanel, Color32, CornerRadius, Frame, Margin, SidePanel, TopBottomPanel};
 
 
 pub mod ribbon;
@@ -8,6 +8,9 @@ pub mod constant;
 pub mod theme;
 pub mod utils;
 pub mod font;
+pub mod control;
+pub mod component;
+
 use crate::App;
 
 pub fn show(app: &mut App, ctx: &egui::Context) {
@@ -16,8 +19,8 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
     CentralPanel::default()
     .frame(Frame {
         outer_margin: Margin::same(0),
-        inner_margin: Margin::same(10),
-        fill: Color32::WHITE,
+        inner_margin: Margin::same(0),
+        fill: app.theme.background,
         ..Default::default()
     })
     .show(ctx, |ui| {
@@ -27,14 +30,15 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
         SidePanel::left("code")
         .frame(Frame {
             outer_margin: Margin { right: 10, ..Default::default()},
-            inner_margin: Margin::same(10),
-            fill: Color32::CYAN,
+            fill: app.theme.code,
             ..Default::default()
         })
         .resizable(false)
         .show_separator_line(false)
-        .min_width(500.0)
+        .min_width(300.0)
+        .default_width(300.0)
         .show_inside(ui, |ui| {
+            ui.label("lol");
         });
 
 
@@ -52,13 +56,15 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             .frame(Frame {
                 outer_margin: Margin { bottom: 10, ..Default::default() },
                 inner_margin: Margin::same(10),
-                fill: app.theme.color3,
+                corner_radius: CornerRadius::same(5),
+                fill: app.theme.ribbon,
                 ..Default::default()
             })
             .resizable(false)
             .show_separator_line(false)
             .show_inside(ui, |ui| {
                 ribbon::show(app, ui);
+                control::show(app, ui);
             });
 
 
@@ -67,6 +73,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             .frame(Frame {
                 outer_margin: Margin::same(0),
                 inner_margin: Margin::same(0),
+                fill: app.theme.graph,
                 corner_radius: CornerRadius::same(5),
                 ..Default::default()
             })

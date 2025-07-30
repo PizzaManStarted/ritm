@@ -1,16 +1,15 @@
 use std::collections::HashMap;
 
-use egui::{
-    Align, Color32, Direction, Frame, Image, Label, Layout, Margin, Pos2, Rect, Scene, Shadow,
-    Stroke, TextWrapMode, Ui, UiBuilder, Vec2, include_image, vec2,
-};
+use egui::{Rect, Scene, Ui, Vec2};
 
 use crate::{
-    ui::{constant::Constant, edit, theme::Theme, utils}, App
+    App,
+    ui::{constant::Constant, edit, utils},
 };
 
 pub mod state;
 pub mod transition;
+pub mod transition_edit;
 
 /// Show the graph display of the turing machine
 ///
@@ -23,39 +22,35 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     let ui_rect = ui.available_rect_before_wrap();
 
     // Compute the force applied on every node
-    apply_force(app);
+    if !app.event.is_dragging {
+        apply_force(app);
+    }
 
-    let scene_response = Frame::new()
-        .fill(app.theme.color5)
-        .corner_radius(5)
-        .show(ui, |ui| {
-            Scene::new()
-                .show(ui, &mut scene_rect, |ui| {
-                    // Draw the transitions of the turing machine
-                    transition::show(app, ui);
+    // Editing popup for transition
+    if app.event.is_editing && app.selected_transition.is_some() {
+        transition_edit::show(app, ui);
+    }
 
-                    // Draw the states of the turing machine
-                    state::show(app, ui);
+    let scene_response = Scene::new()
+        .show(ui, &mut scene_rect, |ui| {
+            // Draw the transitions of the turing machine
+            transition::show(app, ui);
 
-                    // This Rect can be used to "Reset" the view of the graph
-                    inner_rect = ui.min_rect();
-                    
-                })
-                .response
+            // Draw the states of the turing machine
+            state::show(app, ui);
+
+            // This Rect can be used to "Reset" the view of the graph
+            inner_rect = ui.min_rect();
         })
-        .inner;
-
+        .response;
     // Save scene border
     app.graph_rect = scene_rect;
 
     // If the graph scene is clicked
     if scene_response.clicked() {
-
         if app.event.is_adding_state {
-            
             app.add_state(scene_response.interact_pointer_pos().unwrap());
         }
-
 
         // CLick on the scene reset selection and editing
         app.event.is_adding_state = false;
@@ -63,7 +58,6 @@ pub fn show(app: &mut App, ui: &mut Ui) {
         app.selected_state = None;
         app.selected_transition = None;
     }
-
 
     edit::show(app, ui, ui_rect);
 
@@ -73,13 +67,12 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     }
 }
 
-
 /// Apply natural force on the node
 ///
 /// If 2 nodes are too close, they repulse each other to reach a distance L
 /// If 2 nodes are linked by a transition, they attract each other to reach a distance L
 pub fn apply_force(app: &mut App) {
-    let mut forces: HashMap<u8, Vec2> = HashMap::new();
+    let mut forces: HashMap<usize, Vec2> = HashMap::new();
 
     // register the max force applied on a state to check if the system is stable
     let mut max_force_applied: f32 = 0.0;
@@ -97,11 +90,13 @@ pub fn apply_force(app: &mut App) {
             // true if there is a transition between the two states
             let are_adjacent = app
                 .turing
-                .get_transitions_to(*i, *j)
+                .graph()
+                .get_transitions_by_index(*i, *j)
                 .is_ok_and(|v| !v.is_empty())
                 || app
                     .turing
-                    .get_transitions_to(*j, *i)
+                    .graph()
+                    .get_transitions_by_index(*j, *i)
                     .is_ok_and(|v| !v.is_empty());
 
             let distance = utils::distance(state_1.position, state_2.position);
@@ -127,7 +122,7 @@ pub fn apply_force(app: &mut App) {
         forces.insert(*i, final_force);
     }
 
-    for (i, state) in app.states.iter_mut() {
+    for (i, state) in app.states.iter_mut().filter(|f| !f.1.is_pinned) {
         // translate the state by the amount of force
         state.position += *forces.get(&i).unwrap();
     }

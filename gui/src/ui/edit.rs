@@ -1,30 +1,28 @@
 use egui::{
-    Align, Color32, Frame, Id, Image, ImageButton, LayerId, Layout, Margin, Rect, Shadow, Stroke,
-    Ui, UiBuilder, include_image, vec2,
+    Align, Color32, Frame, Id, Image, ImageButton, LayerId, Layout, Margin, Rect, Sense, Shadow,
+    Stroke, Ui, UiBuilder, include_image, vec2,
 };
 
-use crate::App;
+use crate::{ui::theme::Theme, App};
 
 /// Control of the graph
 pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
-
-    // The parent ui paint on the background layer, so we need to change it to a higher layer
-    let layer = LayerId::new(egui::Order::Middle, Id::new("edit"));
-    ui.scope_builder(UiBuilder::new().layer_id(layer), |ui| {
-
-        // Floating control absolute position
-        ui.allocate_new_ui(
-            UiBuilder::new()
-                .max_rect(Rect::from_center_size(
-                    rect.center_bottom() + vec2(0.0, -100.0),
-                    (rect.width(), 1.0).into(),
-                ))
-                .layout(Layout::top_down(Align::Center).with_cross_align(Align::Center)),
-            // .layer_id(layer),
-            |ui| {
+    // Floating control absolute position
+    ui.scope_builder(
+        UiBuilder::new()
+            .max_rect(Rect::from_center_size(
+                rect.center_bottom() + vec2(0.0, -100.0),
+                (rect.width(), 1.0).into(),
+            ))
+            .sense(Sense::empty())
+            .layout(Layout::top_down(Align::Center).with_cross_align(Align::Center)),
+        |ui| {
+            // The parent ui paint on the background layer, so we need to change it to a higher layer
+            let layer = LayerId::new(egui::Order::Middle, Id::new("edit"));
+            ui.scope_builder(UiBuilder::new().layer_id(layer), |ui| {
                 // Used for background
                 Frame::new()
-                    .fill(app.theme.color2)
+                    .fill(app.theme.white)
                     .inner_margin(Margin::symmetric(20, 10))
                     .corner_radius(15)
                     .stroke(Stroke::new(1.0, Color32::from_gray(190)))
@@ -35,7 +33,6 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                         color: Color32::from_black_alpha(25),
                     })
                     .show(ui, |ui| {
-
                         // Need to compute the width of the menu to center it
                         let mut width = 0.0;
                         let mut count = 0;
@@ -69,9 +66,9 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                                 ))
                                                 .fit_to_exact_size(vec2(35.0, 35.0))
                                                 .tint(if app.event.is_adding_state {
-                                                    Color32::BLUE
+                                                    app.theme.selected
                                                 } else {
-                                                    Color32::BLACK
+                                                    Theme::constrast_color(app.theme.white)
                                                 }),
                                             )
                                             .frame(false),
@@ -92,10 +89,10 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                                     "../../assets/icon/path.svg"
                                                 ))
                                                 .fit_to_exact_size(vec2(35.0, 35.0))
-                                                .tint(if app.event.is_adding_transition {
-                                                    Color32::BLUE
+                                                .tint(if app.event.is_adding_state {
+                                                    app.theme.selected
                                                 } else {
-                                                    Color32::BLACK
+                                                    Theme::constrast_color(app.theme.white)
                                                 }),
                                             )
                                             .frame(false),
@@ -108,28 +105,44 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
 
                                 // Delete
                                 // If a state or transition is selected, then display the delete button
-                                if app.selected_state.is_some() || app.selected_transition.is_some()
-                                {
-                                    if ui
+                                if app.selected_state.is_some()
+                                    && ui
                                         .add(
                                             ImageButton::new(
                                                 Image::new(include_image!(
                                                     "../../assets/icon/delete.svg"
                                                 ))
                                                 .fit_to_exact_size(vec2(35.0, 35.0))
-                                                .tint(Color32::BLACK),
+                                                .tint(Theme::constrast_color(app.theme.white)),
                                             )
                                             .frame(false),
                                         )
                                         .clicked()
-                                    {
-                                        app.remove_state();
-                                    }
+                                {
+                                    app.remove_state();
+                                }
+
+                                if (app.selected_state.is_some()
+                                    || app.selected_transition.is_some())
+                                    && ui
+                                        .add(
+                                            ImageButton::new(
+                                                Image::new(include_image!(
+                                                    "../../assets/icon/edit.svg"
+                                                ))
+                                                .fit_to_exact_size(vec2(35.0, 35.0))
+                                                .tint(Theme::constrast_color(app.theme.white)),
+                                            )
+                                            .frame(false),
+                                        )
+                                        .clicked()
+                                {
+                                    app.event.is_editing ^= true;
                                 }
                             },
                         );
                     });
-            },
-        );
-    });
+            });
+        },
+    );
 }

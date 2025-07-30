@@ -1,35 +1,46 @@
-use std::collections::{btree_map::Entry, BTreeMap};
+use std::{collections::{btree_map::Entry, BTreeMap, HashMap, HashSet}, f32::{self, consts::PI}};
 
-use egui::{epaint::{PathShape, QuadraticBezierShape}, vec2, Align, Color32, Label, Pos2, Rect, RichText, Sense, Stroke, TextEdit, Ui, Vec2};
+use egui::{emath::Rot2, epaint::{CubicBezierShape, PathShape, QuadraticBezierShape, TextShape}, text::LayoutJob, vec2, Align2, Color32, Pos2, Rect, Sense, Stroke, TextFormat, Ui, Vec2};
+use ritm_core::turing_machine::Ribbon;
 use crate::{
-    turing::{State, Transition}, ui::{constant::Constant, font::Font, utils::{self}}, App
+    turing::{State, Transition, TransitionId}, ui::{constant::Constant, font::Font, utils::{self}}, App
 };
 
-
+/// Draw every transition of the turing machine
 pub fn show(app: &mut App, ui: &mut Ui) {
 
-    let mut transitions_hashmap: BTreeMap<(u8, u8), Vec<((u8, u8), bool)>> = BTreeMap::new();
+    // We use this binary tree mapping structure to group every transition by source and target state
+    let mut transitions_hashmap: BTreeMap<(usize, usize), Vec<(TransitionId, bool)>> = BTreeMap::new();
+
+    // Used to compute the center of every state position
     let mut graph_center = Vec2::ZERO;
-    let states_count = app.states.len();
 
-    let keys: Vec<u8> = app.states.keys().map(|u| *u).collect::<Vec<u8>>();
+    let mut neighbors: HashMap<usize, HashSet<usize>> = HashMap::new();
 
+    // Extract each keys to avoid borrowing the whole App struct when iterating every state
+    let keys: Vec<usize> = app.states.keys().map(|u| *u).collect::<Vec<usize>>();
 
     for i in keys {
 
         let state = State::get(app, i);
         let transitions_count = state.transitions.len();
 
+
         for j in 0..transitions_count {
 
-            let transition = Transition::get(app, (i,j as u8));
+            let transition = Transition::get(app, (i,j));
             let target_state_index = transition.target_id;
 
-            
-            let is_previous = app.step.transition_taken.as_ref().is_some_and(|f| f
+            if target_state_index != i {
+                neighbors.entry(i).or_insert(HashSet::from([target_state_index])).insert(target_state_index);
+                neighbors.entry(target_state_index).or_insert(HashSet::from([i])).insert(i); 
+            }
+
+            // check if the current transition has been used to get to the current state
+            let is_previous = app.step.0.get_transition_taken().is_some_and(|f| f
                 == app
                     .turing
-                    .get_state(i)
+                    .graph().get_state(i as usize)
                     .unwrap()
                     .transitions
                     .get(transition.id as usize)
@@ -37,60 +48,74 @@ pub fn show(app: &mut App, ui: &mut Ui) {
 
             match transitions_hashmap.entry((i, target_state_index)) {
                 Entry::Occupied(mut e) => {
-                    e.get_mut().push(((i, j as u8), is_previous));
+                    e.get_mut().push(((i, j), is_previous));
                 }
                 Entry::Vacant(e) => {
-                    e.insert(vec![((i, j as u8), is_previous)]);
+                    e.insert(vec![((i, j), is_previous)]);
                 }
             }
         }
 
-        // compute graph center based on node position
+        // add every state position for later computation
         graph_center += state.position.to_vec2();
     }
 
-    graph_center /= states_count as f32;
+
+    // compute the center of the graph by computing the mean of every state position
+    graph_center /= app.states.len() as f32;
 
 
     for ((from, to), transitions) in transitions_hashmap.iter() {
 
-        draw_transition(
-            app,
-            ui,
-            *from,
-            *to,
-            graph_center, 
-            app.turing.get_transitions_to(*to, *from).is_ok_and(|_| to > from),
-            transitions,
-        );
+        if from == to {
+            draw_self_transition(
+                app,
+                ui, 
+                *from,
+                neighbors.get(from).unwrap().iter()
+                    .fold(Vec2::ZERO, |acc, e| acc + (State::get(app, *e).position - State::get(app, *from).position).normalized()),
+                transitions
+            );
+        } else {
+            draw_transition(
+                app,
+                ui,
+                *from,
+                *to,
+                graph_center, 
+                app.turing.graph().get_transitions_by_index(*to, *from).is_ok_and(|x| !x.is_empty() && from > to),
+                transitions,
+            );
+        }
     }
 }
 
+/// Draw transition between 2 different state
 fn draw_transition(
     app: &mut App,
     ui: &mut Ui,
-    source: u8,
-    target: u8,
+    source: usize,
+    target: usize,
     graph_center: Vec2,
     reverse: bool,
-    transitions: &Vec<((u8, u8), bool)>,
+    transitions: &Vec<(TransitionId, bool)>,
 ) {
 
     let source_position = State::get(app, source).position;
     let target_position = State::get(app, target).position;
     // compute the center between the 2 states
-    let center = vec2((source_position.x + target_position.x) / 2.0, (source_position.y + target_position.y) / 2.0);
+    let center = Pos2::new((source_position.x + target_position.x) / 2.0, (source_position.y + target_position.y) / 2.0);
 
     // compute the direction of the curve
     let mut delta = (source_position - target_position).rot90().normalized();
-    let need_to_flip = utils::distance((center + delta).to_pos2(), graph_center.to_pos2()) < utils::distance((center - delta).to_pos2(), graph_center.to_pos2());
+    let need_to_flip = utils::distance(center + delta, graph_center.to_pos2()) < utils::distance(center - delta, graph_center.to_pos2());
     // trust me bro, it's a xor operation
     delta = if reverse != need_to_flip { -delta } else { delta };
 
     // points of the curve
     let points = [
         source_position,
-        (center + delta * Constant::TRANSITION_CURVATURE * 2.0).to_pos2(),
+        (center + delta * Constant::TRANSITION_CURVATURE * 2.0),
         target_position
     ];
 
@@ -124,24 +149,69 @@ fn draw_transition(
         Stroke::NONE
     ));
 
-    let state = app.states.get(&source).unwrap();
-    let rules_len = state.transitions[0].text.len();
-    let offset = vec2(
-        Constant::TRANSITION_CURVATURE + rules_len as f32 * utils::get_width(ui, &Font::default()) / 2.0,
-        Constant::TRANSITION_CURVATURE + transitions.len() as f32 * (utils::get_heigth(ui, &Font::default()) - 10.0)
-    );
 
-    draw_labels(app, ui, center.to_pos2(), transitions, (center + delta * offset).to_pos2());
+    draw_labels(app, ui, transitions, (center , delta * Constant::TRANSITION_CURVATURE));
     
 }
 
+/// Draw self-transition, aka with the target being the source
 fn draw_self_transition(
+    app: &mut App,
     ui: &mut Ui,
-    source: Pos2,
-    graph_center: Vec2,
-    reverse: bool,
+    state_id: usize,
+    transition_vec: Vec2,
+    transitions: &Vec<(TransitionId, bool)>
 ) {
 
+    let state_position = State::get(app, state_id).position;
+    // normalize the delta
+    let delta = - transition_vec.normalized();
+
+    let size = Constant::SELF_TRANSITION_SIZE * 1.33;
+    let points = [
+        state_position,
+        state_position + (delta * size) + (delta.rot90() * size * 0.69),
+        state_position + (delta * size) - (delta.rot90() * size * 0.69),
+        state_position,
+    ];
+
+    ui.painter().add(CubicBezierShape::from_points_stroke(
+        points, 
+        false, 
+        Color32::TRANSPARENT, 
+        Stroke::new(Constant::TRANSITION_THICKNESS, Color32::BLACK)
+    ));
+
+    // we get the arrow position on the curve
+    let n = 100;
+    let curve_lenght = get_cubic_len(points, n);
+    let arrow_position = (
+        cubicbeziercurve(points, map(&curve_lenght, n, 1.0 - (Constant::STATE_RADIUS - 5.0)/curve_lenght.last().unwrap()) ),
+        cubicbeziercurve(points, map(&curve_lenght, n, 1.0 - (Constant::STATE_RADIUS + Constant::ARROW_SIZE/2.0 - 5.0)/curve_lenght.last().unwrap()) ),
+    );
+    let arrow_direction = (arrow_position.1 - arrow_position.0).normalized();
+
+    // points of the triangle
+    let triangles = vec![
+        arrow_position.0.to_pos2(),
+        (arrow_position.1
+            + arrow_direction * Constant::ARROW_SIZE
+            + arrow_direction.rot90() * Constant::ARROW_SIZE / 2.0)
+            .to_pos2(),
+        (arrow_position.1 + arrow_direction * Constant::ARROW_SIZE
+            - arrow_direction.rot90() * Constant::ARROW_SIZE / 2.0)
+            .to_pos2(),
+    ];
+
+    // draw the triangle
+    ui.painter().add(PathShape::convex_polygon(
+        triangles,
+        Color32::BLACK,
+        Stroke::NONE,
+    ));
+
+    // draw the label
+    draw_labels(app, ui, transitions, (state_position, delta * Constant::SELF_TRANSITION_SIZE));
 }
 
 
@@ -149,71 +219,75 @@ fn draw_self_transition(
 fn draw_labels(
     app: &mut App,
     ui: &mut Ui,
-    source: Pos2,
-    transitions: &Vec<((u8, u8), bool)>,
-    position: Pos2,
+    transitions: &Vec<((usize, usize), bool)>,
+    placement: (Pos2, Vec2),
 ) {
-    let font_height = utils::get_heigth(ui, &Font::default());
-    let height_used = transitions.len() as f32 * font_height;
-
-    // enumerate the transition
-    let mut i: usize = 0;
+    
+    // compute the position of the apsis of the curved transition
+    let position = placement.0 + placement.1;
 
     // debug
-    // ui.painter().circle(position, 2.0, Color32::CYAN, Stroke::NONE);
+    // ui.painter().circle(position, 2.0, Color32::RED, Stroke::NONE);
 
-    for (identifier, is_previous) in transitions {
+    let sample_transition = Transition::get(app, transitions[0].0);
 
+    let vector = if sample_transition.parent_id != sample_transition.target_id {
+        State::get(app, sample_transition.parent_id).position - State::get(app, sample_transition.target_id).position
+    } else {
+        (State::get(app, sample_transition.parent_id).position - position).rot90()
+    };
 
-        // initialise the rectangle where the text will be
-        let max_rect = Rect::from_center_size(
-            position + vec2(0.0, -(height_used/2.0 - (i as f32 + 0.5) * font_height)),
-            vec2((transitions.len() + 5) as f32 * utils::get_width(ui, &Font::default()), utils::get_heigth(ui, &Font::default())),
-        );
+    let angle = ((vector.angle() + PI/2.0 - 0.00001).rem_euclid(PI)) - PI/2.0;
 
-        // draw the text or a single line text edit if selected, then return the rect used
-        let selected = app.selected_transition.is_some_and(|selected_transition| selected_transition == *identifier);
-        let transition = Transition::get_mut(app, *identifier);
-        let rect = if selected {
+    let reverse = placement.1.y.is_sign_positive();
+    let selected = app.selected_transition.is_some_and(|transitions| transitions == (sample_transition.parent_id, sample_transition.target_id));
 
-            
-            // scope to not affect style of other parts
-            let response = ui.scope(|ui| {
-                ui.visuals_mut().extreme_bg_color = Color32::TRANSPARENT;
-                ui.visuals_mut().widgets.active.fg_stroke = Stroke::new(1.0, utils::constrast_color(Color32::WHITE));
-                ui.visuals_mut().selection.stroke = Stroke::NONE;
+    let mut clicked = false;
 
-                ui.put(max_rect, TextEdit::singleline(&mut transition.text)
-                    .font(Font::default())
-                    .text_color(utils::constrast_color(Color32::WHITE))
-                    .horizontal_align(Align::Center)
-                    .vertical_align(Align::Center)
-                )
-            }).inner;
+    // place each rules
+    for (i, (identifier, is_previous)) in transitions.iter().enumerate() {
 
-            response.request_focus();
+        let transition = Transition::get(app, *identifier);
+        let text = format!("{}", &transition.text);
 
-            response
+        let job = LayoutJob::single_section(text, TextFormat {
+            font_id: Font::default(),
+            color: if selected {app.theme.selected} else {app.theme.ribbon},
+            underline: if *is_previous {Stroke::new(1.0, app.theme.ribbon)} else {Stroke::NONE},
+            ..Default::default()
+        });
 
+        let galley = ui.painter().layout_job(job);
+        let text_height = galley.size().y;
+
+        let bounding_rect = Rect::from_center_size(Pos2::ZERO, galley.size()).rotate_bb(Rot2::from_angle(angle));
+
+        let row_i = if reverse {i} else {transitions.len() - 1 - i};
+        let position_rect = Rect::from_center_size(position + vec2(
+            (-text_height * row_i as f32 - text_height/2.0) * angle.sin(),
+            (text_height * row_i as f32 + text_height/2.0) * angle.cos()
+        ) * if reverse {1.0} else {-1.0}, bounding_rect.size());
+
+        let anchor: Pos2 = 
+        if angle.sin().is_sign_positive() && angle.cos().is_sign_positive() {
+            Pos2::new(angle.sin() * text_height, 0.0)
+        } else if angle.sin().is_sign_positive() && angle.cos().is_sign_negative() {
+            Pos2::new(position_rect.width(), -angle.cos() * text_height)
+        } else if angle.sin().is_sign_negative() && angle.cos().is_sign_negative() {
+            Pos2::new(position_rect.width() - angle.sin() * text_height, position_rect.height())
         } else {
-            let text = RichText::new(&transition.text)
-                .font(Font::default())
-                .color(Color32::BLACK);
+            Pos2::new(0.0,position_rect.height() - angle.cos() * text_height)
+        };
 
-            // draw the text
-            ui.put(max_rect, Label::new(text).extend())
-        }.rect;
+        ui.painter_at(position_rect)
+            .add(TextShape::new(position_rect.left_top() + anchor.to_vec2(), galley, Color32::BLACK)
+                    .with_angle_and_anchor(angle, Align2::LEFT_TOP));
 
-        // add a click listener to the rectangle of the label/textedit
-        let response = ui.allocate_rect(rect, Sense::click());
-
-        // if a transition rule is clicked, then we set it as selected
-        if response.clicked() {
-            app.selected_transition = Some(*identifier);
-            app.selected_state = None;
-        }
-
-        i += 1;
+        ui.allocate_rect(position_rect, Sense::click()).clicked().then(|| clicked = true);
+    }
+    
+    if clicked {
+        app.selected_transition = Some((sample_transition.parent_id, sample_transition.target_id));
     }
 }
 
@@ -228,8 +302,6 @@ fn quadraticbeziercurve(points: [Pos2; 3], t: f32) -> Vec2 {
         + t.powi(2) * points[2].y;
     Vec2::new(x, y)
 }
-
-
 
 /// return a point on the curve of a cubic bezier
 fn cubicbeziercurve(points: [Pos2; 4], t: f32) -> Vec2 {
@@ -293,7 +365,7 @@ fn map(len: &Vec<f32>, n: usize, t: f32) -> f32 {
         }
     }
 
-    if len[i] > target {
+    if len[i] > target && i != 0 {
         i -= 1;
     }
 
