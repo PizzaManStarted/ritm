@@ -150,14 +150,14 @@ impl TuringMachines
 
 impl TuringMachines {
     /// Gets *reference* of the stored turing machine graph.
-    pub fn get_turing_machine_graph_ref(&self) -> &TuringMachineGraph {
+    pub fn graph_ref(&self) -> &TuringMachineGraph {
         match self {
             TuringMachines::TuringMachine { graph, data:_, iteration:_ } => &graph,
         }
     }
 
     /// Gets *mutable reference* of the stored turing machine graph.
-    pub fn get_turing_machine_graph_mut_ref(&mut self) -> &mut TuringMachineGraph {
+    pub fn graph_mut(&mut self) -> &mut TuringMachineGraph {
         match self {
             TuringMachines::TuringMachine { graph, data:_, iteration:_ } => graph,
         }
@@ -166,7 +166,7 @@ impl TuringMachines {
     /// Gets the stored turing machine graph.
     /// 
     /// This will free the turing machine since it will drop the ownership
-    pub fn get_turing_machine_graph(self) -> TuringMachineGraph {
+    pub fn graph(self) -> TuringMachineGraph {
         match self {
             TuringMachines::TuringMachine { graph, data:_, iteration:_ } => graph,
         }
@@ -331,7 +331,7 @@ pub enum TuringExecutionSteps
 
 
 
-impl<'a> Iterator for &mut TuringMachines
+impl<'a> Iterator for TuringMachines
 {
     type Item = TuringExecutionSteps;
 
@@ -349,7 +349,7 @@ impl<'a> Iterator for &mut TuringMachines
         self.set_iteration(prev_iter + 1);
 
         // Fetch the current state
-        let curr_state =  self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().clone();
+        let curr_state =  self.graph_ref().get_state(self.get_state_pointer()).unwrap().clone();
 
         let mut transition_index_taken = None;
 
@@ -428,7 +428,7 @@ impl<'a> Iterator for &mut TuringMachines
                     // Return backtracking info
                     return Some(TuringExecutionSteps::Backtracked { 
                         previous_state: curr_state, 
-                        reached_state: self.get_turing_machine_graph_ref().get_state(saved_state.saved_state_index).unwrap().clone(),
+                        reached_state: self.graph_ref().get_state(saved_state.saved_state_index).unwrap().clone(),
                         read_ribbon: self.get_reading_ribbon().clone(),
                         write_ribbons: self.get_writting_ribbons().clone(),
                         iteration : self.get_iteration(),
@@ -455,13 +455,13 @@ impl<'a> Iterator for &mut TuringMachines
         }
         // if a viable transition was found
         if let Some(ind) = transition_index_taken {
-            let transition = self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().transitions[ind as usize].clone();
+            let transition = self.graph_ref().get_state(self.get_state_pointer()).unwrap().transitions[ind as usize].clone();
             // Apply the transition
             // to the read ribbons
             self.get_reading_ribbon().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
             
             // to the write ribbons
-            for i in 0..self.get_turing_machine_graph_ref().get_k()
+            for i in 0..self.graph_ref().get_k()
             {
                 self.get_writting_ribbons()[i as usize].try_apply_transition(transition.chars_read[(i+1) as usize],
                                                                                         transition.chars_write[i as usize].0, &transition.chars_write[i as usize].1).unwrap();
@@ -473,7 +473,7 @@ impl<'a> Iterator for &mut TuringMachines
             Some(TuringExecutionSteps::TransitionTaken
             {
                 previous_state: curr_state.clone(),
-                reached_state: self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().clone(),
+                reached_state: self.graph_ref().get_state(self.get_state_pointer()).unwrap().clone(),
                 transition_index_taken : ind as usize,
                 transition_taken: transition.clone(),
                 read_ribbon: self.get_reading_ribbon().clone(),

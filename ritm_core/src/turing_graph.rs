@@ -170,7 +170,7 @@ impl TuringMachineGraph {
     }
 
     /// Returns the **mutable** state (*node*) at the given index.
-    fn get_state_mut(&mut self, pointer: usize) -> Result<&mut TuringState, TuringError>
+    pub fn get_state_mut(&mut self, pointer: usize) -> Result<&mut TuringState, TuringError>
     {
         if self.states.len() <= pointer as usize {
             return Err(TuringError::OutOfRangeStateError { accessed_index: pointer as usize, states_len: self.states.len() });
