@@ -90,12 +90,12 @@ pub fn apply_force(app: &mut App) {
             // true if there is a transition between the two states
             let are_adjacent = app
                 .turing
-                .graph()
+                .graph_ref()
                 .get_transitions_by_index(*i, *j)
                 .is_ok_and(|v| !v.is_empty())
                 || app
                     .turing
-                    .graph()
+                    .graph_ref()
                     .get_transitions_by_index(*j, *i)
                     .is_ok_and(|v| !v.is_empty());
 

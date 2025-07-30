@@ -46,7 +46,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                         if app.rules_edit.is_empty() {
                             app.rules_edit = app
                                 .turing
-                                .graph()
+                                .graph_ref()
                                 .get_state(selected_transition.0)
                                 .unwrap()
                                 .transitions
@@ -330,11 +330,11 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                             .clicked()
                         {
                             app.rules_edit.push(TuringTransitionString {
-                                chars_read: vec!["ç".to_string(); app.turing.graph().get_k() + 1],
+                                chars_read: vec!["ç".to_string(); app.turing.graph_ref().get_k() + 1],
                                 move_read: TuringDirection::None,
                                 chars_write: vec![
                                     ("ç".to_string(), TuringDirection::None);
-                                    app.turing.graph().get_k()
+                                    app.turing.graph_ref().get_k()
                                 ],
                                 index_to_state: Some(selected_transition.1),
                             });

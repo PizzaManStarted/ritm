@@ -1,7 +1,7 @@
 use std::{collections::{btree_map::Entry, BTreeMap, HashMap, HashSet}, f32::{self, consts::PI}};
 
 use egui::{emath::Rot2, epaint::{CubicBezierShape, PathShape, QuadraticBezierShape, TextShape}, text::LayoutJob, vec2, Align2, Color32, Pos2, Rect, Sense, Stroke, TextFormat, Ui, Vec2};
-use ritm_core::turing_machine::Ribbon;
+use ritm_core::turing_machine::{TuringExecutionSteps};
 use crate::{
     turing::{State, Transition, TransitionId}, ui::{constant::Constant, font::Font, utils::{self}}, App
 };
@@ -37,10 +37,16 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             }
 
             // check if the current transition has been used to get to the current state
-            let is_previous = app.step.0.get_transition_taken().is_some_and(|f| f
+            let transition_taken = match &app.step {
+                TuringExecutionSteps::FirstIteration { .. } => { None },
+                TuringExecutionSteps::TransitionTaken { transition_taken, .. } => { Some(transition_taken) },
+                TuringExecutionSteps::Backtracked { ..  } => { None }
+            };
+
+            let is_previous = transition_taken.is_some_and(|f| f
                 == app
                     .turing
-                    .graph().get_state(i as usize)
+                    .graph_ref().get_state(i as usize)
                     .unwrap()
                     .transitions
                     .get(transition.id as usize)
@@ -83,7 +89,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                 *from,
                 *to,
                 graph_center, 
-                app.turing.graph().get_transitions_by_index(*to, *from).is_ok_and(|x| !x.is_empty() && from > to),
+                app.turing.graph_ref().get_transitions_by_index(*to, *from).is_ok_and(|x| !x.is_empty() && from > to),
                 transitions,
             );
         }

@@ -174,7 +174,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                 );
 
                 col2.vertical_centered(|ui| {
-                    ui.add(Label::new(format!("Step : {}", app.step.1)));
+                    ui.add(Label::new(format!("Step : {}", app.step.get_nb_iterations())));
 
                     let (text, color) = if let Some(r) = app.event.is_accepted {
                         if r {

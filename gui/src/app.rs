@@ -23,7 +23,7 @@ pub struct App {
     pub turing: TuringMachines,
 
     /// Current step of the turing machine or None if no step
-    pub step: (TuringExecutionSteps, usize),
+    pub step: TuringExecutionSteps,
 
     /// User input for the turing machine
     pub input: String,
@@ -257,7 +257,7 @@ impl Default for App {
 
         let mut sf = Self {
             turing: turing,
-            step: (step, 0),
+            step: step,
             input: "11011011".to_string(),
             graph_rect: Rect::ZERO,
             states: HashMap::new(),
@@ -309,7 +309,7 @@ impl App {
 
     /// Add a state to the turing machine at a certain position
     pub fn add_state(&mut self, position: Pos2) {
-        let state_count = self.turing.graph().name_index_hashmap.len();
+        let state_count = self.turing.graph_ref().get_states().len();
         let default_name = format!("state{}", state_count + 1);
 
         // Create the state in the core of the application to miror the id into
@@ -341,9 +341,9 @@ impl App {
     /// Add a transition graphically and logically
     pub fn add_transition(&mut self, target: usize) {
         let transition = TuringTransitionMultRibbons::new(
-            vec!['ç'; self.turing.graph().get_k() as usize],
+            vec!['ç'; self.turing.graph_ref().get_k() as usize],
             TuringDirection::None,
-            vec![('ç', TuringDirection::None); self.turing.graph().get_k() as usize],
+            vec![('ç', TuringDirection::None); self.turing.graph_ref().get_k() as usize],
         );
 
         let transition_rule = transition.to_string();
@@ -362,12 +362,12 @@ impl App {
     /// Continue the execution of the turing machine by one iteration
     pub fn next(&mut self) {
         match self.turing.next() {
-            Some(step) => self.step = (step, self.step.1 + 1),
+            Some(step) => self.step = step,
             None => {
                 // Store the result of the computation
                 self.event.is_accepted = Some(
                     self.turing
-                        .graph()
+                        .graph_ref()
                         .get_state(self.turing.get_state_pointer())
                         .unwrap()
                         .state_type
@@ -382,20 +382,15 @@ impl App {
 
     /// Reset the machine execution
     pub fn reset(&mut self) {
-        self.turing = TuringMachines::new(
-            self.turing.graph().clone(),
-            self.turing.get_word().to_string(),
-            self.turing.get_mode().clone(),
-        )
-        .unwrap();
-        self.step = (self.turing.next().unwrap(), 0);
+        self.turing.reset().ok();
+        self.step = self.turing.next().unwrap();
         self.event.is_accepted = None;
     }
 
     /// Reset the machine execution with the new input
     pub fn set_input(&mut self) {
         let _ = self.turing.reset();
-        self.step = (self.turing.next().unwrap(), 0);
+        self.step = self.turing.next().unwrap();
         self.event.is_accepted = None;
     }
 
@@ -413,6 +408,9 @@ impl App {
                 .get_state_mut(selected_transition.0)
                 .unwrap()
                 .transitions;
+
+
+
             transitions.clear();
             transitions.append(self.rules_edit.iter().map(|transition| transition.to().unwrap()).collect::<Vec<TuringTransitionMultRibbons>>().as_mut());
             
@@ -440,27 +438,27 @@ impl App {
         let mut state_list: BTreeSet<usize> = BTreeSet::new();
         let mut layer_state: Vec<usize> = vec![];
 
-        for (name, index) in self.turing.graph().name_index_hashmap.iter() {
-            let state = self.turing.graph().get_state(*index).unwrap();
+        for (i, state) in self.turing.graph_ref().get_states().iter().enumerate() {
+            let index = i;
 
             let transitions: Vec<Transition> = state
                 .transitions
                 .iter()
                 .enumerate()
-                .map(|(i, f)| Transition::new(f.to_string(), i, *index, f.index_to_state.unwrap()))
+                .map(|(i, f)| Transition::new(f.to_string(), i, index, f.index_to_state.unwrap()))
                 .collect();
 
             if state.state_type == TuringStateType::Accepting || state.transitions.is_empty() {
-                layer_state.push(*index);
+                layer_state.push(index);
             } else {
-                state_list.insert(*index);
+                state_list.insert(index);
             }
 
             self.states.insert(
-                *index,
+                index,
                 State {
-                    id: *index,
-                    name: name.to_string(),
+                    id: index,
+                    name: state.name.to_string(),
                     transitions: transitions,
                     ..Default::default()
                 },
@@ -480,7 +478,7 @@ impl App {
             }
 
             for state_id in &state_list {
-                let state = self.turing.graph().get_state(*state_id).unwrap();
+                let state = self.turing.graph_ref().get_state(*state_id).unwrap();
                 if state
                     .transitions
                     .iter()
