@@ -211,7 +211,7 @@ fn expect_out_of_range_transition_error<O>(res : Result<O, TuringError>)
 {
     if let Err(e) = res {
         match e {
-            TuringError::OutOfRangeTransitionError { accessed_index, states_len } => (),
+            TuringError::OutOfRangeTransitionError { accessed_index:_, states_len:_ } => (),
             _ => panic!("Wrong error was returned"),
         }
     }

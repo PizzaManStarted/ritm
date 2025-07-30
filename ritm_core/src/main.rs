@@ -1,22 +1,27 @@
 use ritm_core::{
-    parser::*, turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringMachines}, turing_state::{TuringDirection, TuringTransitionMultRibbons}
+    turing_parser::*, turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringMachines}, turing_state::{TuringDirection, TuringTransitionMultRibbons}
 };
 
 fn main() {
-    let mut mt = parse_turing_machine_file("resources/turing2.tm".to_string()).unwrap();
-    // let mut mt  = parse_turing_machine("".to_string()).unwrap();
-    
-    // FIX ME This is not okay !
-    //mt.remove_state(&"a".to_string());
-    //println!("{:?}", mt);
-    // FIXME : Fix the bug of index being wrong when removing something like a !
-    let exec= TuringMachines::new_with_ref(&mt, "0010011".to_string(), Mode::SaveAll).unwrap();
+    let machine = String::from("q_i {ç, ç -> R, ç, R} q_1;
+                                        q1 {0, _ -> R, a, R 
+                                          | 1, _ -> R, a, R} q1;
+                                        
+                                        q_1 {1, _ -> R, _, L} q_2;
+                                        
+                                        q_2 { 0, a -> R, a, L
+                                            | 1, a -> R, a, L} q_2;
+                                        
+                                        q_2 {$, ç -> N, ç, N} q_a;");
 
-    //&et mut exec = TuringMachineExecutor::new(mt, "1010101010".to_string()).unwrap();
-    for tmp in exec {
-        println!("_______________\nExec. step ::\n{}", tmp)
+    let res = parse_turing_graph_string(machine);
+
+
+    let mut t = TuringMachines::new(res.unwrap(), String::from("01101"), ritm_core::turing_machine::Mode::StopAfter(20000)).unwrap();
+
+    // println!("{:?}", res);
+    for steps in &mut t {
+        println!("{}", steps);   
     }
-    
-    println!("{:?}", mt);
 
 }

@@ -8,4 +8,4 @@ pub mod turing_errors;
 
 pub mod turing_ribbon;
 
-pub mod parser;
+pub mod turing_parser;

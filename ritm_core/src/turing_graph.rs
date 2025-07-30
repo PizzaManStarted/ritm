@@ -6,7 +6,7 @@ use crate::{turing_errors::TuringError, turing_state::{TuringStateType, TuringSt
 pub struct TuringMachineGraph
 {
     /// The hashmap containing a mapping of all nodes names and their related index in the `states` field.
-    pub name_index_hashmap: HashMap<String, usize>, 
+    name_index_hashmap: HashMap<String, usize>, 
     /// The vector containing all the nodes of the turing machine graph
     states: Vec<TuringState>,
     /// The number of ribbons this graph was made for
@@ -84,7 +84,7 @@ impl TuringMachineGraph {
         };
     }
 
-    /// Adds a new rule to a state of the machine of the form : `from {transition} to`.
+    /// Adds a new rule/transition to a state of the machine of the form : `from {transition} to`.
     /// Meaning, a new edge is added to the graph.
     /// 
     /// ## Returns
@@ -97,7 +97,6 @@ impl TuringMachineGraph {
         {
             return Err(TuringError::ArgsSizeTransitionError);
         }
-
         match self.add_rule_state_ind(from_index, transition, to_index) {
             Ok(()) => {
                 return Ok(());
@@ -222,7 +221,7 @@ impl TuringMachineGraph {
         return Ok(res);
     }
 
-    /// Get all the transitions indexes between two nodes.
+    /// Get all the transitions between two nodes.
     pub fn get_transitions_by_index(&self, n1: usize, n2: usize) -> Result<Vec<&TuringTransitionMultRibbons>, TuringError>
     {
         let mut vec = vec!();
@@ -390,13 +389,24 @@ impl TuringMachineGraph {
     }
     
     
-    pub fn get_k(&self) -> usize {
+    pub fn get_k(&self) -> usize 
+    {
         return self.k;
+    }
+
+    pub fn get_name_index_hashmap(&self) -> &HashMap<String, usize>
+    {
+        return &self.name_index_hashmap;
+    }
+
+    pub fn get_states(&self) -> &Vec<TuringState>
+    {
+        return &self.states;
     }
 }
 
 impl Debug for TuringMachineGraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuringMachine").field("states", &self.states).field("hashmap", &self.name_index_hashmap).finish()
+        f.debug_struct("TuringMachine").field("k", &self.k).field("states", &self.states).field("hashmap", &self.name_index_hashmap).finish()
     }
 }

@@ -6,9 +6,9 @@ fn create_graph_test()
 {
     let graph = TuringMachineGraph::new(2).unwrap();
     
-    assert_eq!(*graph.name_index_hashmap.get("i").unwrap(), 0);
-    assert_eq!(*graph.name_index_hashmap.get("a").unwrap(), 1);
-    assert_eq!(*graph.name_index_hashmap.get("r").unwrap(), 2);
+    assert_eq!(*graph.get_name_index_hashmap().get("i").unwrap(), 0);
+    assert_eq!(*graph.get_name_index_hashmap().get("a").unwrap(), 1);
+    assert_eq!(*graph.get_name_index_hashmap().get("r").unwrap(), 2);
 
     expect_illegal_action_error(TuringMachineGraph::new(0));
     // Check the final states
@@ -184,7 +184,7 @@ fn delete_node()
 
     // check that it was removed
     expect_unk_name_error(graph.get_state_from_name(&String::from("t")));
-    if let Some(_) = graph.name_index_hashmap.get(&String::from("t")) {
+    if let Some(_) = graph.get_name_index_hashmap().get(&String::from("t")) {
         panic!("No index should have been returned")
     }
 

@@ -27,6 +27,10 @@ pub enum TuringError {
     /// Error when trying to access a state using a string but the state does not exists
     UnknownStateError {
         state_name : String
+    },
+    /// Error when failing to parse a given turing machine
+    ParseError {
+        reason : String
     }
 }
 
@@ -62,6 +66,10 @@ impl Debug for TuringError {
             Self::UnknownStateError { state_name } => f
                         .debug_struct("UnknownStateError")
                         .field("state_name", state_name)
+                        .finish(),
+            Self::ParseError { reason } => f
+                        .debug_struct("ParseError")
+                        .field("reason", reason)
                         .finish(),
         }
     }
