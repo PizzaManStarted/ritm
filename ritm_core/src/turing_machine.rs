@@ -566,5 +566,22 @@ impl TuringExecutionSteps {
         }
     }
 
+    pub fn get_reading_ribbon(&self) -> &TuringReadRibbon {
+        match self {
+            TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon, init_write_ribbons:_ } => init_read_ribbon,
+            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon, write_ribbons:_, iteration:_ } => read_ribbon,
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon, write_ribbons:_, iteration:_ } => read_ribbon,
+        }
+    }
+
+
+    pub fn get_writting_ribbons(&self) -> &Vec<TuringWriteRibbon> {
+        match self {
+            TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons } => init_write_ribbons,
+            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons, iteration:_ } => write_ribbons,
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons, iteration:_ } => write_ribbons,
+        }
+    }
+
 
 }
