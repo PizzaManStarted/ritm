@@ -212,6 +212,13 @@ impl Display for TuringState {
 }
 
 
+impl PartialEq for TuringState {
+    fn eq(&self, other: &Self) -> bool {
+        self.state_type == other.state_type && self.transitions == other.transitions && self.name == other.name
+    }
+}
+
+
 /// Represents the direction of a movement that the pointer of a ribbon can take after reading/writing a character
 pub enum TuringDirection {
     Left,

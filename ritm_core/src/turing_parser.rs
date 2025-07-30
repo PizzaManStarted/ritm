@@ -9,8 +9,14 @@ use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing
 pub struct TuringGrammar;
 
 
+/// Parses a turing machine graph.
+/// 
+/// Important to note that if the given string is empty, then an empty [TuringMachineGraph] with a *k* of 1 is returned.
 pub fn parse_turing_graph_file(file_path: String) -> Result<TuringMachineGraph, TuringError>
 {
+    if file_path.trim().is_empty() {
+        return TuringMachineGraph::new(1);
+    }
     let unparsed_file = fs::read_to_string(&file_path).expect("cannot read file");
     return parse_turing_graph_string(unparsed_file);
 }

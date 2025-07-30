@@ -6,7 +6,7 @@ use crate::{turing_errors::TuringError, turing_state::{TuringStateType, TuringSt
 pub struct TuringMachineGraph
 {
     /// The hashmap containing a mapping of all nodes names and their related index in the `states` field.
-    pub name_index_hashmap: HashMap<String, usize>, 
+    name_index_hashmap: HashMap<String, usize>, 
     /// The vector containing all the nodes of the turing machine graph
     states: Vec<TuringState>,
     /// The number of ribbons this graph was made for
@@ -389,8 +389,19 @@ impl TuringMachineGraph {
     }
     
     
-    pub fn get_k(&self) -> usize {
+    pub fn get_k(&self) -> usize 
+    {
         return self.k;
+    }
+
+    pub fn get_name_index_hashmap(&self) -> &HashMap<String, usize>
+    {
+        return &self.name_index_hashmap;
+    }
+
+    pub fn get_states(&self) -> &Vec<TuringState>
+    {
+        return &self.states;
     }
 }
 

@@ -1,6 +1,6 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 
-turing_machine = { (WHITESPACE* ~ (transition ~ ";")+ ~ EOI)? }
+turing_machine = { (WHITESPACE* ~ (transition ~ ";")+) ~ EOI }
 
 // Used when only reading a transition
 transition_only = _{ transition ~ EOI }
