@@ -1,9 +1,15 @@
+use std::ops::Div;
+
+use egui::{vec2, Ui, Vec2};
+
 
 
 /// Constant used in the application
 pub struct Constant {}
 
 impl Constant {
+
+    pub const DEFAULT_SIZE: Vec2 = vec2(1000.0, 600.0);
 
     // Graph
     pub const CREP: f32 = 30000.0;
@@ -26,4 +32,14 @@ impl Constant {
 
     // Control
     pub const CONTROL_ICON_SIZE: f32 = 40.0;
+
+
+    pub fn scale<T: From<f32> + Into<f32>>(ui: &Ui, value: T) -> T {
+        let size = ui.ctx().screen_rect().size();
+        if Self::DEFAULT_SIZE.x < size.x || Self::DEFAULT_SIZE.y < size.y {
+            value
+        } else {
+            T::from(size.x / Self::DEFAULT_SIZE.x  * value.into())
+        }
+    }
 }

@@ -25,7 +25,7 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                     .fill(app.theme.white)
                     .inner_margin(Margin::symmetric(20, 10))
                     .corner_radius(15)
-                    .stroke(Stroke::new(1.0, Color32::from_gray(190)))
+                    .stroke(Stroke::new(1.0, app.theme.gray))
                     .shadow(Shadow {
                         offset: [0, 4],
                         blur: 4,
@@ -138,6 +138,23 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                         .clicked()
                                 {
                                     app.event.is_editing ^= true;
+                                }
+
+
+                                if ui
+                                        .add(
+                                            ImageButton::new(
+                                                Image::new(include_image!(
+                                                    "../../assets/icon/recenter.svg"
+                                                ))
+                                                .fit_to_exact_size(vec2(35.0, 35.0))
+                                                .tint(Theme::constrast_color(app.theme.white)),
+                                            )
+                                            .frame(false),
+                                        )
+                                        .clicked()
+                                {
+                                    app.event.need_recenter = true;
                                 }
 
                                 

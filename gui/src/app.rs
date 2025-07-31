@@ -13,7 +13,7 @@ use ritm_core::{
 };
 
 use crate::{
-    turing::{State, Transition, TuringTransitionString},
+    turing::{State, Transition, TransitionEdit, TuringTransitionString},
     ui::{self, theme::Theme},
 };
 
@@ -52,7 +52,7 @@ pub struct App {
     /// Interval between each iteration
     pub interval: i32,
 
-    pub rules_edit: Vec<TuringTransitionString>,
+    pub rules_edit: Vec<TransitionEdit>,
 }
 
 /// Keep the state of the application
@@ -85,6 +85,9 @@ pub struct Event {
 
     /// Is the selected element in editing mode ?
     pub is_editing: bool,
+
+    /// Do we need to recenter the graph
+    pub need_recenter: bool,
 }
 
 impl Default for App {
@@ -289,6 +292,7 @@ impl Default for Event {
             has_changed: false,
             is_next: AtomicBool::new(false).into(),
             is_editing: false,
+            need_recenter: false,
         }
     }
 }
@@ -501,6 +505,7 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         install_image_loaders(ctx);
+
 
         ui::show(self, ctx);
     }

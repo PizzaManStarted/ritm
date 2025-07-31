@@ -7,17 +7,19 @@ use std::{
     time::Duration,
 };
 
-use egui::{include_image, vec2, Color32, Context, Frame, Image, ImageButton, Label, RichText, Sense, Slider, Ui};
+use egui::{include_image, vec2, Context, Frame, Image, ImageButton, Label, RichText, Sense, Slider, TextEdit, Ui};
 use egui_flex::{Flex, FlexAlign, FlexAlignContent, item};
 
-use crate::{App, ui::constant::Constant};
+use crate::{ui::{constant::Constant, font::Font}, App};
 
 pub fn show(app: &mut App, ui: &mut Ui) {
     Frame::new().show(ui, |ui| {
         ui.columns_const(|[col1, col2, col3]| {
             col1.horizontal_centered(|ui| {
-                ui.label("input : ");
+                ui.label(RichText::new("Input : ").font(Font::default(ui)).color(app.theme.gray));
                 ui.text_edit_singleline(&mut app.input);
+
+                TextEdit::singleline(&mut app.input).font(Font::default(ui))
             });
 
             Flex::horizontal()
@@ -38,9 +40,9 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                             Constant::CONTROL_ICON_SIZE,
                                         ))
                                         .tint(if app.event.is_accepted.is_none() {
-                                            Color32::WHITE
+                                            app.theme.white
                                         } else {
-                                            Color32::GRAY
+                                            app.theme.gray
                                         }),
                                 )
                                 .frame(false)
@@ -81,9 +83,9 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                             Constant::CONTROL_ICON_SIZE,
                                         ))
                                         .tint(if app.event.is_accepted.is_none() {
-                                            Color32::WHITE
+                                            app.theme.white
                                         } else {
-                                            Color32::GRAY
+                                            app.theme.gray
                                         }),
                                 )
                                 .frame(false)
@@ -118,9 +120,9 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                         Constant::CONTROL_ICON_SIZE,
                                     ))
                                     .tint(if app.event.is_accepted.is_none() {
-                                        Color32::WHITE
+                                        app.theme.white
                                     } else {
-                                        Color32::GRAY
+                                        app.theme.gray
                                     }),
                             )
                             .frame(false)
@@ -146,7 +148,11 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                         Constant::CONTROL_ICON_SIZE,
                                         Constant::CONTROL_ICON_SIZE,
                                     ))
-                                    .tint(Color32::WHITE),
+                                    .tint(if app.step.get_nb_iterations() != 0 {
+                                        app.theme.white
+                                    } else {
+                                        app.theme.gray
+                                    }),
                             )
                             .frame(false),
                         )
@@ -158,9 +164,9 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                 });
 
             // col3.horizontal_centered(|ui| ui.label("Accepted (no)"))
-            col3.columns_const(|[col1, col2]| {
+            col3.vertical_centered(|ui| {
 
-                col1.add(
+                ui.add(
                     Slider::new(&mut app.interval, 3..=-5)
                         .custom_formatter(|n, _| format!("{}X", 2.0_f32.powi(n as i32 * -1)))
                         .custom_parser(|s| {
@@ -173,19 +179,23 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                         }),
                 );
 
-                col2.vertical_centered(|ui| {
+                ui.horizontal_centered(|ui| {
                     ui.add(Label::new(format!("Step : {}", app.step.get_nb_iterations())));
 
                     let (text, color) = if let Some(r) = app.event.is_accepted {
                         if r {
-                        ("Accepted", Color32::GREEN)
+                        ("Accepted", app.theme.valid)
 
                         } else {
-                        ("Rejected", Color32::RED)
+                        ("Rejected", app.theme.invalid)
 
                         }
                     } else {
-                        ("Running", Color32::GRAY)
+                        if app.event.is_running {
+                            ("Running", app.theme.gray)
+                        } else {
+                            ("Idle", app.theme.gray)
+                        }
                     };
                     
                     ui.add(Label::new(RichText::new(text).color(color)))

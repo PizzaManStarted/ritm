@@ -62,6 +62,7 @@ impl Theme {
             window_shadow: Shadow::NONE,
             popup_shadow: default_shadow,
             override_text_color: Some(theme.gray),
+            text_edit_bg_color: Some(theme.white),
             widgets: Widgets {
                 active: WidgetVisuals {
                     ..default_widget

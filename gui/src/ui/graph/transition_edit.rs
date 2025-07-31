@@ -1,22 +1,18 @@
-use std::process::exit;
-
 use egui::{
     Align, AtomExt, Button, Color32, Frame, Id, Image, ImageButton, Label, Layout, Margin, Modal,
     RichText, ScrollArea, Stroke, TextEdit, Ui, include_image, style::WidgetVisuals, vec2,
 };
-use ritm_core::turing_state::TuringDirection;
+use ritm_core::turing_state::{TuringDirection, TuringTransitionMultRibbons};
 
 use crate::{
-    App,
-    turing::{State, TuringTransitionString},
-    ui::{component::combobox::ComboBox, font::Font, theme::Theme},
+    turing::{State, TransitionEdit}, ui::{component::combobox::ComboBox, font::Font, theme::Theme}, App
 };
 
 pub fn show(app: &mut App, ui: &mut Ui) {
     Modal::new(Id::new("transition_edit"))
         .frame(Frame {
-            fill: Color32::WHITE,
-            stroke: Stroke::new(2.0, Color32::GRAY),
+            fill: app.theme.white,
+            stroke: Stroke::new(2.0, app.theme.gray),
             inner_margin: Margin::same(10),
             ..Default::default()
         })
@@ -34,7 +30,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                         State::get(app, selected_transition.0).name,
                         State::get(app, selected_transition.1).name
                     ))
-                    .font(Font::default()),
+                    .font(Font::default(ui)),
                 );
 
                 // List of the rule
@@ -51,8 +47,8 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                 .unwrap()
                                 .transitions
                                 .iter()
-                                .map(|transition| TuringTransitionString::from(transition))
-                                .collect::<Vec<TuringTransitionString>>();
+                                .map(|transition| TransitionEdit::from(transition))
+                                .collect::<Vec<TransitionEdit>>();
                         }
                         ScrollArea::vertical()
                             .max_height(ui.ctx().input(|i| i.screen_rect()).height()/2.0)
@@ -62,7 +58,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                 let mut marked_to_delete: Vec<usize> = vec![];
                                 for transition_index in 0..count {
                                     // Skip the transition not relevant
-                                    if app.rules_edit[transition_index].index_to_state.unwrap()
+                                    if app.rules_edit[transition_index].get_edit().index_to_state.unwrap()
                                         != selected_transition.1
                                     {
                                         continue;
@@ -82,7 +78,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                             "../../../assets/icon/delete.svg"
                                                         ))
                                                         .fit_to_exact_size(vec2(35.0, 35.0))
-                                                        .tint(Color32::RED),
+                                                        .tint(app.theme.invalid),
                                                     )
                                                     .frame(false),
                                                 )
@@ -96,16 +92,21 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                 .add(
                                                     ImageButton::new(
                                                         Image::new(include_image!(
-                                                            "../../../assets/icon/stateplus.svg"
+                                                            "../../../assets/icon/undo.svg"
                                                         ))
                                                         .fit_to_exact_size(vec2(35.0, 35.0))
-                                                        .tint(Color32::GREEN),
+                                                        .tint(if app.rules_edit[transition_index].has_changed() {
+                                                            app.theme.gray
+                                                        } else {
+                                                            Color32::LIGHT_GRAY
+                                                        }),
                                                     )
                                                     .frame(false),
                                                 )
                                                 .clicked()
                                             {
-                                                todo!("Implement undo change")
+                                                // Undo all changes
+                                                app.rules_edit[transition_index].undo();
                                             }
 
                                             // Margin for textedit
@@ -123,7 +124,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                 ui.visuals_mut().widgets.inactive.weak_bg_fill;
 
                                             // Make access easier
-                                            let transition = &mut app.rules_edit[transition_index];
+                                            let transition = &mut app.rules_edit[transition_index].get_edit();
 
                                             // Layout single character TextEdit
                                             ui.with_layout(
@@ -131,7 +132,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                 |ui| {
                                                     ui.spacing_mut().item_spacing = vec2(5.0, 0.0);
                                                     ui.set_height(
-                                                        Font::get_heigth(ui, &Font::default())
+                                                        Font::get_heigth(ui, &Font::default(ui))
                                                             + margin.y * 2.0,
                                                     );
 
@@ -147,7 +148,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                                     WidgetVisuals {
                                                                         bg_stroke: Stroke::new(
                                                                             1.0,
-                                                                            Color32::RED,
+                                                                            app.theme.invalid,
                                                                         ),
                                                                         ..app.theme.default_widget()
                                                                     },
@@ -161,11 +162,11 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                                     Color32::LIGHT_GRAY,
                                                                 )
                                                                 .frame(true)
-                                                                .font(Font::default())
+                                                                .font(Font::default(ui))
                                                                 .margin(margin)
                                                                 .desired_width(Font::get_width(
                                                                     ui,
-                                                                    &Font::default(),
+                                                                    &Font::default(ui),
                                                                 ))
                                                                 .char_limit(1),
                                                             );
@@ -197,7 +198,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                                 "N".to_string()
                                                             }
                                                         })
-                                                        .font(Font::default()),
+                                                        .font(Font::default(ui)),
                                                     )
                                                     .width(20.0) // TODO change and think about this value, I hardcoded it
                                                     .show_ui(ui, |ui| {
@@ -234,7 +235,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                                     WidgetVisuals {
                                                                         bg_stroke: Stroke::new(
                                                                             1.0,
-                                                                            Color32::RED,
+                                                                            app.theme.invalid,
                                                                         ),
                                                                         ..app.theme.default_widget()
                                                                     },
@@ -249,11 +250,11 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                                     Color32::LIGHT_GRAY,
                                                                 )
                                                                 .frame(true)
-                                                                .font(Font::default())
+                                                                .font(Font::default(ui))
                                                                 .margin(margin)
                                                                 .desired_width(Font::get_width(
                                                                     ui,
-                                                                    &Font::default(),
+                                                                    &Font::default(ui),
                                                                 ))
                                                                 .char_limit(1),
                                                             );
@@ -264,8 +265,9 @@ pub fn show(app: &mut App, ui: &mut Ui) {
 
                                                         // Reading ribbon moving direction
                                                         ComboBox::from_id_salt(format!(
-                                                            "movewrite-{}",
-                                                            transition_index
+                                                            "movewrite-{}/{}",
+                                                            transition_index,
+                                                            i
                                                         ))
                                                         .selected_text(
                                                             RichText::new(
@@ -281,7 +283,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                                     }
                                                                 },
                                                             )
-                                                            .font(Font::default()),
+                                                            .font(Font::default(ui)),
                                                         )
                                                         .width(20.0) // TODO change and think about this value, I hardcoded it
                                                         .show_ui(ui, |ui| {
@@ -320,7 +322,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                             .add(
                                 ImageButton::new(
                                     Image::new(include_image!(
-                                        "../../../assets/icon/stateplus.svg"
+                                        "../../../assets/icon/plus.svg"
                                     ))
                                     .fit_to_exact_size(vec2(35.0, 35.0))
                                     .tint(app.theme.gray),
@@ -329,15 +331,15 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                             )
                             .clicked()
                         {
-                            app.rules_edit.push(TuringTransitionString {
-                                chars_read: vec!["ç".to_string(); app.turing.graph_ref().get_k() + 1],
+                            app.rules_edit.push(TransitionEdit::from(&TuringTransitionMultRibbons {
+                                chars_read: vec!['ç'; app.turing.graph_ref().get_k() + 1],
                                 move_read: TuringDirection::None,
                                 chars_write: vec![
-                                    ("ç".to_string(), TuringDirection::None);
+                                    ('ç', TuringDirection::None);
                                     app.turing.graph_ref().get_k()
                                 ],
-                                index_to_state: Some(selected_transition.1),
-                            });
+                                index_to_state: Some(selected_transition.1)
+                            }));
                         }
                     })
                     .response
@@ -349,14 +351,13 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                 ui.spacing_mut().button_padding = vec2(0.0, 8.0);
                 ui.spacing_mut().item_spacing = vec2(10.0, 0.0);
                 ui.columns(2, |columns| {
+                    let text = RichText::new("Save")
+                                    .color(Theme::constrast_color(app.theme.valid))
+                                    .font(Font::default(&columns[0]))
+                                    .atom_grow(true);
                     if columns[0]
                         .add(
-                            Button::new(
-                                RichText::new("Save")
-                                    .color(Theme::constrast_color(app.theme.valid))
-                                    .font(Font::default())
-                                    .atom_grow(true),
-                            )
+                            Button::new(text)
                             .stroke(Stroke::new(2.0, app.theme.gray))
                             .fill(app.theme.valid)
                             .corner_radius(10.0),
@@ -366,14 +367,13 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                         app.apply_transition_change();
                     };
 
+                    let text = RichText::new("Cancel")
+                                    .color(Theme::constrast_color(app.theme.invalid))
+                                    .font(Font::default(&columns[1]))
+                                    .atom_grow(true);
                     if columns[1]
                         .add(
-                            Button::new(
-                                RichText::new("Cancel")
-                                    .color(Theme::constrast_color(app.theme.invalid))
-                                    .font(Font::default())
-                                    .atom_grow(true),
-                            )
+                            Button::new(text)
                             .stroke(Stroke::new(2.0, app.theme.gray))
                             .fill(app.theme.invalid)
                             .corner_radius(10.0),

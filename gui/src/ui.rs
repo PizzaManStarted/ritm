@@ -1,4 +1,4 @@
-use egui::{CentralPanel, Color32, CornerRadius, Frame, Margin, SidePanel, TopBottomPanel};
+use egui::{CentralPanel, CornerRadius, Frame, Margin, SidePanel, TopBottomPanel};
 
 
 pub mod ribbon;
@@ -11,7 +11,7 @@ pub mod font;
 pub mod control;
 pub mod component;
 
-use crate::App;
+use crate::{ui::font::Font, App};
 
 pub fn show(app: &mut App, ctx: &egui::Context) {
 
@@ -25,6 +25,8 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
     })
     .show(ctx, |ui| {
         ui.spacing_mut().indent = 10.0;
+
+        ui.style_mut().override_font_id = Some(Font::default(ui)); // TODO check if there is not a better way to do that
 
         // Code and file loading
         SidePanel::left("code")

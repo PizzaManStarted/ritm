@@ -12,10 +12,17 @@ impl Font {
     pub const SMALL_SIZE: f32 = 12.0;
 
     /// default font used in the application
-    pub fn default() -> FontId {
+    pub fn default(ui: &Ui) -> FontId {
+        let size = ui.ctx().screen_rect().size();
         FontId {
             family: FontFamily::Name("RobotoMono-regular".into()),
-            size: Font::MEDIUM_SIZE,
+            size: if size.x < 1100.0 || size.y < 700.0 {
+                Self::SMALL_SIZE
+            } else if size.x > 1800.0 || size.y > 1200.0 {
+                Self::BIG_SIZE
+            } else {
+                Self::MEDIUM_SIZE
+            },
         }
     }
 
@@ -33,7 +40,7 @@ impl Font {
             f.layout_job(LayoutJob::simple_singleline(
                 text.to_string(),
                 fond_id,
-                Color32::BLACK,
+                Color32::PLACEHOLDER,
             ))
             .rect
         });

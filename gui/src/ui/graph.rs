@@ -32,6 +32,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     }
 
     let scene_response = Scene::new()
+        .zoom_range(0.0..=2.0)
         .show(ui, &mut scene_rect, |ui| {
             // Draw the transitions of the turing machine
             transition::show(app, ui);
@@ -43,8 +44,14 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             inner_rect = ui.min_rect();
         })
         .response;
-    // Save scene border
-    app.graph_rect = scene_rect;
+
+    // Save scene border and recenter if asked
+    app.graph_rect = if app.event.need_recenter {
+        app.event.need_recenter = false;
+        inner_rect
+    } else {
+        scene_rect
+    };
 
     // If the graph scene is clicked
     if scene_response.clicked() {

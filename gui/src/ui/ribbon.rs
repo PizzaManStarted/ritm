@@ -1,7 +1,7 @@
 use std::i32;
 
 use egui::{
-    epaint::PathShape, scroll_area::{ScrollBarVisibility, ScrollSource}, vec2, Align, Color32, Frame, Label, Layout, Margin, RichText, ScrollArea, Sense, Stroke, StrokeKind, Ui
+    epaint::PathShape, scroll_area::{ScrollBarVisibility, ScrollSource}, vec2, Align, Frame, Label, Layout, Margin, RichText, ScrollArea, Sense, Stroke, StrokeKind, Ui
 };
 use ritm_core::turing_ribbon::TuringRibbon;
 
@@ -12,6 +12,8 @@ use crate::{
 
 pub fn show(app: &mut App, ui: &mut Ui) {
     let ribbon_count = app.turing.graph_ref().get_k() + 1;
+
+    let square_size = Constant::scale(ui, Constant::SQUARE_SIZE);
 
     // Ribbons frame
     Frame::new()
@@ -24,13 +26,13 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             // Get the center of the ribbons layout
             let center = ui.available_rect_before_wrap().left() + ui.available_width() / 2.0;
             let mut square_count = ((ui.available_width() + Constant::HORIZONTAL_SPACE)
-                / (Constant::HORIZONTAL_SPACE + Constant::SQUARE_SIZE))
+                / (Constant::HORIZONTAL_SPACE + square_size))
                 as usize;
             if square_count % 2 == 0 {
                 square_count += 1
             }
             let ribbon_size = square_count as f32
-                * (Constant::SQUARE_SIZE + Constant::HORIZONTAL_SPACE)
+                * (square_size + Constant::HORIZONTAL_SPACE)
                 - Constant::HORIZONTAL_SPACE;
 
             // Scroll area to center and display the ribbon
@@ -38,7 +40,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                 .scroll_source(ScrollSource::NONE)
                 .scroll_bar_visibility(ScrollBarVisibility::AlwaysHidden)
                 .horizontal_scroll_offset(3.0 + // 3.0 is the margin of the center square
-                    Constant::SQUARE_SIZE
+                    square_size
                         + Constant::HORIZONTAL_SPACE
                         + (ribbon_size - ui.available_width()) / 2.0,
                 ) // this offset center the symbol
@@ -69,8 +71,9 @@ pub fn show(app: &mut App, ui: &mut Ui) {
 
 /// Draw a ribbon with the correct spacing and character
 fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
+    let square_size = Constant::scale(ui, Constant::SQUARE_SIZE);
     ui.allocate_ui_with_layout(
-        vec2(0.0, Constant::SQUARE_SIZE + 6.0),
+        vec2(0.0, square_size + 6.0),
         Layout::left_to_right(Align::Center)
             .with_cross_justify(false)
             .with_cross_align(Align::Center),
@@ -78,7 +81,7 @@ fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
             ui.style_mut().spacing.item_spacing = (Constant::HORIZONTAL_SPACE, 0.0).into();
 
             let square_count: i32 = ((width + Constant::HORIZONTAL_SPACE)
-                / (Constant::HORIZONTAL_SPACE + Constant::SQUARE_SIZE))
+                / (Constant::HORIZONTAL_SPACE + square_size))
                 as i32
                 + 2;
 
@@ -121,8 +124,9 @@ fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
 
 // Draw a single square with the character wanted
 fn square(app: &mut App, ui: &mut Ui, character: char, is_current: bool) {
+    let square_size = Constant::scale(ui, Constant::SQUARE_SIZE);
     Frame::new().show(ui, |ui| {
-        let size = Constant::SQUARE_SIZE + if is_current {6.0} else {0.0};
+        let size = square_size + if is_current {6.0} else {0.0};
         let (rect, _res) = ui.allocate_exact_size((size, size).into(), Sense::empty());
 
         ui.painter().rect(
@@ -140,8 +144,8 @@ fn square(app: &mut App, ui: &mut Ui, character: char, is_current: bool) {
             rect,
             Label::new(
                 RichText::new(character)
-                    .size(Constant::SQUARE_SIZE / 2.0)
-                    .color(Color32::BLACK),
+                    .size(square_size / 2.0)
+                    .color(app.theme.gray),
             ),
         );
     });

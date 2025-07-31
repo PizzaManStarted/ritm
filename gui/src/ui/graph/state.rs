@@ -1,4 +1,4 @@
-use egui::{vec2, Color32, Label, Rect, RichText, Sense, Stroke, Ui};
+use egui::{vec2, Label, Rect, RichText, Sense, Stroke, Ui};
 
 use crate::{
     turing::State, ui::{constant::Constant, font::Font, theme::Theme}, App
@@ -39,13 +39,13 @@ fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) {
             if let Some(current_state_id) = app.turing.graph_ref().get_name_index_hashmap().get(&app.step.get_current_state().name) && *current_state_id == state_id {
                 Stroke::new(4.0, app.theme.highlight)
             } else {
-                Stroke::new(2.0, Color32::GRAY)
+                Stroke::new(2.0, app.theme.gray)
             }
         },
     );
 
     let name = RichText::new(&state.name)
-        .font(Font::default())
+        .font(Font::default(ui))
         .color(Theme::constrast_color(state.color));
 
     let label = Label::new(name).truncate();
@@ -54,7 +54,7 @@ fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) {
     ui.put(
         Rect::from_center_size(
             rect.center(),
-            Font::text_size(ui, Font::default(), &state.name).min(vec2(rect.width(), rect.height()))
+            Font::text_size(ui, Font::default(ui), &state.name).min(vec2(rect.width(), rect.height()))
         ),
         label
     );

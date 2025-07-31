@@ -29,6 +29,7 @@ pub struct Transition {
 }
 
 /// Copy of the [`TuringTransitionMultRibbons`] but with string to allow empty char
+#[derive(Clone, PartialEq)]
 pub struct TuringTransitionString {
     pub chars_read: Vec<String>,
     pub move_read: TuringDirection,
@@ -36,31 +37,64 @@ pub struct TuringTransitionString {
     pub index_to_state: Option<usize>,
 }
 
-impl TuringTransitionString {
+pub struct TransitionEdit {
+    edit: TuringTransitionString,
+    base: TuringTransitionString,
+    has_changed: bool,
+}
+
+impl TransitionEdit {
     
     pub fn from(ttmr: &TuringTransitionMultRibbons) -> Self {
 
-        Self {
+        let tts = TuringTransitionString {
             chars_read: ttmr.chars_read.iter().map(|f| f.to_string()).collect::<Vec<String>>(),
             move_read: ttmr.move_read.clone(),
             chars_write: ttmr.chars_write.iter().map(|(char, dir)| (char.to_string(), dir.clone())).collect::<Vec<(String, TuringDirection)>>(),
             index_to_state: ttmr.index_to_state
+        };
+
+        Self {
+            edit: tts.clone(),
+            base: tts,
+            has_changed: false
         }
     }
 
     pub fn to(&self) -> Result<TuringTransitionMultRibbons, Invalid> {
 
-        if self.chars_read.iter().any(|string| string.is_empty())
-        || self.chars_write.iter().any(|(string, _)| string.is_empty()) {
+        if self.edit.chars_read.iter().any(|string| string.is_empty())
+        || self.edit.chars_write.iter().any(|(string, _)| string.is_empty()) {
             return Err(Invalid::True);
         }
 
         Ok(TuringTransitionMultRibbons {
-            chars_read: self.chars_read.iter().map(|string| string.chars().next().unwrap()).collect::<Vec<char>>(),
-            move_read: self.move_read.clone(),
-            chars_write: self.chars_write.iter().map(|(string, dir)| (string.chars().next().unwrap(), dir.clone())).collect::<Vec<(char, TuringDirection)>>(),
-            index_to_state: self.index_to_state,
+            chars_read: self.edit.chars_read.iter().map(|string| string.chars().next().unwrap()).collect::<Vec<char>>(),
+            move_read: self.edit.move_read.clone(),
+            chars_write: self.edit.chars_write.iter().map(|(string, dir)| (string.chars().next().unwrap(), dir.clone())).collect::<Vec<(char, TuringDirection)>>(),
+            index_to_state: self.edit.index_to_state,
         })
+    }
+
+    /// The transition information editable
+    pub fn get_edit(&mut self) -> &mut TuringTransitionString {
+        &mut self.edit
+    }
+
+    /// Check if the transition information changed
+    pub fn has_changed(&mut self) -> bool {
+        if self.has_changed {
+            true
+        } else {
+            self.has_changed = self.edit != self.base;
+            self.has_changed
+        }
+    }
+
+    /// Undo all changes made to the editable transition struct
+    pub fn undo(&mut self) {
+        self.edit = self.base.clone();
+        self.has_changed = false;
     }
 }
 
