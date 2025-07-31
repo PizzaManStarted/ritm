@@ -139,6 +139,8 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                 {
                                     app.event.is_editing ^= true;
                                 }
+
+                                
                             },
                         );
                     });

@@ -3,7 +3,7 @@ use std::{collections::{btree_map::Entry, BTreeMap, HashMap, HashSet}, f32::{sel
 use egui::{emath::Rot2, epaint::{CubicBezierShape, PathShape, QuadraticBezierShape, TextShape}, text::LayoutJob, vec2, Align2, Color32, Pos2, Rect, Sense, Stroke, TextFormat, Ui, Vec2};
 use ritm_core::turing_machine::{TuringExecutionSteps};
 use crate::{
-    turing::{State, Transition, TransitionId}, ui::{constant::Constant, font::Font, utils::{self}}, App
+    turing::{State, Transition, TransitionId}, ui::{constant::Constant, font::Font, theme::Theme, utils::{self}}, App
 };
 
 /// Draw every transition of the turing machine
@@ -24,7 +24,6 @@ pub fn show(app: &mut App, ui: &mut Ui) {
 
         let state = State::get(app, i);
         let transitions_count = state.transitions.len();
-
 
         for j in 0..transitions_count {
 
@@ -257,9 +256,8 @@ fn draw_labels(
         let text = format!("{}", &transition.text);
 
         let job = LayoutJob::single_section(text, TextFormat {
-            font_id: Font::default(),
-            color: if selected {app.theme.selected} else {app.theme.ribbon},
-            underline: if *is_previous {Stroke::new(1.0, app.theme.ribbon)} else {Stroke::NONE},
+            font_id: if *is_previous {Font::bold()} else {Font::default()},
+            color: if selected {app.theme.selected} else {if *is_previous {app.theme.highlight} else {Theme::constrast_color(app.theme.graph)}},
             ..Default::default()
         });
 

@@ -36,7 +36,11 @@ fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) {
         if app.selected_state.is_some_and(|id| id == state_id ) {
             Stroke::new(4.0, app.theme.selected)
         } else {
-            Stroke::new(2.0, Color32::GRAY)
+            if let Some(current_state_id) = app.turing.graph_ref().get_name_index_hashmap().get(&app.step.get_current_state().name) && *current_state_id == state_id {
+                Stroke::new(4.0, app.theme.highlight)
+            } else {
+                Stroke::new(2.0, Color32::GRAY)
+            }
         },
     );
 
