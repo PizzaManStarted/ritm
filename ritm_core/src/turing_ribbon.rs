@@ -3,6 +3,18 @@ use std::fmt::{Debug, Display};
 use crate::{turing_errors::TuringError, turing_state::TuringDirection};
 
 
+/// Represents the initial character stored at the start of every ribbon
+pub const INIT_CHAR : char =  'ç';
+
+/// Represents the blank character in a ribbon 
+pub const BLANK_CHAR : char =  '_';
+
+/// Represents the character placed after the content in a [TuringReadRibbon]
+pub const END_CHAR : char = '$';
+
+
+
+
 /// A trait used to implement Turing ribbons
 pub trait TuringRibbon : Display + Clone
 {
@@ -18,7 +30,7 @@ pub trait TuringRibbon : Display + Clone
     /// * `Some(true)` if the transition went smoothly.
     /// * `Some(false)` if the transition could not be taken.
     /// 
-    /// A [TuringError] if an error happened, like for example, it was not possible to move at the given direction.
+    /// A [TuringError] if an error happened, like for example, it was not possible to move at the given direction. Or if a special character (like [INIT_CHAR], [END_CHAR]) is used to replace a *non* special one.
     fn try_apply_transition(&mut self, if_read: char, replace_by: char, move_to: &TuringDirection) -> Result<bool, TuringError>;
 
     /// Returns the current character being read by the ribbon
@@ -54,7 +66,7 @@ impl TuringRibbon for TuringWriteRibbon
     {
         Self 
         { 
-            chars_vec: vec!('ç', '_'),
+            chars_vec: vec!(INIT_CHAR, BLANK_CHAR),
             pointer: 0
         }
     }
@@ -74,6 +86,10 @@ impl TuringRibbon for TuringWriteRibbon
             if new_pointer >= self.chars_vec.len() as isize {
                 self.chars_vec.push('_');
                 
+            }
+
+            if let Err(e) = check_replacement_validity(self.chars_vec[self.pointer], replace_by) {
+                return Err(e);
             }
             // Replace the current char read
             self.chars_vec[self.pointer] = replace_by;
@@ -101,12 +117,12 @@ impl TuringRibbon for TuringWriteRibbon
 
 impl TuringRibbon for TuringReadRibbon
 {
-    /// Creates a new [TuringReadRibbon]
+    /// Creates a new [TuringReadRibbon] only containing the [INIT_CHAR] and [END_CHAR].
     fn new() -> Self 
     {
         Self 
         { 
-            chars_vec: vec!('ç', '$'),
+            chars_vec: vec!(INIT_CHAR, END_CHAR),
             pointer: 0
         }
     }
@@ -146,18 +162,29 @@ impl TuringRibbon for TuringReadRibbon
 
 impl TuringReadRibbon 
 {
-    /// Feed a word into the read ribbon, and also adds 'ç' and '$' to the extremities of it
+    /// Feed a word into the read ribbon, and also adds [INIT_CHAR] and [END_CHAR] to the extremities of it
     pub fn feed_word(&mut self, word: String)
     {
         self.chars_vec.clear();
-        self.chars_vec.push('ç');
+        self.chars_vec.push(INIT_CHAR);
         for ch in word.chars() {
             self.chars_vec.push(ch);
         }
-        self.chars_vec.push('$');
+        self.chars_vec.push(END_CHAR);
         self.pointer = 0;
     }
 }
+
+
+fn check_replacement_validity(og_char: char, new_char: char) -> Result<(), TuringError>
+{
+    if og_char != new_char && (new_char == INIT_CHAR || new_char == END_CHAR) {
+        return Err(TuringError::IllegalActionError { cause: format!("Tried to replace a char with a special char : {}", new_char) });
+    }
+    Ok(())
+}
+
+
 
 
 
@@ -241,11 +268,11 @@ mod tests{
         let ribbon = TuringReadRibbon::new();
 
         assert_eq!(ribbon.pointer, 0);
-        assert_eq!(ribbon.chars_vec, vec!('ç', '$'));
+        assert_eq!(ribbon.chars_vec, vec!(INIT_CHAR, END_CHAR));
         let ribbon = TuringWriteRibbon::new();
     
         assert_eq!(ribbon.pointer, 0);
-        assert_eq!(ribbon.chars_vec, vec!('ç', '_'));
+        assert_eq!(ribbon.chars_vec, vec!(INIT_CHAR, BLANK_CHAR));
     }
 
     #[test]
@@ -255,7 +282,7 @@ mod tests{
         
         ribbon.feed_word("test".to_string());
 
-        assert_eq!(ribbon.chars_vec, vec!('ç', 't', 'e', 's', 't', '$'));
+        assert_eq!(ribbon.chars_vec, vec!(INIT_CHAR, 't', 'e', 's', 't', END_CHAR));
     }
 
 
@@ -266,23 +293,23 @@ mod tests{
         
         ribbon.feed_word("test".to_string());
 
-        ribbon.try_apply_transition('ç', 'ç', &TuringDirection::Right).unwrap();
+        ribbon.try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::Right).unwrap();
         assert_eq!(ribbon.pointer, 1);
         ribbon.try_apply_transition('t', 'p', &TuringDirection::Left).unwrap();
         assert_eq!(ribbon.pointer, 0);
-        ribbon.try_apply_transition('ç', 'ç', &TuringDirection::None).unwrap();
+        ribbon.try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::None).unwrap();
         assert_eq!(ribbon.pointer, 0);
         
-        assert_eq!(ribbon.chars_vec, vec!('ç', 't', 'e', 's', 't', '$'));
+        assert_eq!(ribbon.chars_vec, vec!(INIT_CHAR, 't', 'e', 's', 't', END_CHAR));
 
 
-        ribbon.try_apply_transition('ç', '_', &TuringDirection::Right).unwrap();
+        ribbon.try_apply_transition(INIT_CHAR, '_', &TuringDirection::Right).unwrap();
         ribbon.try_apply_transition('t', '_', &TuringDirection::Right).unwrap();
         ribbon.try_apply_transition('e', '_', &TuringDirection::Right).unwrap();
         ribbon.try_apply_transition('s', '_', &TuringDirection::Right).unwrap();
         ribbon.try_apply_transition('t', '_', &TuringDirection::Right).unwrap();
 
-        match ribbon.try_apply_transition('$', '_', &TuringDirection::Right) {
+        match ribbon.try_apply_transition(END_CHAR, '_', &TuringDirection::Right) {
             Ok(b) => {panic!("Transition should have returned a TuringError and not : {}", b)},
             Err(e) => {
                 match e {
@@ -292,6 +319,20 @@ mod tests{
             },
         }
 
+    }
+
+    #[test]
+    fn test_illagal_replacement()
+    {
+        let mut ribbon = TuringWriteRibbon::new();
+        
+
+        ribbon.try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::Right).unwrap();
+        assert_eq!(ribbon.pointer, 1);
+
+        if let Ok(_) = ribbon.try_apply_transition(BLANK_CHAR, 'ç', &TuringDirection::Right) {
+            panic!("An error should have been returned");
+        }
     }
 
     
