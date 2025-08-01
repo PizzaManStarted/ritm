@@ -1,0 +1,38 @@
+name: deploy-action
+
+on: 
+  push:
+    branches:
+      - gui
+  pull_request:
+    branches:
+      - gui
+jobs:
+  deploy:
+    runs-on: self-hosted
+    defaults:
+      run:
+        working-directory: ./gui
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-use/setup-rust@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - run: rustup --version
+      - run: cargo --version
+
+      - name: Install TRUNK
+        uses: jetli/trunk-action@v0.5.1
+        with:
+          # Optional version of trunk to install(eg. 'v0.21.14', 'latest')
+          version: 'latest'
+      
+      - name: Build the webapp
+        run: RUSTFLAGS='--cfg getrandom_backend="wasm_js"' trunk build --release
+
+
