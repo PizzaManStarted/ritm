@@ -256,7 +256,7 @@ fn draw_labels(
         let text = format!("{}", &transition.text);
 
         let job = LayoutJob::single_section(text, TextFormat {
-            font_id: if *is_previous {Font::bold()} else {Font::default(ui)},
+            font_id: if *is_previous {Font::bold()} else {Font::default()},
             color: if selected {app.theme.selected} else {if *is_previous {app.theme.highlight} else {Theme::constrast_color(app.theme.graph)}},
             ..Default::default()
         });

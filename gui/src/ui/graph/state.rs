@@ -45,7 +45,7 @@ fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) {
     );
 
     let name = RichText::new(&state.name)
-        .font(Font::default(ui))
+        .font(Font::default_big())
         .color(Theme::constrast_color(state.color));
 
     let label = Label::new(name).truncate();
@@ -54,7 +54,7 @@ fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) {
     ui.put(
         Rect::from_center_size(
             rect.center(),
-            Font::text_size(ui, Font::default(ui), &state.name).min(vec2(rect.width(), rect.height()))
+            Font::text_size(ui, Font::default(), &state.name).min(vec2(rect.width(), rect.height()))
         ),
         label
     );

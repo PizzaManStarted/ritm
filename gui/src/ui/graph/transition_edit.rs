@@ -30,7 +30,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                         State::get(app, selected_transition.0).name,
                         State::get(app, selected_transition.1).name
                     ))
-                    .font(Font::default(ui)),
+                    .font(Font::default()),
                 );
 
                 // List of the rule
@@ -132,7 +132,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                 |ui| {
                                                     ui.spacing_mut().item_spacing = vec2(5.0, 0.0);
                                                     ui.set_height(
-                                                        Font::get_heigth(ui, &Font::default(ui))
+                                                        Font::get_heigth(ui, &Font::default())
                                                             + margin.y * 2.0,
                                                     );
 
@@ -162,11 +162,11 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                                     Color32::LIGHT_GRAY,
                                                                 )
                                                                 .frame(true)
-                                                                .font(Font::default(ui))
+                                                                .font(Font::default())
                                                                 .margin(margin)
                                                                 .desired_width(Font::get_width(
                                                                     ui,
-                                                                    &Font::default(ui),
+                                                                    &Font::default(),
                                                                 ))
                                                                 .char_limit(1),
                                                             );
@@ -198,7 +198,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                                 "N".to_string()
                                                             }
                                                         })
-                                                        .font(Font::default(ui)),
+                                                        .font(Font::default()),
                                                     )
                                                     .width(20.0) // TODO change and think about this value, I hardcoded it
                                                     .show_ui(ui, |ui| {
@@ -250,11 +250,11 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                                     Color32::LIGHT_GRAY,
                                                                 )
                                                                 .frame(true)
-                                                                .font(Font::default(ui))
+                                                                .font(Font::default())
                                                                 .margin(margin)
                                                                 .desired_width(Font::get_width(
                                                                     ui,
-                                                                    &Font::default(ui),
+                                                                    &Font::default(),
                                                                 ))
                                                                 .char_limit(1),
                                                             );
@@ -283,7 +283,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                                     }
                                                                 },
                                                             )
-                                                            .font(Font::default(ui)),
+                                                            .font(Font::default()),
                                                         )
                                                         .width(20.0) // TODO change and think about this value, I hardcoded it
                                                         .show_ui(ui, |ui| {
@@ -353,7 +353,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                 ui.columns(2, |columns| {
                     let text = RichText::new("Save")
                                     .color(Theme::constrast_color(app.theme.valid))
-                                    .font(Font::default(&columns[0]))
+                                    .font(Font::default())
                                     .atom_grow(true);
                     if columns[0]
                         .add(
@@ -369,7 +369,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
 
                     let text = RichText::new("Cancel")
                                     .color(Theme::constrast_color(app.theme.invalid))
-                                    .font(Font::default(&columns[1]))
+                                    .font(Font::default())
                                     .atom_grow(true);
                     if columns[1]
                         .add(

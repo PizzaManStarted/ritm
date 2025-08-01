@@ -16,10 +16,10 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     Frame::new().show(ui, |ui| {
         ui.columns_const(|[col1, col2, col3]| {
             col1.horizontal_centered(|ui| {
-                ui.label(RichText::new("Input : ").font(Font::default(ui)).color(app.theme.gray));
+                ui.label(RichText::new("Input : ").font(Font::default()).color(app.theme.gray));
                 ui.text_edit_singleline(&mut app.input);
 
-                TextEdit::singleline(&mut app.input).font(Font::default(ui))
+                TextEdit::singleline(&mut app.input).font(Font::default())
             });
 
             Flex::horizontal()

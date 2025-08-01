@@ -13,7 +13,7 @@ use ritm_core::{
 };
 
 use crate::{
-    turing::{State, Transition, TransitionEdit, TuringTransitionString},
+    turing::{State, Transition, TransitionEdit},
     ui::{self, theme::Theme},
 };
 
@@ -264,7 +264,7 @@ impl Default for App {
             input: "11011011".to_string(),
             graph_rect: Rect::ZERO,
             states: HashMap::new(),
-            code: "".to_string(), // TODO display a message as comment instead
+            code: "q_i {ç,ç -> R, ç, R} q_1;\nq_1 { 1,_ -> R, _, N\n\n| 0, _ -> R, 0, R} q_1;\n\n\nq_1 { $, _ -> L, _, L} q_2;\nq_2 {0, ç -> L,  ç, N\n\n| 1, 0 -> L, 0, L\n| 0, 0 -> L, 0, N} q_2;\n\nq_2 {ç,ç -> N,ç,N} q_a;".to_string(), // TODO display a message as comment instead
             event: Event::default(),
             theme: Theme::DEFAULT,
             selected_state: None,
@@ -305,6 +305,8 @@ impl App {
         load_font(cc);
 
         let app: App = Default::default();
+
+        cc.egui_ctx.set_zoom_factor(1.0); // TODO add a computed zoom based on window size
 
         Theme::set_global_theme(&app.theme, &cc.egui_ctx);
 
@@ -505,7 +507,6 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         install_image_loaders(ctx);
-
 
         ui::show(self, ctx);
     }
