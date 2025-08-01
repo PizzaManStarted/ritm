@@ -26,6 +26,9 @@ jobs:
       - run: rustup --version
       - run: cargo --version
 
+      - name: install architecture wasm32
+        run: rustup target add wasm32-unknown-unknown
+
       - name: Install TRUNK
         uses: jetli/trunk-action@v0.5.1
         with:
