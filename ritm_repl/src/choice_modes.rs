@@ -4,6 +4,12 @@ use strum_macros::EnumIter;
 use colored::Colorize;
 
 
+pub trait ModeEvent {
+    fn print_help(&self);
+    fn choose_option(&self);
+}
+
+
 #[derive(EnumIter)]
 pub enum StartingMode {
     CreateTM,
@@ -89,7 +95,29 @@ pub fn print_help<E>() where E:IntoEnumIterator + Display
 }
 
 
-pub fn collect_enum_values<E>() -> Vec<E> where E:IntoEnumIterator + Display 
+pub fn collect_enum_values<E>() -> Vec<E> where E:IntoEnumIterator + Display + ModeEvent
 {
     E::iter().collect()
+}
+
+
+
+
+impl ModeEvent for StartingMode {
+    fn print_help(&self) {
+        let tm_it = "Turing Machine".italic();
+        print!("-> ");
+        match self {
+            StartingMode::CreateTM => println!("Creates a new {tm_it} by specifying the {} and a {} (if any)", 
+                                                "number of writting ribbons".red(),
+                                                "name".yellow() ),
+            StartingMode::LoadTM => println!("Loads a new {tm_it} by specifying a {} to it from",
+                                                "file path".red()),
+        }
+        println!("")
+    }
+
+    fn choose_option(&self) {
+        todo!()
+    }
 }
