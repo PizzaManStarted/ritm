@@ -1,43 +1,22 @@
-use std::fmt::Display;
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
+
+use ritm_repl::choice_modes::{print_help, ExecuteTuringMode, ModifyTuringMode, StartingMode};
 use rustyline::error::ReadlineError;
 use rustyline::{DefaultEditor, Result};
 
 
-#[derive(EnumIter)]
-pub enum StartingMode {
-    CreateTM,
-    LoadTM
-}
-
-
-impl Display for StartingMode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            StartingMode::CreateTM => "Create new Turing Machine",
-            StartingMode::LoadTM => "Load an existing Turing Machine",
-        })
-    }
-}
-
-impl StartingMode {
-    pub fn print_help()
-    {
-        for (i, mode) in StartingMode::iter().enumerate() {
-            println!("{}: {}", i, mode);
-        }
-    }
-}
 
 
 
-
-fn main() -> Result<()> {
-    println!("Hello, world!");
+fn main() -> Result<()> 
+{
     let mut rl = DefaultEditor::new()?;
+    rl.clear_screen().unwrap();
+    // Collect all possible modes
+
     loop {
-        StartingMode::print_help();
+        print_help::<StartingMode>();
+
+
         // Print possible commands
         let readline = rl.readline(">> ");
         match readline {

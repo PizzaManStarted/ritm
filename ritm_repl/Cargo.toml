@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+colored = "3.0.0"
 rustyline = "16.0.0"
 strum = "0.27.2"
 strum_macros = "0.27.2"
