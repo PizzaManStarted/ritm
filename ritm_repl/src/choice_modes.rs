@@ -105,14 +105,36 @@ pub fn collect_enum_values<E>() -> Vec<E> where E:IntoEnumIterator + Display + M
 
 impl ModeEvent for StartingMode {
     fn print_help(&self) {
-        let tm_it = "Turing Machine".italic();
+        let tm_it = "Turing Machine".italic().bold();
         print!("-> ");
         match self {
             StartingMode::CreateTM => println!("Creates a new {tm_it} by specifying the {} and a {} (if any)", 
-                                                "number of writting ribbons".red(),
+                                                "number of writting ribbons".purple(),
                                                 "name".yellow() ),
             StartingMode::LoadTM => println!("Loads a new {tm_it} by specifying a {} to it from",
-                                                "file path".red()),
+                                                "file path".purple()),
+        }
+        println!("")
+    }
+
+    fn choose_option(&self) {
+        todo!()
+    }
+}
+
+
+impl ModeEvent for ModifyTuringMode {
+    fn print_help(&self) {
+        let tm_it_bold = "Turing Machine".italic().bold();
+        print!("-> ");
+        match self {
+            ModifyTuringMode::PrintSummary => println!("Prints a detailed overview of the current {tm_it_bold}"),
+            ModifyTuringMode::AddState => println!("Adds a {} to the current {tm_it_bold}", "state".purple()),
+            ModifyTuringMode::AddTransitions => println!("Adds one or multiple {} to the current {tm_it_bold}", "transitions".purple()),
+            ModifyTuringMode::RemoveTransitions => println!("Removes one or multiple {} from the current {tm_it_bold}", "transitions".purple()),
+            ModifyTuringMode::RemoveState => println!("Removes a {} from the current {tm_it_bold}", "state".purple()),
+            ModifyTuringMode::SaveTM => println!("Saves the current {tm_it_bold} as a file"),
+            ModifyTuringMode::FeedWord => println!("Feeds a word to the {tm_it_bold} and starts executing it"),
         }
         println!("")
     }

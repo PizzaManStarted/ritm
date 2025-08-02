@@ -15,22 +15,25 @@ fn main() -> rustyline::Result<()>
     rl.clear_screen().unwrap();
     
     // Collect all possible modes
-    let starting_modes = collect_enum_values::<StartingMode>();
+    let starting_modes = collect_enum_values::<ModifyTuringMode>();
 
     // Clear terminal
     rl.clear_screen().unwrap();
 
     loop {
-        let mut argument = String::new();
+        let argument ;
         let mut need_help = false;
 
-        print_help::<StartingMode>();
+        print_help::<ModifyTuringMode>();
         // Print possible commands
         let readline = rl.readline(">> ");
         match readline {
             Ok(line) => {
                 let line = line.trim();
 
+                if line.is_empty() {
+                    continue;
+                }
 
                 // Adds the given string to the history for convenience
                 rl.add_history_entry(line.to_string())?;
@@ -53,10 +56,11 @@ fn main() -> rustyline::Result<()>
                 }
                 else if line.eq("cl") || line.eq("clear") {
                     rl.clear_screen().unwrap();
+                    continue;
                 }
                 else {
                     if line_vec.len() > 1 {
-                        print_error_help(RiplError::UnknownCommandError { command: line.to_string() });
+                        print_error_help(RiplError::UnknownCommandError { command: line_vec.get(0).unwrap().to_string() });
                         continue;
                     }
                     argument = line_vec.get(0).unwrap().to_string();
@@ -77,6 +81,7 @@ fn main() -> rustyline::Result<()>
                 }
                 // println!("Got index : {}", index.to_string().purple());
                 if need_help {
+                    rl.clear_screen().unwrap();
                     starting_modes.get(index).unwrap().print_help();
                 }
                 else {
