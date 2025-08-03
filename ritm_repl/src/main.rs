@@ -1,6 +1,7 @@
 
-use colored::Colorize;
-use ritm_repl::choice_modes::{collect_enum_values, print_help, ExecuteTuringMode, ModeEvent, ModifyTuringMode, StartingMode};
+
+use ritm_repl::modes::choice_modes::{collect_enum_values, print_help_gen, ModeEvent};
+use ritm_repl::modes::modify_mode::ModifyTuringMode;
 use ritm_repl::ripl_error::{print_error_help, RiplError};
 use rustyline::error::ReadlineError;
 use rustyline::{DefaultEditor};
@@ -15,7 +16,7 @@ fn main() -> rustyline::Result<()>
     rl.clear_screen().unwrap();
     
     // Collect all possible modes
-    let starting_modes = collect_enum_values::<ModifyTuringMode>();
+    let current_modes = collect_enum_values::<ModifyTuringMode>();
 
     // Clear terminal
     rl.clear_screen().unwrap();
@@ -24,7 +25,7 @@ fn main() -> rustyline::Result<()>
         let argument ;
         let mut need_help = false;
 
-        print_help::<ModifyTuringMode>();
+        print_help_gen(&current_modes);
         // Print possible commands
         let readline = rl.readline(">> ");
         match readline {
@@ -75,17 +76,17 @@ fn main() -> rustyline::Result<()>
 
                 let index = index_res.unwrap();
 
-                if index >= starting_modes.len() {
+                if index >= current_modes.len() {
                     print_error_help(RiplError::OutOfRangeIndexError { index });
                     continue;
                 }
                 // println!("Got index : {}", index.to_string().purple());
                 if need_help {
                     rl.clear_screen().unwrap();
-                    starting_modes.get(index).unwrap().print_help();
+                    current_modes.get(index).unwrap().print_help();
                 }
                 else {
-                    starting_modes.get(index).unwrap().choose_option();
+                    // current_modes = current_modes.get(index).unwrap().choose_option();
                 }
 
                 // println!("Line: {}", line);
