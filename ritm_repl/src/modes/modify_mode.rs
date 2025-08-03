@@ -4,7 +4,7 @@ use strum_macros::EnumIter;
 
 use colored::Colorize;
 
-use crate::modes::choice_modes::ModeEvent;
+use crate::modes::{choice_modes::ModeEvent, starting_modes::StartingMode};
 
 
 
@@ -51,8 +51,10 @@ impl ModeEvent for ModifyTuringMode {
         println!("")
     }
     
-    fn choose_option(&self) {
+    fn choose_option(&self) -> super::choice_modes::Modes {
+        super::choice_modes::Modes::Start
     }
+    
     
 }
 

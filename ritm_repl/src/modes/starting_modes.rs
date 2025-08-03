@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::modes::choice_modes::ModeEvent;
+use crate::modes::choice_modes::{ModeEvent, Modes};
 use colored::Colorize;
 use strum_macros::EnumIter;
 
@@ -37,14 +37,8 @@ impl ModeEvent for StartingMode {
         println!("")
     }
     
-    fn choose_option(&self) {
-        match self {
-            StartingMode::CreateTM => {
-
-            },
-            StartingMode::LoadTM => {
-            },
-        }
+    fn choose_option(&self) -> Modes {
+        Modes::Modify
     }
 
 }

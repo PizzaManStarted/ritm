@@ -1,15 +1,20 @@
 use std::fmt::Display;
 use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
 use colored::Colorize;
 
 
 pub trait ModeEvent {
     fn print_help(&self);
-    fn choose_option(&self);
+    fn choose_option(&self) -> Modes;
 }
 
 
+#[derive(Debug)]
+pub enum Modes {
+    Start,
+    Modify,
+    Execute
+}
 
 
 // _________________________________________________________________________
@@ -29,7 +34,7 @@ pub fn print_help_gen<E>(vec: &Vec<E>) where E:IntoEnumIterator + Display
 }
 
 
-pub fn collect_enum_values<E>() -> Vec<impl ModeEvent + IntoEnumIterator + Display> where E:IntoEnumIterator + Display + ModeEvent
+pub fn collect_enum_values<E>() -> Vec<E> where E:IntoEnumIterator + Display + ModeEvent
 {
     E::iter().collect()
 }
