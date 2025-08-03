@@ -54,14 +54,15 @@ fn eval_loop<E>(rl: &mut Editor<(), FileHistory>, current_mode: &mut Modes) -> r
     let argument ;
     let mut need_help = false;
 
+    // Print possible commands
     print_help::<E>();
 
+    
     // get possible commands
-
     let commands= collect_enum_values::<E>();
     
-    // Print possible commands
     let readline = rl.readline(">> ");
+    // rl.clear_screen().unwrap();
     match readline {
         Ok(line) => {
             let line = line.trim();
@@ -104,7 +105,7 @@ fn eval_loop<E>(rl: &mut Editor<(), FileHistory>, current_mode: &mut Modes) -> r
             // Read requested nb
             let index_res = argument.parse();
             if let Err(_) = &index_res {
-                print_error_help(RiplError::CouldNotParseStringError { value: argument });
+                print_error_help(RiplError::CouldNotParseStringIntError { value: argument });
                 return Ok(true);
             }
 
@@ -116,11 +117,11 @@ fn eval_loop<E>(rl: &mut Editor<(), FileHistory>, current_mode: &mut Modes) -> r
             }
             // println!("Got index : {}", index.to_string().purple());
             if need_help {
-                rl.clear_screen().unwrap();
+                // rl.clear_screen().unwrap();
                 commands.get(index).unwrap().print_help();
             }
             else {
-                *current_mode = commands.get(index).unwrap().choose_option();
+                *current_mode = commands.get(index).unwrap().choose_option(rl);
                 // println!("{:?}", current_mode);
             }
             return Ok(true);
