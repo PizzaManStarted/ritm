@@ -28,6 +28,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             let mut square_count = ((ui.available_width() + Constant::HORIZONTAL_SPACE)
                 / (Constant::HORIZONTAL_SPACE + square_size))
                 as usize;
+
             if square_count % 2 == 0 {
                 square_count += 1
             }
@@ -80,9 +81,8 @@ fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
         |ui| {
             ui.style_mut().spacing.item_spacing = (Constant::HORIZONTAL_SPACE, 0.0).into();
 
-            let square_count: i32 = ((width + Constant::HORIZONTAL_SPACE)
-                / (Constant::HORIZONTAL_SPACE + square_size))
-                as i32
+            let square_count: usize = ((width + Constant::HORIZONTAL_SPACE)
+                / (Constant::HORIZONTAL_SPACE + square_size)) as usize
                 + 2;
 
             // Get the chars and pointer from reading or writing ribbon
@@ -97,7 +97,7 @@ fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
             };
 
             // Create a vector with the character that are needed
-            let ribbon_center = square_count / 2;
+            let ribbon_center = square_count as i32 / 2;
             let mut ribbon_vec = vec![' '; (ribbon_center - pointer).max(0) as usize];
             ribbon_vec.append(
                 &mut chars[(pointer - ribbon_center).max(0) as usize
@@ -109,13 +109,13 @@ fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
                 (ribbon_center - (chars.len() as i32 - pointer - 1)).max(0)
                     as usize
             ]);
-
+            
             for i in 0..square_count {
                 square(
                     app,
                     ui,
                     ribbon_vec[i as usize],
-                    i == ribbon_center,
+                    i == ribbon_center as usize,
                 );
             }
         },

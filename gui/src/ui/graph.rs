@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use egui::{
-    Id, Image, ImageButton, LayerId, Rect, Scene, Ui, UiBuilder, Vec2, include_image, vec2,
+    include_image, vec2, Id, Image, ImageButton, LayerId, Rect, Scene, Sense, Ui, UiBuilder, Vec2
 };
 
 use crate::{
@@ -32,7 +32,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     }
 
     let scene_response = Scene::new()
-        .zoom_range(0.0..=2.0)
+        .zoom_range(0.0..=1.5)
         .show(ui, &mut scene_rect, |ui| {
             // Draw the transitions of the turing machine
             transition::show(app, ui);
@@ -44,6 +44,21 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             inner_rect = ui.min_rect();
         })
         .response;
+
+    let layer = LayerId::new(egui::Order::Middle, Id::new("to-code"));
+    ui.scope_builder(UiBuilder::new().layer_id(layer).max_rect(Rect::from_min_size(ui.min_rect().min, vec2(35.0, 35.0))), |ui| {
+        if ui.put(
+            Rect::from_min_size(ui.min_rect().min, vec2(35.0, 35.0)),
+            ImageButton::new(
+                Image::new(include_image!("../../assets/icon/code.svg"))
+                    .fit_to_exact_size(vec2(35.0, 35.0))
+                    .tint(app.theme.gray),
+            )
+            .frame(false),
+        ).clicked() {
+            todo!("Convert graph to code")
+        }
+    });
 
     // Save scene border and recenter if asked
     app.graph_rect = if app.event.need_recenter {

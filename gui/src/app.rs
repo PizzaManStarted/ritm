@@ -54,6 +54,8 @@ pub struct App {
     /// Store the current editing of the transitions between 2 states
     pub rules_edit: Vec<TransitionEdit>,
 
+    /// NOT IMPLEMEMENTED how many state are pinned to avoid pointless feature proposition
+    #[allow(dead_code)]
     pin_count: usize,
 
     /// File loaded
@@ -103,176 +105,15 @@ pub struct Event {
 
 impl Default for App {
     fn default() -> Self {
-        let mut graph = TuringMachineGraph::new(1).ok().unwrap();
-        {
-            graph.add_state(&"q0".to_string());
-            graph.add_state(&"q1".to_string());
-            graph.add_state(&"q2".to_string());
+        let graph = TuringMachineGraph::new(1).ok().unwrap();
 
-            graph
-                .append_rule_state_by_name(
-                    &"i".to_string(),
-                    TuringTransitionMultRibbons {
-                        chars_read: vec!['ç', 'ç'],
-                        move_read: TuringDirection::Right,
-                        chars_write: vec![('ç', TuringDirection::Right)],
-                        index_to_state: None,
-                    },
-                    &"q0".to_string(),
-                )
-                .expect("failed to create transition");
-
-            graph
-                .append_rule_state_by_name(
-                    &"q0".to_string(),
-                    TuringTransitionMultRibbons {
-                        chars_read: vec!['0', 'ç'],
-                        move_read: TuringDirection::Right,
-                        chars_write: vec![('0', TuringDirection::Right)],
-                        index_to_state: None,
-                    },
-                    &"q0".to_string(),
-                )
-                .expect("failed to create transition");
-
-            graph
-                .append_rule_state_by_name(
-                    &"q0".to_string(),
-                    TuringTransitionMultRibbons {
-                        chars_read: vec!['1', 'ç'],
-                        move_read: TuringDirection::Right,
-                        chars_write: vec![('1', TuringDirection::Right)],
-                        index_to_state: None,
-                    },
-                    &"q0".to_string(),
-                )
-                .expect("failed to create transition");
-
-            graph
-                .append_rule_state_by_name(
-                    &"q0".to_string(),
-                    TuringTransitionMultRibbons {
-                        chars_read: vec!['0', '_'],
-                        move_read: TuringDirection::Right,
-                        chars_write: vec![('0', TuringDirection::Right)],
-                        index_to_state: None,
-                    },
-                    &"q0".to_string(),
-                )
-                .expect("failed to create transition");
-
-            graph
-                .append_rule_state_by_name(
-                    &"q0".to_string(),
-                    TuringTransitionMultRibbons {
-                        chars_read: vec!['1', '_'],
-                        move_read: TuringDirection::Right,
-                        chars_write: vec![('1', TuringDirection::Right)],
-                        index_to_state: None,
-                    },
-                    &"q0".to_string(),
-                )
-                .expect("failed to create transition");
-
-            graph
-                .append_rule_state_by_name(
-                    &"q0".to_string(),
-                    TuringTransitionMultRibbons {
-                        chars_read: vec!['$', '_'],
-                        move_read: TuringDirection::None,
-                        chars_write: vec![('_', TuringDirection::Left)],
-                        index_to_state: None,
-                    },
-                    &"q1".to_string(),
-                )
-                .expect("failed to create transition");
-
-            graph
-                .append_rule_state_by_name(
-                    &"q1".to_string(),
-                    TuringTransitionMultRibbons {
-                        chars_read: vec!['$', '0'],
-                        move_read: TuringDirection::None,
-                        chars_write: vec![('0', TuringDirection::Left)],
-                        index_to_state: None,
-                    },
-                    &"q1".to_string(),
-                )
-                .expect("failed to create transition");
-
-            graph
-                .append_rule_state_by_name(
-                    &"q1".to_string(),
-                    TuringTransitionMultRibbons {
-                        chars_read: vec!['$', '1'],
-                        move_read: TuringDirection::None,
-                        chars_write: vec![('1', TuringDirection::Left)],
-                        index_to_state: None,
-                    },
-                    &"q1".to_string(),
-                )
-                .expect("failed to create transition");
-
-            graph
-                .append_rule_state_by_name(
-                    &"q1".to_string(),
-                    TuringTransitionMultRibbons {
-                        chars_read: vec!['$', 'ç'],
-                        move_read: TuringDirection::Left,
-                        chars_write: vec![('_', TuringDirection::Right)],
-                        index_to_state: None,
-                    },
-                    &"q2".to_string(),
-                )
-                .expect("failed to create transition");
-
-            graph
-                .append_rule_state_by_name(
-                    &"q2".to_string(),
-                    TuringTransitionMultRibbons {
-                        chars_read: vec!['0', '0'],
-                        move_read: TuringDirection::Left,
-                        chars_write: vec![('0', TuringDirection::Right)],
-                        index_to_state: None,
-                    },
-                    &"q2".to_string(),
-                )
-                .expect("failed to create transition");
-
-            graph
-                .append_rule_state_by_name(
-                    &"q2".to_string(),
-                    TuringTransitionMultRibbons {
-                        chars_read: vec!['1', '1'],
-                        move_read: TuringDirection::Left,
-                        chars_write: vec![('1', TuringDirection::Right)],
-                        index_to_state: None,
-                    },
-                    &"q2".to_string(),
-                )
-                .expect("failed to create transition");
-
-            graph
-                .append_rule_state_by_name(
-                    &"q2".to_string(),
-                    TuringTransitionMultRibbons {
-                        chars_read: vec!['ç', '_'],
-                        move_read: TuringDirection::None,
-                        chars_write: vec![('_', TuringDirection::None)],
-                        index_to_state: None,
-                    },
-                    &"a".to_string(),
-                )
-                .expect("failed to create transition");
-        }
-
-        let mut turing = TuringMachines::new(graph, "11011001".to_string(), Mode::SaveAll).unwrap();
+        let mut turing = TuringMachines::new(graph, "".to_string(), Mode::SaveAll).unwrap();
         let step = turing.next().unwrap();
 
         let mut sf = Self {
             turing: turing,
             step: step,
-            input: "11011011".to_string(),
+            input: "".to_string(),
             graph_rect: Rect::ZERO,
             states: HashMap::new(),
             code: "".to_string(), // TODO display a message as comment instead
@@ -314,7 +155,7 @@ impl Default for Event {
 
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // cc.egui_ctx.set_debug_on_hover(true);
+        cc.egui_ctx.set_debug_on_hover(true);
 
         // Load the fonts used in the application
         load_font(cc);
@@ -322,6 +163,8 @@ impl App {
         let app: App = Default::default();
 
         cc.egui_ctx.set_zoom_factor(1.0); // TODO add a computed zoom based on window size
+
+        println!("{}", cc.egui_ctx.screen_rect());
 
         Theme::set_global_theme(&app.theme, &cc.egui_ctx);
 
@@ -362,9 +205,9 @@ impl App {
     /// Add a transition graphically and logically
     pub fn add_transition(&mut self, target: usize) {
         let transition = TuringTransitionMultRibbons::new(
-            vec!['ç'; self.turing.graph_ref().get_k() as usize],
+            vec!['ç'; self.turing.graph_ref().get_k() + 1],
             TuringDirection::None,
-            vec![('ç', TuringDirection::None); self.turing.graph_ref().get_k() as usize],
+            vec![('ç', TuringDirection::None); self.turing.graph_ref().get_k()],
         );
 
         let transition_rule = transition.to_string();
@@ -378,6 +221,9 @@ impl App {
             Transition::new(transition_rule, source.transitions.len(), source.id, target);
         source.transitions.push(transition);
         self.event.is_adding_transition = false;
+
+        self.selected_state = None;
+        self.selected_transition = None;
     }
 
     /// Continue the execution of the turing machine by one iteration
@@ -536,6 +382,10 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         install_image_loaders(ctx);
+
+        if ctx.screen_rect().width() < 600.0 {
+            self.event.is_code_closed = true;
+        }
 
         ui::show(self, ctx);
     }

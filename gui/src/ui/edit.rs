@@ -92,7 +92,7 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                         .add(
                                             ImageButton::new(
                                                 Image::new(include_image!(
-                                                    "../../assets/icon/path.svg"
+                                                    "../../assets/icon/transition.svg"
                                                 ))
                                                 .fit_to_exact_size(vec2(35.0, 35.0))
                                                 .tint(if app.event.is_adding_state {

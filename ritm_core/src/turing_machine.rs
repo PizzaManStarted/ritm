@@ -74,9 +74,6 @@ impl TuringMachines
     // Create a new [TuringMachineWithRef] for a given word.
     pub fn new(mt: TuringMachineGraph, word: String, mode: Mode) -> Result<Self, TuringError>
     {
-        if word.is_empty() {
-            return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
-        }
         let mut s = 
         TuringMachines::TuringMachine 
         {
@@ -124,10 +121,6 @@ impl TuringMachines
     /// Resets the turing machine to its initial state and feeds it the given word.
     pub fn reset_word(&mut self, word: &String) -> Result<(), TuringError>
     {
-        
-        if word.is_empty() {
-            return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
-        }
         // Reset reading ribbon
         self.get_reading_ribbon().feed_word(word.clone());
 

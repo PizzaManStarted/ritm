@@ -21,16 +21,16 @@ use crate::{
 pub fn show(app: &mut App, ui: &mut Ui) {
     Frame::new().show(ui, |ui| {
         ui.columns_const(|[col1, col2, col3]| {
-            col1.horizontal_centered(|ui| {
-                ui.label(
-                    RichText::new("Input : ")
-                        .font(Font::default_small())
-                        .color(app.theme.gray),
-                );
-                ui.text_edit_singleline(&mut app.input);
+            // col1.horizontal_centered(|ui| {
+            //     ui.label(
+            //         RichText::new("Input : ")
+            //             .font(Font::default_small())
+            //             .color(app.theme.gray),
+            //     );
+            //     ui.text_edit_singleline(&mut app.input);
 
-                TextEdit::singleline(&mut app.input).font(Font::default())
-            });
+            //     TextEdit::singleline(&mut app.input).font(Font::default())
+            // });
 
             Flex::vertical()
                 .align_items(FlexAlign::Center)

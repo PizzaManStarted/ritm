@@ -1,5 +1,5 @@
 use egui::{
-    CentralPanel, CornerRadius, Frame, Margin, SidePanel, TopBottomPanel,
+    vec2, Align, CentralPanel, CornerRadius, Frame, Layout, Margin, SidePanel, TopBottomPanel
 };
 
 pub mod code;
@@ -149,8 +149,10 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                             .resizable(false)
                             .show_separator_line(false)
                             .show_inside(ui, |ui| {
-                                ribbon::show(app, ui);
-                                control::show(app, ui);
+                                ui.allocate_ui_with_layout(vec2(ui.available_width(), 0.0), Layout::top_down(Align::Min), |ui| {
+                                    ribbon::show(app, ui);
+                                    control::show(app, ui);
+                                });
                             });
 
                         // Graph visual and edition
