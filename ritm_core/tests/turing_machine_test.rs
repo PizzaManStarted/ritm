@@ -1,4 +1,4 @@
-use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringExecutionSteps, TuringMachines}, turing_state::{TuringDirection, TuringStateType, TuringTransitionMultRibbons}};
+use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringExecutionSteps, TuringMachines}, turing_ribbon::TuringRibbon, turing_state::{TuringDirection, TuringStateType, TuringTransitionMultRibbons}};
 
 
 #[test]
@@ -9,7 +9,7 @@ fn save_all_accept()
 
     // let mut turing_machine = TuringMachine::new(tm_graph, String::from("010"), Mode::SaveAll).unwrap();
 
-    let mut turing_machine = TuringMachines::new(tm_graph, String::from("11111"), Mode::SaveAll).unwrap();
+    let mut turing_machine = TuringMachines::new(tm_graph, String::from("0111110"), Mode::SaveAll).unwrap();
 
     // let mut turing_machine = TuringMachines::new(get_smaller_non_deter_graph(), String::from("0000000000000001"), Mode::SaveAll).unwrap();
     let mut saved_state = None;
