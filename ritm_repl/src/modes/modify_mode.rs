@@ -1,11 +1,12 @@
 use std::fmt::Display;
 
+use ritm_core::{turing_graph::TuringMachineGraph, turing_parser::parse_transition_string, turing_state::TuringTransitionMultRibbons};
 use rustyline::{history::FileHistory, Editor};
 use strum_macros::EnumIter;
 
 use colored::Colorize;
 
-use crate::{modes::{choice_modes::{ModeEvent, Modes}, starting_modes::StartingMode}, DataStorage};
+use crate::{modes::{choice_modes::{ModeEvent, Modes}, starting_modes::StartingMode}, query_string, ripl_error::{print_error_help, RiplError}, DataStorage};
 
 
 
@@ -53,19 +54,88 @@ impl ModeEvent for ModifyTuringMode {
     }
     
     fn choose_option(&self, rl: &mut Editor<(), FileHistory>, storage: &mut DataStorage) -> Modes {    
-        let readline = rl.readline(">> ");
-
+        let tm = storage.graph.as_mut().unwrap();
         match self {
-            ModifyTuringMode::PrintSummary => todo!(),
-            ModifyTuringMode::AddState => todo!(),
-            ModifyTuringMode::AddTransitions => todo!(),
+            ModifyTuringMode::PrintSummary => {
+                println!("{:?}", tm);
+            },
+            ModifyTuringMode::AddState => {
+                let res = add_state(rl);
+                if let Err(e) = res {
+                    print_error_help(e);
+                }
+                else {
+                    tm.add_state(&res.unwrap());
+                }
+            },
+            ModifyTuringMode::AddTransitions => {
+                if let Err(e) = add_transition(rl, tm) {
+                    print_error_help(e);
+                }
+            },
             ModifyTuringMode::RemoveTransitions => todo!(),
             ModifyTuringMode::RemoveState => todo!(),
             ModifyTuringMode::SaveTM => todo!(),
             ModifyTuringMode::FeedWord => todo!(),
         }
+        Modes::Modify
     }
     
     
 }
 
+
+fn add_state(rl: &mut Editor<(), FileHistory>) -> Result<String, RiplError>
+{
+    let name = query_string(rl, format!("Enter the {} of the state: ", "name".blue()));
+
+    name
+}
+
+
+
+fn add_transition(rl: &mut Editor<(), FileHistory>, turing_graph: &mut TuringMachineGraph) -> Result<(), RiplError>
+{
+    let transitions = query_transition(rl, format!("Enter one or multiple {} to add to the graph: ", "transitions".blue()));
+
+    if let Err(e) = transitions {
+        return Err(e);
+    }
+
+    let (q1, vec_tm, q2) = transitions.unwrap();
+
+    for transition in vec_tm {
+        if let Err(e) = turing_graph.append_rule_state_by_name(&q1, transition, &q2) {
+            return Err(RiplError::EncounteredTuringError { error: e });
+        }
+    }
+
+    Ok(())
+}
+
+
+
+
+pub fn query_transition(rl: &mut Editor<(), FileHistory>, query: String) -> Result<(String, Vec<TuringTransitionMultRibbons>, String), RiplError>
+{
+    println!("{}", query);
+    loop {
+        let readline = rl.readline("==> ");
+        match readline {
+            Ok(l) => {
+                let l = l.trim().to_string();
+                if l.is_empty() {
+                    continue;
+                }
+                rl.add_history_entry(l.to_string()).unwrap();
+                
+                let res = parse_transition_string(l);
+                if let Err(e) = res {
+                    return Err(RiplError::EncounteredTuringError { error: e });
+                }
+                return Ok(res.unwrap());
+            },
+            Err(e) => return Err(RiplError::CouldNotParseStringError { value: e.to_string() }),
+        }
+    }
+}

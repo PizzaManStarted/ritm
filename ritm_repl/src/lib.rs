@@ -1,4 +1,4 @@
-use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::TuringMachines};
+use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::TuringMachines, turing_parser::parse_transition_string, turing_state::TuringTransitionMultRibbons};
 use rustyline::{history::FileHistory, Editor};
 
 use crate::ripl_error::RiplError;
@@ -59,3 +59,4 @@ pub fn query_string(rl: &mut Editor<(), FileHistory>, query: String) -> Result<S
         }
     }
 }
+
