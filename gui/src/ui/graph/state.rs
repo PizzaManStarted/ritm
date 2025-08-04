@@ -1,4 +1,4 @@
-use egui::{vec2, Label, Rect, RichText, Sense, Stroke, Ui};
+use egui::{vec2, Align, Label, Rect, RichText, Sense, Stroke, Ui};
 
 use crate::{
     turing::State, ui::{constant::Constant, font::Font, theme::Theme}, App
@@ -25,9 +25,6 @@ fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) {
         vec2(Constant::STATE_RADIUS, Constant::STATE_RADIUS) * 2.0,
     );
 
-    // Listen for click and drag event on the node
-    let response = ui.allocate_rect(rect, Sense::click_and_drag());
-
     // Draw the node circle
     ui.painter().circle(
         state.position,
@@ -48,21 +45,13 @@ fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) {
         .font(Font::default_big())
         .color(Theme::constrast_color(state.color));
 
-    let label = Label::new(name).truncate();
+    let label = Label::new(name).wrap().halign(Align::Center);
 
     // Draw the label inside the node, without overflow
-    ui.put(
-        Rect::from_center_size(
-            rect.center(),
-            Font::text_size(ui, Font::default(), &state.name).min(vec2(rect.width(), rect.height()))
-        ),
-        label
-    );
+    ui.put(rect, label);
 
-    if response.secondary_clicked() {
-
-        State::get_mut(app, state_id).is_pinned = false;
-    }
+    // Listen for click and drag event on the node
+    let response = ui.allocate_rect(rect, Sense::click_and_drag());
 
     if response.clicked() {
 

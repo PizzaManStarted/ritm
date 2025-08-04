@@ -29,7 +29,7 @@ impl Constant {
     // Control
     pub const CONTROL_ICON_SIZE: f32 = 40.0;
 
-    pub const ICON_SIZE: f32 = 45.0;
+    pub const ICON_SIZE: f32 = 35.0;
 
 
     /// Scale down the value passed when the application is smaller than default

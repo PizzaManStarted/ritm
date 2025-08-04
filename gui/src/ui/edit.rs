@@ -1,9 +1,8 @@
 use egui::{
-    Align, Color32, Frame, Id, Image, ImageButton, LayerId, Layout, Margin, Rect, Sense, Shadow,
-    Stroke, Ui, UiBuilder, include_image, vec2,
+    include_image, vec2, Align, Color32, Frame, Id, Image, ImageButton, LayerId, Layout, Margin, Rect, Sense, Shadow, Stroke, Ui, UiBuilder
 };
 
-use crate::{ui::theme::Theme, App};
+use crate::{turing::State, ui::theme::Theme, App};
 
 /// Control of the graph
 pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
@@ -33,19 +32,26 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                         color: Color32::from_black_alpha(25),
                     })
                     .show(ui, |ui| {
+
+                        let state_selected = app.selected_state.is_some();
+                        let transition_selected = app.selected_transition.is_some();
                         // Need to compute the width of the menu to center it
-                        let mut width = 0.0;
-                        let mut count = 0;
-                        if app.selected_state.is_none() && app.selected_transition.is_none() {
+
+                        // Recenter/Unpin/Pin
+                        let mut count = 3;
+                        if state_selected && transition_selected {
+                            // Adding a state condition
                             count += 1;
                         }
-                        if app.selected_state.is_some() {
+                        if state_selected {
+                            // Create transition from the selected state
                             count += 1;
                         }
-                        if app.selected_state.is_some() || app.selected_transition.is_some() {
-                            count += 1;
+                        if state_selected || transition_selected {
+                            // Delete/Edit state/transition
+                            count += 2;
                         }
-                        width += 35.0 * count as f32 + 20.0 * (count - 1) as f32;
+                        let width = 35.0 * count as f32 + 20.0 * (count - 1) as f32;
 
                         ui.allocate_ui_with_layout(
                             vec2(width, 35.0),
@@ -105,7 +111,8 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
 
                                 // Delete
                                 // If a state or transition is selected, then display the delete button
-                                if app.selected_state.is_some()
+                                if (app.selected_state.is_some()
+                                    || app.selected_transition.is_some())
                                     && ui
                                         .add(
                                             ImageButton::new(
@@ -155,6 +162,42 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                         .clicked()
                                 {
                                     app.event.need_recenter = true;
+                                }
+
+                                if ui
+                                        .add(
+                                            ImageButton::new(
+                                                Image::new(include_image!(
+                                                    "../../assets/icon/unpin.svg"
+                                                ))
+                                                .fit_to_exact_size(vec2(35.0, 35.0))
+                                                .tint(Theme::constrast_color(app.theme.white)),
+                                            )
+                                            .frame(false),
+                                        )
+                                        .clicked()
+                                {
+                                    app.unpin();
+                                }
+
+                                if ui
+                                        .add(
+                                            ImageButton::new(
+                                                Image::new(include_image!(
+                                                    "../../assets/icon/pin.svg"
+                                                ))
+                                                .fit_to_exact_size(vec2(35.0, 35.0))
+                                                .tint(Theme::constrast_color(app.theme.white)),
+                                            )
+                                            .frame(false),
+                                        )
+                                        .clicked()
+                                {
+                                    if state_selected {
+                                        State::get_mut(app, app.selected_state.unwrap()).is_pinned = true;
+                                    } else {
+                                        app.pin();
+                                    }
                                 }
                             },
                         );

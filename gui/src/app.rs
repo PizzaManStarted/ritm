@@ -1,6 +1,5 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
-    sync::{Arc, atomic::AtomicBool},
+    collections::{BTreeMap, BTreeSet, HashMap}, sync::{atomic::AtomicBool, Arc}
 };
 
 use egui::{FontData, FontDefinitions, FontFamily, Pos2, Rect, vec2};
@@ -14,7 +13,7 @@ use ritm_core::{
 
 use crate::{
     turing::{State, Transition, TransitionEdit},
-    ui::{self, theme::Theme},
+    ui::{self, theme::Theme, utils::FileDialog},
 };
 
 /// The only structure that is persistent each redraw of the application
@@ -52,7 +51,13 @@ pub struct App {
     /// Interval between each iteration
     pub interval: i32,
 
+    /// Store the current editing of the transitions between 2 states
     pub rules_edit: Vec<TransitionEdit>,
+
+    pin_count: usize,
+
+    /// File loaded
+    pub file: FileDialog,
 }
 
 /// Keep the state of the application
@@ -86,8 +91,14 @@ pub struct Event {
     /// Is the selected element in editing mode ?
     pub is_editing: bool,
 
-    /// Do we need to recenter the graph
+    /// Do we need to recenter the graph ?
     pub need_recenter: bool,
+
+    /// Do we need to display the settings interface ?
+    pub are_settings_visible: bool,
+
+    /// Is the code section closed ?
+    pub is_code_closed: bool,
 }
 
 impl Default for App {
@@ -264,13 +275,15 @@ impl Default for App {
             input: "11011011".to_string(),
             graph_rect: Rect::ZERO,
             states: HashMap::new(),
-            code: "q_i {ç,ç -> R, ç, R} q_1;\nq_1 { 1,_ -> R, _, N\n\n| 0, _ -> R, 0, R} q_1;\n\n\nq_1 { $, _ -> L, _, L} q_2;\nq_2 {0, ç -> L,  ç, N\n\n| 1, 0 -> L, 0, L\n| 0, 0 -> L, 0, N} q_2;\n\nq_2 {ç,ç -> N,ç,N} q_a;".to_string(), // TODO display a message as comment instead
+            code: "".to_string(), // TODO display a message as comment instead
             event: Event::default(),
             theme: Theme::DEFAULT,
             selected_state: None,
             selected_transition: None,
             interval: 0,
             rules_edit: vec![],
+            pin_count: 0,
+            file: FileDialog::default(),
         };
 
         // Update the graph data with the turing data at initialization
@@ -293,6 +306,8 @@ impl Default for Event {
             is_next: AtomicBool::new(false).into(),
             is_editing: false,
             need_recenter: false,
+            are_settings_visible: false,
+            is_code_closed: false,
         }
     }
 }
@@ -499,6 +514,20 @@ impl App {
             layer_state = next_layer_state;
 
             j += 1.0;
+        }
+    }
+
+    /// Unpin all states
+    pub fn unpin(&mut self) {
+        for (_, state) in &mut self.states {
+            state.is_pinned = false;
+        }
+    }
+
+    /// Pin all states
+    pub fn pin(&mut self) {
+        for (_, state) in &mut self.states {
+            state.is_pinned = true;
         }
     }
 }

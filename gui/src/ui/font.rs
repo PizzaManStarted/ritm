@@ -27,6 +27,14 @@ impl Font {
         }
     }
 
+    /// default font used in the application
+    pub fn default_small() -> FontId {
+        FontId {
+            family: FontFamily::Name("RobotoMono-regular".into()),
+            size: Self::SMALL_SIZE,
+        }
+    }
+
     /// bold version of the default font used in the application
     pub fn bold() -> FontId {
         FontId {

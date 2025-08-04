@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 
-use egui::{Rect, Scene, Ui, Vec2};
+use egui::{
+    Id, Image, ImageButton, LayerId, Rect, Scene, Ui, UiBuilder, Vec2, include_image, vec2,
+};
 
 use crate::{
-    App,
-    ui::{constant::Constant, edit, utils},
+    ui::{constant::Constant, edit, popup::transition_edit, utils}, App
 };
 
 pub mod state;
 pub mod transition;
-pub mod transition_edit;
 
 /// Show the graph display of the turing machine
 ///
@@ -47,6 +47,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
 
     // Save scene border and recenter if asked
     app.graph_rect = if app.event.need_recenter {
+        // TODO better way to recenter, avoid sticking to top
         app.event.need_recenter = false;
         inner_rect
     } else {

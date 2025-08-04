@@ -14,6 +14,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             fill: app.theme.white,
             stroke: Stroke::new(2.0, app.theme.gray),
             inner_margin: Margin::same(10),
+            corner_radius: 5.into(),
             ..Default::default()
         })
         .show(ui.ctx(), |ui: &mut Ui| {
@@ -288,17 +289,17 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                                                         .width(20.0) // TODO change and think about this value, I hardcoded it
                                                         .show_ui(ui, |ui| {
                                                             ui.selectable_value(
-                                                                &mut transition.move_read,
+                                                                &mut transition.chars_write[i].1,
                                                                 TuringDirection::Right,
                                                                 "Right",
                                                             );
                                                             ui.selectable_value(
-                                                                &mut transition.move_read,
+                                                                &mut transition.chars_write[i].1,
                                                                 TuringDirection::Left,
                                                                 "Left",
                                                             );
                                                             ui.selectable_value(
-                                                                &mut transition.move_read,
+                                                                &mut transition.chars_write[i].1,
                                                                 TuringDirection::None,
                                                                 "None",
                                                             );
