@@ -6,6 +6,7 @@ use ritm_repl::modes::choice_modes::{collect_enum_values, print_help, ModeEvent,
 use ritm_repl::modes::modify_mode::ModifyTuringMode;
 use ritm_repl::modes::starting_modes::StartingMode;
 use ritm_repl::ripl_error::{print_error_help, RiplError};
+use ritm_repl::DataStorage;
 use rustyline::error::ReadlineError;
 use rustyline::history::FileHistory;
 use rustyline::{DefaultEditor, Editor};
@@ -15,11 +16,17 @@ use strum::IntoEnumIterator;
 
 
 
+
 fn main() -> Result<(), Box<dyn std::error::Error>>
 {
     let mut rl = DefaultEditor::new()?;
+    // Clear screen
     rl.clear_screen().unwrap();
+
+    // Creates the data storage
+    let mut storage = DataStorage {graph: None, iterator: None};
     
+    // Choose the first mode
     let mut curr_mode = Modes::Start;
 
     // Clear terminal
@@ -28,10 +35,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
     loop {
         let status = match curr_mode {
             Modes::Start => {
-                eval_loop::<StartingMode>(&mut rl, &mut curr_mode).unwrap()
+                eval_loop::<StartingMode>(&mut rl, &mut curr_mode, &mut storage).unwrap()
             },
             Modes::Modify => {
-                eval_loop::<ModifyTuringMode>(&mut rl, &mut curr_mode).unwrap()
+                eval_loop::<ModifyTuringMode>(&mut rl, &mut curr_mode, &mut storage).unwrap()
                 
             },
             Modes::Execute => {
@@ -49,7 +56,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
 }
 
 
-fn eval_loop<E>(rl: &mut Editor<(), FileHistory>, current_mode: &mut Modes) -> rustyline::Result<bool> where E : ModeEvent + IntoEnumIterator + Display
+fn eval_loop<E>(rl: &mut Editor<(), FileHistory>, 
+                current_mode: &mut Modes, 
+                storage: &mut DataStorage) 
+-> rustyline::Result<bool> where E : ModeEvent + IntoEnumIterator + Display
 {
     let argument ;
     let mut need_help = false;
@@ -121,7 +131,7 @@ fn eval_loop<E>(rl: &mut Editor<(), FileHistory>, current_mode: &mut Modes) -> r
                 commands.get(index).unwrap().print_help();
             }
             else {
-                *current_mode = commands.get(index).unwrap().choose_option(rl);
+                *current_mode = commands.get(index).unwrap().choose_option(rl, storage);
                 // println!("{:?}", current_mode);
             }
             return Ok(true);

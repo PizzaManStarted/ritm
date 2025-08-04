@@ -3,10 +3,13 @@ use rustyline::{history::FileHistory, Editor};
 use strum::IntoEnumIterator;
 use colored::Colorize;
 
+use crate::DataStorage;
+
+
 
 pub trait ModeEvent {
     fn print_help(&self);
-    fn choose_option(&self, rl: &mut Editor<(), FileHistory>) -> Modes;
+    fn choose_option(&self, rl: &mut Editor<(), FileHistory>, storage: &mut DataStorage) -> Modes;
 }
 
 

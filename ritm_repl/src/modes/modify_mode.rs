@@ -5,7 +5,7 @@ use strum_macros::EnumIter;
 
 use colored::Colorize;
 
-use crate::modes::{choice_modes::{ModeEvent, Modes}, starting_modes::StartingMode};
+use crate::{modes::{choice_modes::{ModeEvent, Modes}, starting_modes::StartingMode}, DataStorage};
 
 
 
@@ -52,7 +52,7 @@ impl ModeEvent for ModifyTuringMode {
         println!("")
     }
     
-    fn choose_option(&self, rl: &mut Editor<(), FileHistory>) -> Modes {    
+    fn choose_option(&self, rl: &mut Editor<(), FileHistory>, storage: &mut DataStorage) -> Modes {    
         let readline = rl.readline(">> ");
 
         match self {
