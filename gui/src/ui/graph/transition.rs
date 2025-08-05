@@ -20,43 +20,43 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     // Extract each keys to avoid borrowing the whole App struct when iterating every state
     let keys: Vec<usize> = app.states.keys().map(|u| *u).collect::<Vec<usize>>();
 
-    for i in keys {
+    for i in &keys {
 
-        let state = State::get(app, i);
+        let state = State::get(app, *i);
         let transitions_count = state.transitions.len();
 
         for j in 0..transitions_count {
 
-            let transition = Transition::get(app, (i,j));
+            let transition = Transition::get(app, (*i,j));
             let target_state_index = transition.target_id;
 
-            if target_state_index != i {
-                neighbors.entry(i).or_insert(HashSet::from([target_state_index])).insert(target_state_index);
-                neighbors.entry(target_state_index).or_insert(HashSet::from([i])).insert(i); 
+            if target_state_index != *i {
+                neighbors.entry(*i).or_insert(HashSet::from([target_state_index])).insert(target_state_index);
+                neighbors.entry(target_state_index).or_insert(HashSet::from([*i])).insert(*i); 
             }
 
             // check if the current transition has been used to get to the current state
-            let transition_taken = match &app.step {
-                TuringExecutionSteps::FirstIteration { .. } => { None },
-                TuringExecutionSteps::TransitionTaken { transition_taken, .. } => { Some(transition_taken) },
-                TuringExecutionSteps::Backtracked { ..  } => { None }
+            let (transition_taken, index) = match &app.step {
+                TuringExecutionSteps::FirstIteration { .. } => { (None, 0) },
+                TuringExecutionSteps::TransitionTaken { transition_taken, transition_index_taken, .. } => { (Some(transition_taken), *transition_index_taken)},
+                TuringExecutionSteps::Backtracked { ..  } => { (None, 0) }
             };
 
-            let is_previous = transition_taken.is_some_and(|f| f
+            let is_previous = transition_taken.is_some_and(|f| transition.id == index && f
                 == app
                     .turing
-                    .graph_ref().get_state(i as usize)
+                    .graph_ref().get_state(*i as usize)
                     .unwrap()
                     .transitions
                     .get(transition.id as usize)
                     .unwrap());
 
-            match transitions_hashmap.entry((i, target_state_index)) {
+            match transitions_hashmap.entry((*i, target_state_index)) {
                 Entry::Occupied(mut e) => {
-                    e.get_mut().push(((i, j), is_previous));
+                    e.get_mut().push(((*i, j), is_previous));
                 }
                 Entry::Vacant(e) => {
-                    e.insert(vec![((i, j), is_previous)]);
+                    e.insert(vec![((*i, j), is_previous)]);
                 }
             }
         }
@@ -77,7 +77,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                 app,
                 ui, 
                 *from,
-                neighbors.get(from).unwrap().iter()
+                neighbors.entry(*from).or_insert(HashSet::from_iter(keys.iter().cloned())).iter()
                     .fold(Vec2::ZERO, |acc, e| acc + (State::get(app, *e).position - State::get(app, *from).position).normalized()),
                 transitions
             );

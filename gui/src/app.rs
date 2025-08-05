@@ -155,7 +155,7 @@ impl Default for Event {
 
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        cc.egui_ctx.set_debug_on_hover(true);
+        // cc.egui_ctx.set_debug_on_hover(true);
 
         // Load the fonts used in the application
         load_font(cc);
@@ -202,6 +202,18 @@ impl App {
         self.selected_state = None;
     }
 
+    /// Remove the selected state from the core and the gui structure
+    pub fn remove_transitions(&mut self) {
+        // for (_, state) in self.states.iter_mut() {
+        //     state
+        //         .transitions
+        //         .retain(|t| t.target_id != self.selected_state.unwrap());
+        // }
+        // self.states.remove(&self.selected_state.unwrap());
+
+        // self.selected_state = None;
+    }
+
     /// Add a transition graphically and logically
     pub fn add_transition(&mut self, target: usize) {
         let transition = TuringTransitionMultRibbons::new(
@@ -215,6 +227,8 @@ impl App {
             .graph_mut()
             .append_rule_state(self.selected_state.unwrap(), transition, target)
             .ok();
+
+        println!("{:?}", self.turing.graph_ref());
 
         let source = State::get_mut(self, self.selected_state.unwrap());
         let transition =
@@ -296,6 +310,15 @@ impl App {
     pub fn cancel_transition_change(&mut self) {
         self.rules_edit.clear();
         self.event.is_editing = false;
+    }
+
+    pub fn graph_to_code(&mut self) {
+
+        let mut code = String::new();
+        for (i, state) in &self.states {
+
+            code.push_str(&state.name);
+        }
     }
 
     /// Create a graphical representation of a turing machine by copying each states and transitions information into GUI-oriented struct

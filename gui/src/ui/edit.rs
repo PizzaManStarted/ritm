@@ -95,7 +95,7 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                                     "../../assets/icon/transition.svg"
                                                 ))
                                                 .fit_to_exact_size(vec2(35.0, 35.0))
-                                                .tint(if app.event.is_adding_state {
+                                                .tint(if app.event.is_adding_transition {
                                                     app.theme.selected
                                                 } else {
                                                     Theme::constrast_color(app.theme.white)
@@ -126,7 +126,13 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                         )
                                         .clicked()
                                 {
-                                    app.remove_state();
+                                    if state_selected {
+                                        app.remove_state();
+                                    }
+                                    
+                                    if transition_selected {
+                                        app.remove_transitions();
+                                    }
                                 }
 
                                 if (app.selected_state.is_some()
