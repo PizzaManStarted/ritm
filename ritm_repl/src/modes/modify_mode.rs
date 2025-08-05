@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use std::{f32::consts::E, fmt::Display, ops::DerefMut};
 
-use ritm_core::{turing_graph::TuringMachineGraph, turing_parser::parse_transition_string, turing_state::TuringTransitionMultRibbons};
+use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::TuringMachines, turing_parser::parse_transition_string, turing_state::TuringTransitionMultRibbons};
 use rustyline::{history::FileHistory, Editor};
 use strum_macros::EnumIter;
 
@@ -60,7 +60,7 @@ impl ModeEvent for ModifyTuringMode {
                 println!("{:?}", tm);
             },
             ModifyTuringMode::AddState => {
-                let res = add_state(rl);
+                let res = get_state_name(rl);
                 if let Err(e) = res {
                     print_error_help(e);
                 }
@@ -74,18 +74,48 @@ impl ModeEvent for ModifyTuringMode {
                 }
             },
             ModifyTuringMode::RemoveTransitions => todo!(),
-            ModifyTuringMode::RemoveState => todo!(),
+            ModifyTuringMode::RemoveState => {
+                let res = get_state_name(rl);
+                if let Err(e) = res {
+                    print_error_help(e);
+                }
+                else {
+                    if let Err(e) = tm.remove_state_with_name(&res.unwrap()) {
+                        print_error_help(RiplError::EncounteredTuringError { error: e });
+                    }
+                }
+            },
             ModifyTuringMode::SaveTM => todo!(),
-            ModifyTuringMode::FeedWord => todo!(),
+            ModifyTuringMode::FeedWord => {
+                let res = query_string(rl, format!("Enter the word to feed to this Turing machine: "));
+                if let Err(e) = res  {
+                    print_error_help(e);
+                }
+                else {
+                    let res = TuringMachines::new(tm.clone(), res.unwrap(), ritm_core::turing_machine::Mode::SaveAll);
+                    if let Err(e) = res {
+                        print_error_help(RiplError::EncounteredTuringError { error: e });
+                    }
+                    else {
+                        storage.graph = None;
+                        storage.iterator = Some(res.unwrap());
+                        return Modes::Execute;
+                    }
+                }
+            },
         }
         Modes::Modify
+    }
+    
+    fn get_help_color(str : colored::ColoredString) -> colored::ColoredString {
+        str.purple()
     }
     
     
 }
 
 
-fn add_state(rl: &mut Editor<(), FileHistory>) -> Result<String, RiplError>
+fn get_state_name(rl: &mut Editor<(), FileHistory>) -> Result<String, RiplError>
 {
     let name = query_string(rl, format!("Enter the {} of the state: ", "name".blue()));
 

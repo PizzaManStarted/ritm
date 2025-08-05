@@ -410,3 +410,10 @@ impl Debug for TuringMachineGraph {
         f.debug_struct("TuringMachine").field("k", &self.k).field("states", &self.states).field("hashmap", &self.name_index_hashmap).finish()
     }
 }
+
+
+impl Clone for TuringMachineGraph {
+    fn clone(&self) -> Self {
+        Self { name_index_hashmap: self.name_index_hashmap.clone(), states: self.states.clone(), k: self.k.clone() }
+    }
+}

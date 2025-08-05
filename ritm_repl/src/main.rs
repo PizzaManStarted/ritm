@@ -3,6 +3,7 @@
 use std::fmt::Display;
 
 use ritm_repl::modes::choice_modes::{collect_enum_values, print_help, ModeEvent, Modes};
+use ritm_repl::modes::execute_mode::ExecuteTuringMode;
 use ritm_repl::modes::modify_mode::ModifyTuringMode;
 use ritm_repl::modes::starting_modes::StartingMode;
 use ritm_repl::ripl_error::{print_error_help, RiplError};
@@ -42,8 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
                 
             },
             Modes::Execute => {
-                // eval_loop::<ExecuteTuringMode>(&mut rl, &mut curr_mode).unwrap()
-                false
+                eval_loop::<ExecuteTuringMode>(&mut rl, &mut curr_mode, &mut storage).unwrap()
             },
         };
 

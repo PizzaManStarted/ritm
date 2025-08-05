@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
+use colored::Colorize;
 use strum_macros::EnumIter;
+
+use crate::modes::choice_modes::ModeEvent;
 
 
 
@@ -29,5 +32,20 @@ impl Display for ExecuteTuringMode {
             ExecuteTuringMode::FeedWord => "Feed a new word and reset",
             ExecuteTuringMode::Summary => "Print a summary of the execution",
         })
+    }
+}
+
+
+impl ModeEvent for ExecuteTuringMode {
+    fn print_help(&self) {
+        todo!()
+    }
+
+    fn choose_option(&self, rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, storage: &mut crate::DataStorage) -> super::choice_modes::Modes {
+        todo!()
+    }
+    
+    fn get_help_color(str : colored::ColoredString) -> colored::ColoredString {
+        str.yellow()
     }
 }

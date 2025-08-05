@@ -1,8 +1,8 @@
 use std::{fmt::Display, fs::File};
 
-use crate::{modes::choice_modes::{ModeEvent, Modes}, query_usize, ripl_error::{print_error_help, RiplError}, DataStorage};
+use crate::{modes::choice_modes::{ModeEvent, Modes}, query_string, query_usize, ripl_error::{print_error_help, RiplError}, DataStorage};
 use colored::Colorize;
-use ritm_core::turing_graph::TuringMachineGraph;
+use ritm_core::{turing_graph::TuringMachineGraph, turing_parser::parse_turing_graph_file_path};
 use rustyline::{history::FileHistory, Editor};
 use strum_macros::EnumIter;
 
@@ -44,7 +44,7 @@ impl ModeEvent for StartingMode {
                 create_tm(rl)
             },
             StartingMode::LoadTM => {
-                todo!()
+                load_tm(rl)
             },
         };
         if let Err(e) = res {
@@ -56,6 +56,10 @@ impl ModeEvent for StartingMode {
         // Change the mode to allow modifying this tm graph
         Modes::Modify
     }
+    
+    fn get_help_color(str : colored::ColoredString) -> colored::ColoredString {
+        str.blue()
+    }
 
 }
 
@@ -63,7 +67,6 @@ impl ModeEvent for StartingMode {
 
 fn create_tm(rl: &mut Editor<(), FileHistory>) -> Result<TuringMachineGraph, RiplError>
 {
-
     let res = query_usize(rl, format!("Enter the numbers of {} of the Turing machine ({}) :", "writting ribbons".blue(), "k".blue().italic()));
 
     if let Err(e) = res {
@@ -82,5 +85,17 @@ fn create_tm(rl: &mut Editor<(), FileHistory>) -> Result<TuringMachineGraph, Rip
 
 fn load_tm(rl: &mut Editor<(), FileHistory>) -> Result<TuringMachineGraph, RiplError>
 {
-    todo!()
+    let res = query_string(rl, format!("Enter the {} the Turing machine to read:", "path".blue()));
+
+    if let Err(e) = res {
+        return Err(e);
+    }
+
+    let tm = parse_turing_graph_file_path(res.unwrap());
+    if let Err(e) = tm {
+        return Err(RiplError::EncounteredTuringError { error: e });
+    }
+    
+    Ok(tm.unwrap())
+
 }
