@@ -57,7 +57,7 @@ impl ModeEvent for ModifyTuringMode {
         let tm = storage.graph.as_mut().unwrap();
         match self {
             ModifyTuringMode::PrintSummary => {
-                println!("{:?}", tm);
+                println!("{}", tm);
             },
             ModifyTuringMode::AddState => {
                 let res = get_state_name(rl);
@@ -161,7 +161,7 @@ pub fn query_transition(rl: &mut Editor<(), FileHistory>, query: String) -> Resu
                 
                 let res = parse_transition_string(l);
                 if let Err(e) = res {
-                    return Err(RiplError::EncounteredTuringError { error: e });
+                    return Err(RiplError::EncounteredParsingError { error: e });
                 }
                 return Ok(res.unwrap());
             },

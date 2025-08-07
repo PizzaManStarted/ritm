@@ -58,7 +58,7 @@ impl TuringMachineGraph {
         // Checks if the given number of ribbons is correct
         if transition.get_number_of_affected_ribbons() != (self.k + 1) as usize
         {
-            return Err(TuringError::ArgsSizeTransitionError);
+            return Err(TuringError::IncompatibleTransitionError {expected: self.get_k(), received: transition.get_number_of_affected_ribbons() - 1 });
         }
         let from_index = self.name_index_hashmap.get(from);
         if let None = from_index {
@@ -95,7 +95,7 @@ impl TuringMachineGraph {
         // Checks if the given correct of number transitions was given
         if transition.chars_write.len() != self.k as usize
         {
-            return Err(TuringError::ArgsSizeTransitionError);
+            return Err(TuringError::IncompatibleTransitionError {expected: self.k, received: transition.chars_write.len()});
         }
         match self.add_rule_state_ind(from_index, transition, to_index) {
             Ok(()) => {
@@ -415,5 +415,48 @@ impl Debug for TuringMachineGraph {
 impl Clone for TuringMachineGraph {
     fn clone(&self) -> Self {
         Self { name_index_hashmap: self.name_index_hashmap.clone(), states: self.states.clone(), k: self.k.clone() }
+    }
+}
+
+
+impl Display for TuringMachineGraph {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut res = String::from("States:\n");
+        
+        // Print all states
+        for state in &self.states {
+            res.push_str(format!("{}: {}\n", state.name, state.state_type).as_str());
+        }
+
+        res.push_str("\nTransitions:\n");
+        let mut res_tr = String::new();
+        // Print all transitions btw states
+        for (q1, i1) in &self.name_index_hashmap {
+            for (q2, i2) in &self.name_index_hashmap {
+                let transitions = self.get_transitions_by_index(*i1, *i2).unwrap();
+                if transitions.is_empty() {
+                    continue;
+                }
+                res_tr.push_str(format!("q_{} {} ", q1, '{').as_str());
+                let spaces = 3 + q1.len();
+
+                for i in 0..transitions.len()-1 {
+                    res_tr.push_str(format!("{} \n{}| ", transitions.get(i).unwrap(), " ".repeat(spaces)).as_str());
+                }
+                // add last
+                res_tr.push_str(format!("{} ", transitions.last().unwrap()).as_str());
+                
+
+                res_tr.push_str(format!("{} q_{};\n\n", "}", q2).as_str());
+            }
+        }
+        if res_tr.is_empty() {
+            res.push_str("None");
+        }
+        else {
+            res.push_str(res_tr.as_str());
+        }
+
+        write!(f, "{}", res)
     }
 }

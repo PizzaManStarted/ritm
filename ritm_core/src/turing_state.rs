@@ -83,7 +83,7 @@ impl TuringState {
     {
         // Check that the number of ribbon from a transition is the same for all added transitions
         if ! self.transitions.is_empty() && self.transitions.first().unwrap().get_number_of_affected_ribbons() != transition.get_number_of_affected_ribbons() {
-            return Err(TuringError::ArgsSizeTransitionError);
+            return Err(TuringError::IncompatibleTransitionError {expected: self.transitions.first().unwrap().get_number_of_affected_ribbons(), received: transition.get_number_of_affected_ribbons()});
         }
 
         Ok(self.transitions.push(transition))
@@ -320,15 +320,15 @@ impl TuringTransitionMultRibbons {
         let move_read = directions.get(0);
         
         if let None = move_read {
-            return Err(TuringError::ArgsSizeTransitionError);
+            return Err(TuringError::TransitionArgsError { reason: format!("At least one direction must be given") });
         }
         let move_read = move_read.unwrap().clone();
 
         if chars_write.len() + 1 != directions.len(){
-            return Err(TuringError::ArgsSizeTransitionError);
+            return Err(TuringError::TransitionArgsError { reason: format!("The number of character to write must be equal to the number of directions minus one (for the reading ribbon)") });
         }
         if chars_read.len() != directions.len() {
-            return Err(TuringError::ArgsSizeTransitionError);
+            return Err(TuringError::TransitionArgsError { reason: format!("The number of characters to read must be equal to the number of given directions") });
         }
         for i in 1..directions.len() 
         {
@@ -386,7 +386,7 @@ impl Display for TuringTransitionMultRibbons {
 
 
 
-        write!(f, "[{} -> {}]", char_read, char_written)
+        write!(f, "{} -> {}", char_read, char_written)
     }
 }
 

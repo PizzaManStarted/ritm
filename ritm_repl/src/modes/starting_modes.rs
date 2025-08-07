@@ -93,7 +93,7 @@ fn load_tm(rl: &mut Editor<(), FileHistory>) -> Result<TuringMachineGraph, RiplE
 
     let tm = parse_turing_graph_file_path(res.unwrap());
     if let Err(e) = tm {
-        return Err(RiplError::EncounteredTuringError { error: e });
+        return Err(RiplError::EncounteredParsingError { error: e });
     }
     
     Ok(tm.unwrap())

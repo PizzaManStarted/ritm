@@ -1,4 +1,4 @@
-use ritm_core::{turing_parser::{parse_transition_string, parse_turing_graph_string}, turing_graph::TuringMachineGraph, turing_machine::TuringMachines, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
+use ritm_core::{turing_errors::{TuringError, TuringParserError}, turing_graph::TuringMachineGraph, turing_machine::TuringMachines, turing_parser::{parse_transition_string, parse_turing_graph_string}, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
 
 
 #[test]
@@ -107,4 +107,116 @@ fn test_parse_transition_fail()
     if let Ok(t) = parse_transition_string(transition_str) {
         panic!("The parser should have returned an error not this value:  {:?}",t)
     }
+}
+
+
+#[test]
+fn test_parser_missing_semicolon()
+{
+
+    let machine = String::from("q_i {ç, ç -> R, ç, R} q_1;
+                                        q1 {0, _ -> R, a, R 
+                                          | 1, _ -> R, a, R} q1");
+
+    let res = parse_turing_graph_string(machine);
+
+    match res {
+        Ok(_) => panic!("An error was expected"),
+        Err(e) => match e {
+            TuringParserError::ParsingError { line_col_pos:_, value:_, missing_value } => {
+                assert_eq!(missing_value.expect("Expected a missing char to be found"), String::from(";"))
+            },
+            _ => panic!("A parsing error was expected")
+        },
+    }    
+}
+
+
+#[test]
+fn test_parser_missing_left_bracket()
+{
+
+    let machine = String::from("q_i ç, ç -> R, ç, R} q_1;
+                                        q1 {0, _ -> R, a, R 
+                                          | 1, _ -> R, a, R} q1;");
+
+    let res = parse_turing_graph_string(machine);
+
+    match res {
+        Ok(_) => panic!("An error was expected"),
+        Err(e) => match e {
+            TuringParserError::ParsingError { line_col_pos:_, value:_, missing_value } => {
+                assert_eq!(missing_value.expect("Expected a missing char to be found"), String::from("{"))
+            },
+            _ => panic!("A parsing error was expected")
+        },
+    }    
+}
+
+
+#[test]
+fn test_parser_missing_right_bracket()
+{
+
+    let machine = String::from("q_i {ç, ç -> R, ç, R} q_1;
+                                        q1 {0, _ -> R, a, R 
+                                          | 1, _ -> R, a, R q1;");
+
+    let res = parse_turing_graph_string(machine);
+
+    match res {
+        Ok(_) => panic!("An error was expected"),
+        Err(e) => match e {
+            TuringParserError::ParsingError { line_col_pos:_, value:_, missing_value } => {
+                assert_eq!(missing_value.expect("Expected a missing char to be found"), String::from("}"))
+            },
+            _ => panic!("A parsing error was expected")
+        },
+    }    
+}
+
+
+
+#[test]
+fn test_parse_graph_incompatible_transition()
+{
+    let machine = String::from("q_i {ç, ç -> R, ç, R} q_1;
+                                        q1 {0, _ -> R, a, R 
+                                          | 1, _, _ -> R, a, R, a, R} q1;");
+
+    let res = parse_turing_graph_string(machine);
+    match res {
+        Ok(_) => panic!("An error was expected"),
+        Err(e) => match e {
+            TuringParserError::EncounteredTuringError { line_col_pos:_, turing_error, value:_ } => {
+                match turing_error {
+                    TuringError::IncompatibleTransitionError { expected:_, received:_ } => {()},
+                    _ => panic!("An IncompatibleTransitionError was expected")
+                }
+            },
+            _ => panic!("An EncounteredTuringError was expected")
+        },
+    }    
+}
+
+#[test]
+fn test_parse_graph_bad_transition()
+{
+    let machine = String::from("q_i {ç, ç -> R, ç, R} q_1;
+                                        q1 {0, _ -> R, a, R 
+                                          | 1, _ -> R, a, R, a, R} q1;");
+
+    let res = parse_turing_graph_string(machine);
+    match res {
+        Ok(_) => panic!("An error was expected"),
+        Err(e) => match e {
+            TuringParserError::EncounteredTuringError { line_col_pos:_, turing_error, value:_ } => {
+                match turing_error {
+                    TuringError::TransitionArgsError { reason:_ } => {()},
+                    _ => panic!("An IncompatibleTransitionError was expected")
+                }
+            },
+            _ => panic!("An EncounteredTuringError was expected")
+        },
+    }    
 }
