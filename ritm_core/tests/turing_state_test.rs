@@ -198,7 +198,7 @@ fn expect_wrong_args_error<O>(res : Result<O, TuringError>)
 {
     if let Err(e) = res {
         match e {
-            TuringError::ArgsSizeTransitionError => (),
+            TuringError::IncompatibleTransitionError => (),
             _ => panic!("Wrong error was returned"),
         }
     }

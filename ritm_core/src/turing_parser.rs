@@ -52,7 +52,11 @@ pub fn parse_turing_graph_string(turing_mach: String) -> Result<TuringMachineGra
             // For every rule matched :
             Rule::transition => 
             {
-                let (from_var, transitions, to_var) = parse_transition(turing_machine_rule).unwrap();
+                let res = parse_transition(turing_machine_rule);
+                if let Err(e) = res {
+                    return Err(e);
+                }
+                let (from_var, transitions, to_var) = res.unwrap();
 
                 /* Add the colected transitions to the MT */
 

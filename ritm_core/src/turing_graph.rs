@@ -58,7 +58,7 @@ impl TuringMachineGraph {
         // Checks if the given number of ribbons is correct
         if transition.get_number_of_affected_ribbons() != (self.k + 1) as usize
         {
-            return Err(TuringError::ArgsSizeTransitionError);
+            return Err(TuringError::IncompatibleTransitionError {expected: self.get_k(), received: transition.get_number_of_affected_ribbons() - 1 });
         }
         let from_index = self.name_index_hashmap.get(from);
         if let None = from_index {
@@ -95,7 +95,7 @@ impl TuringMachineGraph {
         // Checks if the given correct of number transitions was given
         if transition.chars_write.len() != self.k as usize
         {
-            return Err(TuringError::ArgsSizeTransitionError);
+            return Err(TuringError::IncompatibleTransitionError {expected: self.k, received: transition.chars_write.len()});
         }
         match self.add_rule_state_ind(from_index, transition, to_index) {
             Ok(()) => {

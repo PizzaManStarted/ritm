@@ -18,8 +18,17 @@ pub enum TuringError {
     },
     /// Error when a word given to a turing machine did not end on an accepting state
     WordNotAcceptedError,
-    /// Error when a transition was given a wrong number of args
-    ArgsSizeTransitionError,
+    /// Error when a transition cannot be added due to the number of ribbons it affects 
+    IncompatibleTransitionError{
+        /// Number of writting ribbons expected
+        expected: usize,
+        /// Numbers of writting ribbons got
+        received: usize,
+    },
+    /// Error when trying to construct a transition with an incorrect number of arguments
+    TransitionArgsError {
+        reason: String
+    },
     /// Error when trying to access a state using an index that goes outside of the bound 
     OutOfRangeStateError {
         accessed_index : usize,

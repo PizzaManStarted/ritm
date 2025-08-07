@@ -178,12 +178,45 @@ fn test_parser_missing_right_bracket()
 
 
 #[test]
-fn test_parse_graph_bad_transitions()
+fn test_parse_graph_incompatible_transition()
 {
     let machine = String::from("q_i {ç, ç -> R, ç, R} q_1;
                                         q1 {0, _ -> R, a, R 
-                                          | 1, _ -> R, a, R, a, N} q1;");
+                                          | 1, _, _ -> R, a, R, a, R} q1;");
 
     let res = parse_turing_graph_string(machine);
-    let parsed_graph = res.unwrap();
+    match res {
+        Ok(_) => panic!("An error was expected"),
+        Err(e) => match e {
+            TuringParserError::EncounteredTuringError { line_col_pos:_, turing_error, value:_ } => {
+                match turing_error {
+                    TuringError::IncompatibleTransitionError { expected:_, received:_ } => {()},
+                    _ => panic!("An IncompatibleTransitionError was expected")
+                }
+            },
+            _ => panic!("An EncounteredTuringError was expected")
+        },
+    }    
+}
+
+#[test]
+fn test_parse_graph_bad_transition()
+{
+    let machine = String::from("q_i {ç, ç -> R, ç, R} q_1;
+                                        q1 {0, _ -> R, a, R 
+                                          | 1, _ -> R, a, R, a, R} q1;");
+
+    let res = parse_turing_graph_string(machine);
+    match res {
+        Ok(_) => panic!("An error was expected"),
+        Err(e) => match e {
+            TuringParserError::EncounteredTuringError { line_col_pos:_, turing_error, value:_ } => {
+                match turing_error {
+                    TuringError::TransitionArgsError { reason:_ } => {()},
+                    _ => panic!("An IncompatibleTransitionError was expected")
+                }
+            },
+            _ => panic!("An EncounteredTuringError was expected")
+        },
+    }    
 }
