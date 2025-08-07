@@ -294,7 +294,10 @@ fn get_line_col(error: &Error<Rule>) -> Option<(usize, usize)>
 }
 
 
-
+/// Turns the given [TuringMachineGraph] into its equivalent [String] value.
+/// The returned value can then be parsed by the parser to return the same graph. 
+/// 
+/// This function is therefore very useful to save graphs.
 pub fn graph_to_string(tm: &TuringMachineGraph) -> String
 {
     let mut res = String::new();
