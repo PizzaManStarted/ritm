@@ -15,7 +15,7 @@ pub trait ModeEvent {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Modes {
     Start,
     Modify,
@@ -44,3 +44,5 @@ pub fn collect_enum_values<E>() -> Vec<E> where E:IntoEnumIterator + Display + M
 {
     E::iter().collect()
 }
+
+

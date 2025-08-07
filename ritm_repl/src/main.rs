@@ -29,6 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
     
     // Choose the first mode
     let mut curr_mode = Modes::Start;
+    let mut prev_mode = Modes::Execute;
 
     // Clear terminal
     rl.clear_screen().unwrap();
@@ -36,21 +37,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
     loop {
         let status = match curr_mode {
             Modes::Start => {
-                eval_loop::<StartingMode>(&mut rl, &mut curr_mode, &mut storage).unwrap()
+                eval_loop::<StartingMode>(&mut rl, &mut curr_mode,  &mut prev_mode, &mut storage).unwrap()
             },
             Modes::Modify => {
-                eval_loop::<ModifyTuringMode>(&mut rl, &mut curr_mode, &mut storage).unwrap()
+                eval_loop::<ModifyTuringMode>(&mut rl, &mut curr_mode, &mut prev_mode, &mut storage).unwrap()
                 
             },
             Modes::Execute => {
-                eval_loop::<ExecuteTuringMode>(&mut rl, &mut curr_mode, &mut storage).unwrap()
+                eval_loop::<ExecuteTuringMode>(&mut rl, &mut curr_mode, &mut prev_mode, &mut storage).unwrap()
             },
         };
 
+        
         if !status {
             break;
         }
-
+        
     }
     Ok(())
 }
@@ -58,19 +60,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
 
 fn eval_loop<E>(rl: &mut Editor<(), FileHistory>, 
                 current_mode: &mut Modes, 
+                previous_mode: &mut Modes,
                 storage: &mut DataStorage) 
 -> rustyline::Result<bool> where E : ModeEvent + IntoEnumIterator + Display
 {
     let argument ;
     let mut need_help = false;
 
-    // Print possible commands
-    print_help::<E>();
-
     
     // get possible commands
     let commands= collect_enum_values::<E>();
     
+    if *previous_mode != *current_mode {
+        print_help::<E>();
+        *previous_mode = current_mode.clone();
+    }
+
     let readline = rl.readline(">> ");
     // rl.clear_screen().unwrap();
     match readline {
@@ -86,11 +91,14 @@ fn eval_loop<E>(rl: &mut Editor<(), FileHistory>,
 
             // Split line
             let line_vec : Vec<&str> = line.split(" ").collect();
-            
 
             // if the line starts with : "h " or "help " then the user is requesting help first
-            if line.starts_with("h ") || line.starts_with("help ") {
-                if line_vec.len() > 2 {
+            if line.starts_with("h") || line.starts_with("help") {
+                if line_vec.len() == 1 {
+                    print_help::<E>();
+                    return Ok(true);
+                }
+                else if line_vec.len() > 2 {
                     print_error_help(RiplError::ArgsNumberError { received: line_vec.len() - 1, expected: 1 });
                     return Ok(true);
                 }
