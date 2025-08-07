@@ -97,8 +97,8 @@ impl ModeEvent for ModifyTuringMode {
                         print_error_help(RiplError::EncounteredTuringError { error: e });
                     }
                     else {
-                        storage.graph = None;
                         storage.iterator = Some(res.unwrap());
+                        println!("{}", storage.iterator.as_mut().unwrap().next().unwrap());
                         return Modes::Execute;
                     }
                 }
