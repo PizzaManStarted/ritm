@@ -161,7 +161,7 @@ pub fn query_transition(rl: &mut Editor<(), FileHistory>, query: String) -> Resu
                 
                 let res = parse_transition_string(l);
                 if let Err(e) = res {
-                    return Err(RiplError::EncounteredTuringError { error: e });
+                    return Err(RiplError::EncounteredParsingError { error: e });
                 }
                 return Ok(res.unwrap());
             },

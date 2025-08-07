@@ -1,7 +1,7 @@
 use std::fmt::{format, Display};
 
 use colored::{ColoredString, Colorize};
-use ritm_core::turing_errors::TuringError;
+use ritm_core::turing_errors::{TuringError, TuringParserError};
 
 #[derive(Debug)]
 pub enum RiplError {
@@ -23,6 +23,9 @@ pub enum RiplError {
     },
     EncounteredTuringError {
         error : TuringError
+    },
+    EncounteredParsingError {
+        error : TuringParserError
     }
 }
 
@@ -37,6 +40,7 @@ pub fn print_error_help(error: RiplError)
             RiplError::CouldNotParseStringError{value}=>format!("Could not parse the value \"{}\"", as_arg_error(value)),
             RiplError::ArgsNumberError{received,expected}=>format!("Read wrong number of arguments. Expected {} but read {} args",expected.to_string().blue(),as_arg_error(received)),
             RiplError::EncounteredTuringError { error } => format!("Ran into the following turing error : {:?}", error),
+            RiplError::EncounteredParsingError { error } => format!("Ran into the following error during the parsing : {:?}", error)
                     }.red()
     )
 }

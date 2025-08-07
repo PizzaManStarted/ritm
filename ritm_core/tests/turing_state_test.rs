@@ -92,7 +92,7 @@ fn add_transitions() {
 
     // Check that we cannot add a transition that has a different size
     let transition2 = TuringTransitionMultRibbons::create(vec!('ç', 'ç', 'ç'), vec!('ç', 'ç'), vec!(TuringDirection::Left, TuringDirection::Right, TuringDirection::None)).unwrap();
-    expect_wrong_args_error(s.add_transition(transition2));
+    expect_incompatible_transition_error(s.add_transition(transition2));
 }
 
 #[test]
@@ -198,7 +198,22 @@ fn expect_wrong_args_error<O>(res : Result<O, TuringError>)
 {
     if let Err(e) = res {
         match e {
-            TuringError::IncompatibleTransitionError => (),
+            TuringError::TransitionArgsError {reason: _} => (),
+            
+            _ => panic!("Wrong error was returned"),
+        }
+    }
+    else {
+        panic!("Should have thrown an error")
+    }
+}
+
+fn expect_incompatible_transition_error<O>(res : Result<O, TuringError>)
+{
+    if let Err(e) = res {
+        match e {
+            TuringError::IncompatibleTransitionError {expected:_, received:_} => (),
+            
             _ => panic!("Wrong error was returned"),
         }
     }
