@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+#[derive(Debug)]
 pub enum TuringError {
     /// Error thrown when an action not supported by the turing machines is performed (ex: creating a turing machine with 0 ribbon or trying to remove the initial state)
     IllegalActionError {
@@ -28,49 +29,21 @@ pub enum TuringError {
     UnknownStateError {
         state_name : String
     },
-    /// Error when failing to parse a given turing machine
-    ParseError {
-        reason : String
-    }
 }
 
-impl Debug for TuringError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::IllegalActionError { 
-                            cause 
-                    } => f
-                        .debug_struct("IllegalActionError")
-                        .field("cause", cause)
-                        .finish(),
-            Self::OutofRangeRibbonError {
-                        accessed_index: tried_to_access,
-                        ribbon_size,
-                    } => f
-                        .debug_struct("OutofRangeRibbonError")
-                        .field("tried_to_access", tried_to_access)
-                        .field("ribbon_size", ribbon_size)
-                        .finish(),
-            Self::OutOfRangeTransitionError { accessed_index, states_len } => f
-                        .debug_struct("OutOfRangeTransitionError")
-                        .field("accessed_index", accessed_index)
-                        .field("states_len", states_len)
-                        .finish(),
-            Self::WordNotAcceptedError => write!(f, "WordNotAcceptedError"),
-            Self::ArgsSizeTransitionError => write!(f, "NotEnougthArgsError"),
-            Self::OutOfRangeStateError { accessed_index, states_len } => f
-                        .debug_struct("OutOfRangeStateError")
-                        .field("accessed_index", accessed_index)
-                        .field("states_len", states_len)
-                        .finish(),
-            Self::UnknownStateError { state_name } => f
-                        .debug_struct("UnknownStateError")
-                        .field("state_name", state_name)
-                        .finish(),
-            Self::ParseError { reason } => f
-                        .debug_struct("ParseError")
-                        .field("reason", reason)
-                        .finish(),
-        }
+#[derive(Debug)]
+pub enum TuringParserError {
+    /// Error when failing to parse a given string value
+    ParsingError {
+        line_col_pos: Option<(usize, usize)>,
+        value: String,
+        missing_value : Option<String>
+    },
+    
+    /// Error when a [TuringError] was encountered **while** parsing a string value
+    EncounteredTuringError {
+        line_col_pos: Option<(usize, usize)>,
+        turing_error: TuringError,
+        value: String
     }
 }
