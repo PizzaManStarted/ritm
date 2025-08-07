@@ -1,4 +1,5 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE }
+COMMENT = _{ "//" ~ (!"\n" ~ ANY)* }
 
 turing_machine = { (WHITESPACE* ~ (transition ~ semicolon)+) ~ EOI }
 
