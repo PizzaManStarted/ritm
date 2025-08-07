@@ -108,3 +108,16 @@ fn test_parse_transition_fail()
         panic!("The parser should have returned an error not this value:  {:?}",t)
     }
 }
+
+
+#[test]
+fn test_parser_error()
+{
+
+    let machine = String::from("q_i {ç, ç -> R, ç, R} q_1;
+                                        q1 {0, _ -> R, a, R 
+                                          | 1, _ -> R, a, R} q1;");
+
+    let res = parse_turing_graph_string(machine);
+    println!("\n{:?}", res);
+}

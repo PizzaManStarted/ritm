@@ -31,6 +31,12 @@ pub fn parse_turing_graph_string(turing_mach: String) -> Result<TuringMachineGra
     let file = TuringGrammar::parse(Rule::turing_machine, &turing_mach);
     if let Err(e) = file {
         // TODO Add help here
+        println!("{:?}", e.variant);
+        let v = match e.variant {
+            pest::error::ErrorVariant::ParsingError { positives, negatives } => println!("positive: {:?} | nega : {:?}", positives, negatives),
+            pest::error::ErrorVariant::CustomError { message } => println!("fuuuckk"),
+        };
+        
         return Err(TuringError::ParseError { reason: String::from("Couldn't parse") });
     }
     let file = file.unwrap().next().unwrap(); // get and unwrap the `file` rule; never fails
@@ -55,6 +61,7 @@ pub fn parse_turing_graph_string(turing_mach: String) -> Result<TuringMachineGra
 
                     if let Err(e) = tm {
                         // FIXME wrap with parsing error
+                        // explain (col + line + content) why it wasn't possible to create a TM
                         return Err(e);
                     }
                     turing_machine = Some(tm.unwrap());
@@ -75,7 +82,8 @@ pub fn parse_turing_graph_string(turing_mach: String) -> Result<TuringMachineGra
                     }
                 }
             },
-            // The file has ended, we can stop reading/parsing
+            Rule::semicolon => {},
+            // The file has ended, this means we reached the last matched rule
             Rule::EOI => {},
             _ => unreachable!(),
         }
@@ -154,10 +162,13 @@ fn parse_transition(rule: Pair<Rule>) -> Result<(String, Vec<TuringTransitionMul
                 // Add the transition
                 let tr_res = parse_transition_content(rule);
                 if let Err(e) = tr_res {
+                    // explain in this error that we couldn't create the transition
+                    // Return the col and line + the string content of the rule
                     return Err(e); // FIXME wrap with parsing error
                 }
                 transitions.push(tr_res.unwrap());
             },
+            Rule::left_bracket | Rule::right_bracket => {}
             _ => unreachable!(), 
         }
     };

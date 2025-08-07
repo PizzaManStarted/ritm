@@ -1,11 +1,11 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 
-turing_machine = { (WHITESPACE* ~ (transition ~ ";")+) ~ EOI }
+turing_machine = { (WHITESPACE* ~ (transition ~ semicolon)+) ~ EOI }
 
 // Used when only reading a transition
 transition_only = _{ transition ~ EOI }
 
-transition = { (state_name) ~ ("{" ~ transition_content ~ ("|" ~ transition_content)* ~ "}")+ ~ (state_name) }
+transition = { (state_name) ~ (left_bracket ~ transition_content ~ ("|" ~ transition_content)* ~ right_bracket)+ ~ (state_name) }
 
 transition_content = { to_read ~ "->" ~ to_write_move }
 
@@ -29,3 +29,8 @@ char_special = _{ (char | special_chars) }
 char = { (ASCII_DIGIT | ASCII_ALPHA) }
 // Special characters
 special_chars = { ("ç" | "#" | "$" | "_") }
+
+// These rules only serve to give better error reports
+left_bracket = { "{" }
+right_bracket = { "}" }
+semicolon = { ";" }
