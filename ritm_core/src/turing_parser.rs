@@ -292,3 +292,32 @@ fn get_line_col(error: &Error<Rule>) -> Option<(usize, usize)>
         pest::error::LineColLocation::Span(_, _) => None,
     }
 }
+
+
+
+pub fn graph_to_string(tm: &TuringMachineGraph) -> String
+{
+    let mut res = String::new();
+
+    // Print all transitions btw states
+    for (q1, i1) in tm.get_name_index_hashmap() {
+        for (q2, i2) in tm.get_name_index_hashmap() {
+            let transitions = tm.get_transitions_by_index(*i1, *i2).unwrap();
+            if transitions.is_empty() {
+                continue;
+            }
+            res.push_str(format!("q_{} {} ", q1, '{').as_str());
+            let spaces = 3 + q1.len();
+
+            for i in 0..transitions.len()-1 {
+                res.push_str(format!("{} \n{}| ", transitions.get(i).unwrap(), " ".repeat(spaces)).as_str());
+            }
+            // add last
+            res.push_str(format!("{} ", transitions.last().unwrap()).as_str());
+            
+
+            res.push_str(format!("{} q_{};\n\n", "}", q2).as_str());
+        }
+    }
+    res
+}

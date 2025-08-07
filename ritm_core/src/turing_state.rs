@@ -386,7 +386,7 @@ impl Display for TuringTransitionMultRibbons {
 
 
 
-        write!(f, "[{} -> {}]", char_read, char_written)
+        write!(f, "{} -> {}", char_read, char_written)
     }
 }
 
