@@ -199,7 +199,6 @@ fn print_step(st: &TuringExecutionSteps)
             println!("{} {}", "* Iteration: ".bold().yellow(), st.get_nb_iterations().to_string().bold());
             print!("{}", "\t-> Backtracked: ".bold().yellow());
             println!("From {} to {}", color_state(previous_state), color_state(reached_state));
-
             println!("{}", format_ribbons(st, Color::Yellow));
         },
     }
@@ -216,9 +215,9 @@ fn color_state(state: &TuringState) -> ColoredString
 
 fn format_ribbons(st: &TuringExecutionSteps, color: Color) -> ColoredString
 {
-    let first = format!("* Reading ribbon: \n{}\n", st.get_reading_ribbon().to_string().white());
+    let first = format!("{}\n{}\n", "* Reading ribbon: ".bold(), st.get_reading_ribbon().to_string().white());
 
-    let mut second = format!("* Writing ribbons: \n");
+    let mut second = format!("{}\n", "* Writing ribbons: ".bold());
     for rib in st.get_writting_ribbons() {
         second = format!("{}{}", second, format!("{}\n", rib).white());
     }

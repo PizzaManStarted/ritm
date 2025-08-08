@@ -19,7 +19,8 @@ pub enum ModifyTuringMode {
     RemoveTransitions,
     RemoveState,
     SaveTM,
-    FeedWord
+    FeedWord,
+    UnloadTM,
 }
 
 
@@ -33,6 +34,7 @@ impl Display for ModifyTuringMode {
             ModifyTuringMode::RemoveState => "Remove a state",
             ModifyTuringMode::SaveTM => "Save this TM as a file",
             ModifyTuringMode::FeedWord => "Feed a word and start executing this TM",
+            ModifyTuringMode::UnloadTM => "Unload the current Turing Machine"
         })
     }
 }
@@ -49,6 +51,7 @@ impl ModeEvent for ModifyTuringMode {
             ModifyTuringMode::RemoveState => println!("Removes a {} from the current {tm_it_bold}", "state".purple()),
             ModifyTuringMode::SaveTM => println!("Saves the current {tm_it_bold} as a file"),
             ModifyTuringMode::FeedWord => println!("Feeds a word to the {tm_it_bold} and starts executing it"),
+            ModifyTuringMode::UnloadTM => println!("Unloads the current Turing Machine and go back to the turing machine creation phase")
         }
         println!("")
     }
@@ -102,6 +105,10 @@ impl ModeEvent for ModifyTuringMode {
                         return Modes::Execute;
                     }
                 }
+            },
+            ModifyTuringMode::UnloadTM => {
+                storage.graph = None;
+                return Modes::Start;
             },
         }
         Modes::Modify
