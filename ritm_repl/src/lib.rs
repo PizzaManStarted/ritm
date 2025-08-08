@@ -46,6 +46,7 @@ pub fn query_usize(rl: &mut Editor<(), FileHistory>, query: String) -> Result<us
 
 pub fn query_prim<E: FromStr>(rl: &mut Editor<(), FileHistory>, query: String) -> Result<E, RiplError> where <E as FromStr>::Err: Debug
 {
+    // FIXME: fix the error returned !!!
     println!("{}", query);
     loop {
         let readline = rl.readline("==> ");

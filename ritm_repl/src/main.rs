@@ -26,13 +26,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
     // Clear screen
     rl.clear_screen().unwrap();
 
+    // Adding a CTRL C handler
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
 
     
     ctrlc::set_handler(move || {
+        // Sets the value to false, to signal to any running execution to stop
         r.store(false, Ordering::SeqCst);
-        //println!("received Ctrl+C!");
     })
     .expect("Error setting Ctrl-C handler");
 
@@ -60,11 +61,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
             },
         };
 
-        
         if !status {
             break;
         }
-        
     }
     Ok(())
 }

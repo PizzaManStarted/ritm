@@ -1,8 +1,8 @@
 use core::time;
 use std::{fmt::Display};
 
-use colored::Colorize;
-use ritm_core::turing_machine::{TuringExecutionSteps, TuringMachines};
+use colored::{Color, ColoredString, Colorize};
+use ritm_core::{turing_machine::{TuringExecutionSteps, TuringMachines}, turing_state::{TuringState, TuringStateType}};
 use strum_macros::EnumIter;
 
 use crate::{modes::choice_modes::{ModeEvent, Modes}, query_prim, query_string, query_usize, ripl_error::{print_error_help, RiplError}};
@@ -58,13 +58,16 @@ impl ModeEvent for ExecuteTuringMode {
                     print_error_help(e)
                 }
                 else {
-                    let total = total.unwrap() - 1;
-                    for step in &mut *tm {
-                        if step.get_nb_iterations() >= total - 1 {
-                            break;
+                    let total = total.unwrap();
+                    if total != 0 {
+                        for step in &mut *tm {
+                            if step.get_nb_iterations() >= total - 1 {
+                                break;
+                            }
                         }
+                        next_step(&mut tm);
                     }
-                    next_step(&mut tm);
+                    
                 }
             },
             ExecuteTuringMode::AutoPlay => {
@@ -162,5 +165,62 @@ pub fn next_step(mut tm: &mut TuringMachines) -> bool
 
 fn print_step(st: &TuringExecutionSteps)
 {
-    println!("{}", st);
+    // Print the iteration number : 
+
+    
+    // println!("{}", st);
+
+    match st {
+        TuringExecutionSteps::FirstIteration { init_state, init_read_ribbon, init_write_ribbons } => {
+
+            println!("{} {}", "* Iteration: ".bold().magenta(), st.get_nb_iterations().to_string().bold());
+            println!("{}", format_ribbons(st, Color::Magenta));
+        },
+        TuringExecutionSteps::TransitionTaken { previous_state, reached_state, state_pointer, transition_index_taken, transition_taken, read_ribbon, write_ribbons, iteration } => {        
+            if let TuringStateType::Accepting = reached_state.state_type {
+                println!("{} {}", "* Iteration: ".bold().green(), st.get_nb_iterations().to_string().bold());
+
+                print!("{}", "* Transition taken: ".bold().green());
+                println!("{} {} {} {} {}", color_state(previous_state), "{", transition_taken, "}", color_state(reached_state));
+
+                println!("{}", format_ribbons(st, Color::Green));
+            }
+            else {
+                println!("{} {}", "* Iteration: ".bold().blue(), st.get_nb_iterations().to_string().bold());
+    
+                print!("{}", "* Transition taken: ".bold().blue());
+                println!("{} {} {} {} {}", color_state(previous_state), "{", transition_taken, "}", color_state(reached_state));
+                println!("{}", format_ribbons(st, Color::Blue));                
+            }
+
+            
+        },
+        TuringExecutionSteps::Backtracked { previous_state, reached_state, state_pointer, read_ribbon, write_ribbons, iteration } => {
+            println!("{} {}", "* Iteration: ".bold().yellow(), st.get_nb_iterations().to_string().bold());
+            print!("{}", "\t-> Backtracked: ".bold().yellow());
+            println!("From {} to {}", color_state(previous_state), color_state(reached_state));
+
+            println!("{}", format_ribbons(st, Color::Yellow));
+        },
+    }
+}
+
+fn color_state(state: &TuringState) -> ColoredString
+{
+    format!("q_{}", state.name).color(match state.state_type {
+        ritm_core::turing_state::TuringStateType::Accepting => {Color::Green},
+        ritm_core::turing_state::TuringStateType::Rejecting => {Color::Red}
+        _ => {Color::White}
+    })
+}
+
+fn format_ribbons(st: &TuringExecutionSteps, color: Color) -> ColoredString
+{
+    let first = format!("* Reading ribbon: \n{}\n", st.get_reading_ribbon().to_string().white());
+
+    let mut second = format!("* Writing ribbons: \n");
+    for rib in st.get_writting_ribbons() {
+        second = format!("{}{}", second, format!("{}\n", rib).white());
+    }
+    format!("{}{}", first, second).color(color)
 }
