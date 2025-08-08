@@ -6,7 +6,7 @@ use strum_macros::EnumIter;
 
 use colored::Colorize;
 
-use crate::{modes::{choice_modes::{ModeEvent, Modes}, starting_modes::StartingMode}, query_string, ripl_error::{print_error_help, RiplError}, DataStorage};
+use crate::{modes::{choice_modes::{ModeEvent, Modes}, execute_mode, starting_modes::StartingMode}, query_string, ripl_error::{print_error_help, RiplError}, DataStorage};
 
 
 
@@ -98,7 +98,7 @@ impl ModeEvent for ModifyTuringMode {
                     }
                     else {
                         storage.iterator = Some(res.unwrap());
-                        println!("{}", storage.iterator.as_mut().unwrap().next().unwrap());
+                        execute_mode::next_step(&mut storage.iterator.as_mut().unwrap());
                         return Modes::Execute;
                     }
                 }

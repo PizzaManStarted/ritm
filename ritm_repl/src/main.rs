@@ -1,6 +1,8 @@
 
 
 use std::fmt::Display;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use ritm_repl::modes::choice_modes::{collect_enum_values, print_help, ModeEvent, Modes};
 use ritm_repl::modes::execute_mode::ExecuteTuringMode;
@@ -24,8 +26,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
     // Clear screen
     rl.clear_screen().unwrap();
 
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+
+    
+    ctrlc::set_handler(move || {
+        r.store(false, Ordering::SeqCst);
+        //println!("received Ctrl+C!");
+    })
+    .expect("Error setting Ctrl-C handler");
+
     // Creates the data storage
-    let mut storage = DataStorage {graph: None, iterator: None};
+    let mut storage = DataStorage {graph: None, iterator: None, is_running: running};
     
     // Choose the first mode
     let mut curr_mode = Modes::Start;
