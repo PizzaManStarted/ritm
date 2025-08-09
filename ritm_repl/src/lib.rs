@@ -2,6 +2,7 @@ use std::{fmt::Debug, path::PathBuf, str::FromStr, sync::{atomic::AtomicBool, Ar
 
 use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::TuringMachines, turing_parser::parse_transition_string, turing_state::TuringTransitionMultRibbons};
 use rustyline::{history::FileHistory, Editor};
+use ritm_core::turing_machine::Mode;
 
 use crate::ripl_error::RiplError;
 
@@ -14,7 +15,9 @@ pub struct DataStorage {
     pub graph : Option<TuringMachineGraph>,
     pub iterator : Option<TuringMachines>,
     pub is_running : Arc<AtomicBool>,
-    pub curr_path : Option<PathBuf>
+    pub curr_path : Option<PathBuf>,
+    pub clear_after_step : bool,
+    pub exec_mode : Mode,
 }
 
 

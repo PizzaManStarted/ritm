@@ -19,7 +19,7 @@ pub trait ModeEvent {
 pub enum Modes {
     Start,
     Modify,
-    Execute
+    Execute,
 }
 
 

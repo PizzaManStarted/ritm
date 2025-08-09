@@ -6,17 +6,16 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use colored::Colorize;
+use ritm_core::turing_machine::SavedState;
 use ritm_repl::modes::choice_modes::{collect_enum_values, print_help, ModeEvent, Modes};
 use ritm_repl::modes::execute_mode::ExecuteTuringMode;
 use ritm_repl::modes::modify_mode::ModifyTuringMode;
 use ritm_repl::modes::starting_modes::StartingMode;
 use ritm_repl::ripl_error::{print_error_help, RiplError};
 use ritm_repl::DataStorage;
-use rustyline::config::Configurer;
 use rustyline::error::ReadlineError;
-use rustyline::highlight::Highlighter;
 use rustyline::history::FileHistory;
-use rustyline::{highlight, DefaultEditor, Editor, Helper};
+use rustyline::{DefaultEditor, Editor};
 use strum::IntoEnumIterator;
 
 
@@ -57,7 +56,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
                     None
                 },
             } 
-        }
+        },
+        clear_after_step: false,
+        exec_mode: ritm_core::turing_machine::Mode::SaveAll
     };
     
     // Choose the first mode

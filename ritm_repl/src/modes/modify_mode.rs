@@ -105,7 +105,7 @@ impl ModeEvent for ModifyTuringMode {
                     }
                     else {
                         storage.iterator = Some(res.unwrap());
-                        execute_mode::next_step(&mut storage.iterator.as_mut().unwrap());
+                        execute_mode::next_step(rl, &mut storage.iterator.as_mut().unwrap(),  storage.clear_after_step);
                         return Modes::Execute;
                     }
                 }

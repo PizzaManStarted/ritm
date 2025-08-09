@@ -17,6 +17,8 @@ pub enum ExecuteTuringMode {
     Finish,
     Reset,
     FeedWord,
+    ToggleClearAfterStep,
+    SetExecutionMode,
     SummaryGraph,
     SummaryExecution,
     Stop,
@@ -32,6 +34,8 @@ impl Display for ExecuteTuringMode {
             ExecuteTuringMode::Finish => "Finish the execution (can loop forever)",
             ExecuteTuringMode::Reset => "Reset the execution",
             ExecuteTuringMode::FeedWord => "Feed a new word and reset",
+            ExecuteTuringMode::ToggleClearAfterStep => "Toggle on/off clearing after each step",
+            ExecuteTuringMode::SetExecutionMode => "Sets the execution mode",
             ExecuteTuringMode::SummaryGraph => "Print a summary of the graph",
             ExecuteTuringMode::SummaryExecution => "Print a summary of the execution",
             ExecuteTuringMode::Stop => "Stop the execution",
@@ -49,7 +53,7 @@ impl ModeEvent for ExecuteTuringMode {
         let mut tm = storage.iterator.as_mut().unwrap();
         let res = match self {
             ExecuteTuringMode::NextStep => {
-                next_step(&mut tm);
+                next_step(rl, &mut tm, storage.clear_after_step);
                 None
             },
             ExecuteTuringMode::SkipSteps => {
@@ -66,7 +70,7 @@ impl ModeEvent for ExecuteTuringMode {
                                 break;
                             }
                         }
-                        next_step(&mut tm);
+                        next_step(rl, &mut tm, storage.clear_after_step);
                     }
                     None
                 }
@@ -86,7 +90,7 @@ impl ModeEvent for ExecuteTuringMode {
                         if !storage.is_running.load(std::sync::atomic::Ordering::SeqCst) {
                             break;
                         }
-                        print_step(&step);
+                        print_step(rl, &step, storage.clear_after_step);
                         std::thread::sleep(sleep_time);
                     }
                     None
@@ -105,7 +109,7 @@ impl ModeEvent for ExecuteTuringMode {
                     last_step = Some(steps);
                 }
                 if let Some(step) = last_step {
-                    print_step(&step);
+                    print_step(rl, &step, storage.clear_after_step);
                 }
                 else {
                     println!("Already finished");
@@ -122,7 +126,7 @@ impl ModeEvent for ExecuteTuringMode {
                     Some(RiplError::EncounteredTuringError { error: e })
                 }
                 else {
-                    next_step(&mut tm);
+                    next_step(rl, &mut tm, storage.clear_after_step);
                     None
                 }
             },
@@ -136,7 +140,7 @@ impl ModeEvent for ExecuteTuringMode {
                         Some(RiplError::EncounteredTuringError { error: e })
                     }
                     else {
-                        next_step(&mut tm);
+                        next_step(rl,  &mut tm, storage.clear_after_step);
                         None
                     }
                 }
@@ -146,6 +150,14 @@ impl ModeEvent for ExecuteTuringMode {
                 None
             },
             ExecuteTuringMode::SummaryExecution => {
+                None
+            },
+            ExecuteTuringMode::ToggleClearAfterStep => {
+                storage.clear_after_step = !storage.clear_after_step;
+                println!("Set to : {}", storage.clear_after_step.to_string().blue());
+                None
+            },
+            ExecuteTuringMode::SetExecutionMode => {
                 None
             }
         };
@@ -162,11 +174,12 @@ impl ModeEvent for ExecuteTuringMode {
 // printf '%s\n' "0" "1" "6" "tmp" | cargo run
 
 
-pub fn next_step(mut tm: &mut TuringMachines) -> bool
+pub fn next_step(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, mut tm: &mut TuringMachines, clear_after: bool) -> bool
 {
+
     match tm.next() {
         Some(step) => {
-            print_step(&step);
+            print_step(rl, &step, clear_after);
             true
         },
         None => {
@@ -176,20 +189,19 @@ pub fn next_step(mut tm: &mut TuringMachines) -> bool
     }
 }
 
-fn print_step(st: &TuringExecutionSteps)
+fn print_step(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, st: &TuringExecutionSteps, clear_after: bool)
 {
-    // Print the iteration number : 
-
-    
-    // println!("{}", st);
+    if clear_after {
+        rl.clear_screen().unwrap();
+    }
 
     match st {
-        TuringExecutionSteps::FirstIteration { init_state, init_read_ribbon, init_write_ribbons } => {
+        TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => {
 
             println!("{} {}", "* Iteration: ".bold().magenta(), st.get_nb_iterations().to_string().bold());
             println!("{}", format_ribbons(st, Color::Magenta));
         },
-        TuringExecutionSteps::TransitionTaken { previous_state, reached_state, state_pointer, transition_index_taken, transition_taken, read_ribbon, write_ribbons, iteration } => {        
+        TuringExecutionSteps::TransitionTaken { previous_state, reached_state, state_pointer:_, transition_index_taken:_, transition_taken, read_ribbon:_, write_ribbons:_, iteration:_ } => {        
             if let TuringStateType::Accepting = reached_state.state_type {
                 println!("{} {}", "* Iteration: ".bold().green(), st.get_nb_iterations().to_string().bold());
 
