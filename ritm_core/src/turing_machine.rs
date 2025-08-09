@@ -116,7 +116,6 @@ impl TuringMachines
     /// Resets the turing machine to its initial state and re-feeds it the current stored word.
     pub fn reset(&mut self) -> Result<(), TuringError>
     {
-        self.set_iteration(0);
         let word = self.get_word().clone();
         return self.reset_word(&word);
     }
@@ -450,7 +449,7 @@ impl<'a> Iterator for &mut TuringMachines
                         reached_state: self.get_turing_machine_graph_ref().get_state(saved_state.saved_state_index).unwrap().clone(),
                         read_ribbon: self.get_reading_ribbon().clone(),
                         write_ribbons: self.get_writting_ribbons().clone(),
-                        iteration : self.get_iteration(),
+                        iteration : prev_iter,
                         state_pointer: self.get_state_pointer() });
                 }
             }
@@ -497,7 +496,7 @@ impl<'a> Iterator for &mut TuringMachines
                 transition_taken: transition.clone(),
                 read_ribbon: self.get_reading_ribbon().clone(),
                 write_ribbons: self.get_writting_ribbons().clone(),
-                iteration: self.get_iteration(),
+                iteration: prev_iter,
                 state_pointer: self.get_state_pointer()
             })
             

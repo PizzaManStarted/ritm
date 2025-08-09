@@ -12,9 +12,11 @@ use ritm_repl::modes::modify_mode::ModifyTuringMode;
 use ritm_repl::modes::starting_modes::StartingMode;
 use ritm_repl::ripl_error::{print_error_help, RiplError};
 use ritm_repl::DataStorage;
+use rustyline::config::Configurer;
 use rustyline::error::ReadlineError;
+use rustyline::highlight::Highlighter;
 use rustyline::history::FileHistory;
-use rustyline::{DefaultEditor, Editor};
+use rustyline::{highlight, DefaultEditor, Editor, Helper};
 use strum::IntoEnumIterator;
 
 
@@ -25,6 +27,7 @@ use strum::IntoEnumIterator;
 fn main() -> Result<(), Box<dyn std::error::Error>>
 {
     let mut rl = DefaultEditor::new()?;
+    
     // Clear screen
     rl.clear_screen().unwrap();
 
@@ -102,7 +105,9 @@ fn eval_loop<E>(rl: &mut Editor<(), FileHistory>,
     }
 
     let readline = rl.readline(">> ");
+    
     // rl.clear_screen().unwrap();
+
     match readline {
         Ok(line) => {
             let line = line.trim();

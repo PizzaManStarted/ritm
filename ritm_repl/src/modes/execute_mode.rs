@@ -47,34 +47,35 @@ impl ModeEvent for ExecuteTuringMode {
 
     fn choose_option(&self, rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, storage: &mut crate::DataStorage) -> Modes {
         let mut tm = storage.iterator.as_mut().unwrap();
-        match self {
+        let res = match self {
             ExecuteTuringMode::NextStep => {
                 next_step(&mut tm);
+                None
             },
             ExecuteTuringMode::SkipSteps => {
                 // Get nb to skip
                 let total = query_prim::<usize>(rl, String::from("Insert the number of steps to skip: "));
                 if let Err(e) = total {
-                    print_error_help(e)
+                    Some(e)
                 }
                 else {
                     let total = total.unwrap();
                     if total != 0 {
-                        for step in &mut *tm {
-                            if step.get_nb_iterations() >= total - 1 {
+                        for _ in 0..total-1 {
+                            if let None = tm.next() {
                                 break;
                             }
                         }
                         next_step(&mut tm);
                     }
-                    
+                    None
                 }
             },
             ExecuteTuringMode::AutoPlay => {
                 // ask for the speed
                 let speed = query_prim::<f32>(rl, String::from("Insert the time in seconds to wait between steps (floats are accepted): "));
                 if let Err(e) = speed {
-                    print_error_help(e);
+                    Some(e)
                 }
                 else {
                     let sleep_time = time::Duration::from_secs_f32(speed.unwrap());
@@ -88,6 +89,7 @@ impl ModeEvent for ExecuteTuringMode {
                         print_step(&step);
                         std::thread::sleep(sleep_time);
                     }
+                    None
                 }
                 
             },
@@ -108,6 +110,7 @@ impl ModeEvent for ExecuteTuringMode {
                 else {
                     println!("Already finished");
                 }
+                None
             },
             ExecuteTuringMode::Stop => {
                 storage.iterator = None;
@@ -116,28 +119,38 @@ impl ModeEvent for ExecuteTuringMode {
             },
             ExecuteTuringMode::Reset => {
                 if let Err(e) = tm.reset() {
-                    print_error_help(RiplError::EncounteredTuringError { error: e });
+                    Some(RiplError::EncounteredTuringError { error: e })
                 }
-                next_step(&mut tm);
+                else {
+                    next_step(&mut tm);
+                    None
+                }
             },
             ExecuteTuringMode::FeedWord => {
                 let word = query_string(rl, String::from("Give a new input to replace the current one with: "));
                 if let Err(e) = word {
-                    print_error_help(e);
+                    Some(e)
                 }
                 else {
                     if let Err(e) = tm.reset_word(&word.unwrap()) {
-                        print_error_help(RiplError::EncounteredTuringError { error: e });
+                        Some(RiplError::EncounteredTuringError { error: e })
+                    }
+                    else {
+                        next_step(&mut tm);
+                        None
                     }
                 }
-                next_step(&mut tm);
             },
             ExecuteTuringMode::SummaryGraph => {
                 println!("{}", tm.get_turing_machine_graph_ref());
+                None
             },
             ExecuteTuringMode::SummaryExecution => {
-
+                None
             }
+        };
+        if let Some(e) = res {
+            print_error_help(e);
         }
         Modes::Execute
     }
@@ -157,7 +170,7 @@ pub fn next_step(mut tm: &mut TuringMachines) -> bool
             true
         },
         None => {
-            println!("Already over");
+            println!("{}", "No more steps left".bold().cyan());
             false
         },
     }

@@ -18,7 +18,6 @@ pub struct DataStorage {
 }
 
 
-
 pub fn query_usize(rl: &mut Editor<(), FileHistory>, query: String) -> Result<usize, RiplError>
 {
     println!("{}", query);

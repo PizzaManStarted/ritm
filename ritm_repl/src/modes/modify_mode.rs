@@ -184,11 +184,16 @@ pub fn query_transition(rl: &mut Editor<(), FileHistory>, query: String) -> Resu
 
 fn save_tm(rl: &mut Editor<(), FileHistory>, tm: &TuringMachineGraph, current_path: &Option<PathBuf>) -> Result<(), RiplError>
 {
+    let tm_string = turing_parser::graph_to_string(tm);
+    if tm_string.is_empty() {
+        println!("{}", "Nothing to save because this machine has no transitions !".red());
+        return Ok(());
+    }
     loop {
         println!("Enter the {} of the {} to create: ", "path".bold().blue(), "file".bold());
         let readline = match current_path {
             Some(p) => {
-                rl.readline_with_initial("==> ", (format!("{}/", p.as_path().to_str().unwrap()).as_str(), ".tm"))
+                rl.readline_with_initial("==> ", (format!("{}", p.as_path().join("turing_machine").to_str().unwrap()).as_str(), ".tm"))
             },
             None => {
                 rl.readline("==> ")
@@ -224,7 +229,7 @@ fn save_tm(rl: &mut Editor<(), FileHistory>, tm: &TuringMachineGraph, current_pa
                 let file = File::create(path);
                 match file {
                     Ok(mut f) => {
-                        if let Err(e) = f.write_all(turing_parser::graph_to_string(tm).as_bytes()) {
+                        if let Err(e) = f.write_all(tm_string.as_bytes()) {
                             return Err(RiplError::FileError { file_path: Some(e.to_string()) });
                         }
                     },

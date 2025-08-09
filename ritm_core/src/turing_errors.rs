@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 #[derive(Debug)]
 pub enum TuringError {
@@ -58,5 +58,38 @@ pub enum TuringParserError {
         line_col_pos: Option<(usize, usize)>,
         turing_error: TuringError,
         value: String
+    }
+}
+
+
+impl Display for TuringParserError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", {
+            match self {
+                TuringParserError::FileError { given_path, error_reason } 
+                    => format!("Ran into an error trying to open the file at \"{}\". The reason being : {}", given_path, error_reason),
+                TuringParserError::ParsingError { line_col_pos, value, missing_value } 
+                    => format!("Impossible to parse the given input.\n{}{}", get_arrow_under(value, line_col_pos), {
+                        if let Some(token) = missing_value {
+                            format!("\nThis token might be missing : \"{}\"", token.to_string())
+                        }
+                        else {
+                            String::from("")
+                        }
+                    }),
+                TuringParserError::EncounteredTuringError { line_col_pos, turing_error, value } => todo!(),
+            }
+        })
+    }
+}
+
+fn get_arrow_under(value: &String, line_col_pos : &Option<(usize, usize)>)  -> String
+{
+    if let Some((line, col)) = line_col_pos {
+        let line_str = (line - 1).to_string();
+        format!("{line_str}: {value}\n{}{}^", String::from(" ").repeat(line_str.len() + 2), String::from("-").repeat(col-2))
+    }
+    else {
+        value.to_string()
     }
 }
