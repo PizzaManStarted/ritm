@@ -1,12 +1,12 @@
-use std::{f32::consts::E, fmt::Display, ops::DerefMut};
+use std::{f32::consts::E, fmt::Display, fs::File, io::Write, ops::DerefMut, path::{Path, PathBuf}};
 
-use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::TuringMachines, turing_parser::parse_transition_string, turing_state::TuringTransitionMultRibbons};
+use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::TuringMachines, turing_parser::{self, parse_transition_string}, turing_state::TuringTransitionMultRibbons};
 use rustyline::{history::FileHistory, Editor};
 use strum_macros::EnumIter;
 
 use colored::Colorize;
 
-use crate::{modes::{choice_modes::{ModeEvent, Modes}, execute_mode, starting_modes::StartingMode}, query_string, ripl_error::{print_error_help, RiplError}, DataStorage};
+use crate::{modes::{choice_modes::{ModeEvent, Modes}, execute_mode, starting_modes::StartingMode}, query_prim, query_string, ripl_error::{print_error_help, RiplError}, DataStorage};
 
 
 
@@ -27,13 +27,13 @@ pub enum ModifyTuringMode {
 impl Display for ModifyTuringMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", match self {
-            ModifyTuringMode::PrintSummary => "Print a summary of the TM",
+            ModifyTuringMode::PrintSummary => "Print a summary of the Turing Machine",
             ModifyTuringMode::AddState => "Add a state",
             ModifyTuringMode::AddTransitions => "Add one or multiple transition",
             ModifyTuringMode::RemoveTransitions => "Remove one or multiple transition",
             ModifyTuringMode::RemoveState => "Remove a state",
             ModifyTuringMode::SaveTM => "Save this TM as a file",
-            ModifyTuringMode::FeedWord => "Feed a word and start executing this TM",
+            ModifyTuringMode::FeedWord => "Feed a word and start executing this Turing Machine",
             ModifyTuringMode::UnloadTM => "Unload the current Turing Machine"
         })
     }
@@ -88,7 +88,11 @@ impl ModeEvent for ModifyTuringMode {
                     }
                 }
             },
-            ModifyTuringMode::SaveTM => todo!(),
+            ModifyTuringMode::SaveTM => {
+                if let Err(e) = save_tm(rl, &tm, &storage.curr_path) {
+                    print_error_help(e);
+                }
+            },
             ModifyTuringMode::FeedWord => {
                 let res = query_string(rl, format!("Enter the word to feed to this Turing machine: "));
                 if let Err(e) = res  {
@@ -175,4 +179,65 @@ pub fn query_transition(rl: &mut Editor<(), FileHistory>, query: String) -> Resu
             Err(e) => return Err(RiplError::CouldNotParseStringError { value: e.to_string() }),
         }
     }
+}
+
+
+fn save_tm(rl: &mut Editor<(), FileHistory>, tm: &TuringMachineGraph, current_path: &Option<PathBuf>) -> Result<(), RiplError>
+{
+    loop {
+        println!("Enter the {} of the {} to create: ", "path".bold().blue(), "file".bold());
+        let readline = match current_path {
+            Some(p) => {
+                rl.readline_with_initial("==> ", (format!("{}/", p.as_path().to_str().unwrap()).as_str(), ".tm"))
+            },
+            None => {
+                rl.readline("==> ")
+            },
+        };
+        match readline {
+            Ok(l) => {
+                let l = l.trim().to_string();
+                if l.is_empty() {
+                    continue;
+                }
+                rl.add_history_entry(l.to_string()).unwrap();
+                
+                let path = Path::new(&l);
+                // Check that no file with this name exists
+                
+                if path.exists() {
+                    // If it does, ask user for confirmation before overwritting it
+                    let choice = query_string(rl, format!("A file with this name already exists, rewrite it ? {}: ", "Y(es) or N(o)".italic().blue()));
+                    match choice {
+                        Ok(choice) => {
+                            let choice = choice.to_lowercase();
+                            if !choice.eq("y") && !choice.eq("yes") {
+                                continue;
+                            }
+                        },
+                        Err(e) => {
+                            return Err(e);
+                        },
+                    }
+                }
+
+                let file = File::create(path);
+                match file {
+                    Ok(mut f) => {
+                        if let Err(e) = f.write_all(turing_parser::graph_to_string(tm).as_bytes()) {
+                            return Err(RiplError::FileError { file_path: Some(e.to_string()) });
+                        }
+                    },
+                    Err(e) => {
+                        return Err(RiplError::FileError { file_path: Some(e.to_string()) });
+                    },
+                }
+
+                println!("{}{}", "Saved the file at the location : ".green(), path.to_str().unwrap());
+                return Ok(());
+            },
+            Err(e) => return Err(RiplError::CouldNotParseStringError { value: e.to_string() }),
+        }
+    }
+
 }

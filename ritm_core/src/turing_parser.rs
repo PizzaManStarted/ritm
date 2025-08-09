@@ -1,5 +1,5 @@
 use pest::{error::Error, iterators::Pair, Parser};
-use std::fs;
+use std::{fs, path::PathBuf};
 use pest_derive::Parser;
 
 use crate::{turing_errors::{TuringError, TuringParserError}, turing_graph::TuringMachineGraph, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
@@ -26,8 +26,12 @@ pub fn parse_turing_graph_file_path(file_path: String) -> Result<TuringMachineGr
             )
         };
     }
-    let unparsed_file = fs::read_to_string(&file_path).expect("cannot read file");
-    return parse_turing_graph_string(unparsed_file);
+    match fs::read_to_string(&file_path) {
+        Ok(unparsed_file) => parse_turing_graph_string(unparsed_file),
+        Err(e) => {
+            Err(TuringParserError::FileError { given_path: file_path, error_reason: e.to_string() })
+        },
+    }
 }
 
 
@@ -322,5 +326,10 @@ pub fn graph_to_string(tm: &TuringMachineGraph) -> String
             res.push_str(format!("{} q_{};\n\n", "}", q2).as_str());
         }
     }
+    if !res.is_empty() {
+        // remove extra '\n'
+        res.pop().unwrap();
+    }
+    
     res
 }

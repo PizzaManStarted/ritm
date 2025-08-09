@@ -1,4 +1,4 @@
-use std::{fmt::Debug, str::FromStr, sync::{atomic::AtomicBool, Arc}};
+use std::{fmt::Debug, path::PathBuf, str::FromStr, sync::{atomic::AtomicBool, Arc}};
 
 use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::TuringMachines, turing_parser::parse_transition_string, turing_state::TuringTransitionMultRibbons};
 use rustyline::{history::FileHistory, Editor};
@@ -13,7 +13,8 @@ pub mod ripl_error;
 pub struct DataStorage {
     pub graph : Option<TuringMachineGraph>,
     pub iterator : Option<TuringMachines>,
-    pub is_running : Arc<AtomicBool>
+    pub is_running : Arc<AtomicBool>,
+    pub curr_path : Option<PathBuf>
 }
 
 
@@ -110,10 +111,9 @@ pub fn query_string(rl: &mut Editor<(), FileHistory>, query: String) -> Result<S
                     continue;
                 }
                 rl.add_history_entry(l.to_string()).unwrap();
-                return Ok(l);
+                return Ok(l.trim().to_string());
             },
             Err(e) => return Err(RiplError::CouldNotParseStringError { value: e.to_string() }),
         }
     }
 }
-

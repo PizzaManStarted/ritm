@@ -26,6 +26,12 @@ pub enum RiplError {
     },
     EncounteredParsingError {
         error : TuringParserError
+    },
+    FileError {
+        file_path: Option<String>
+    },
+    FileNotExistError {
+        file_path: String
     }
 }
 
@@ -40,7 +46,9 @@ pub fn print_error_help(error: RiplError)
             RiplError::CouldNotParseStringError{value}=>format!("Could not parse the value \"{}\"", as_arg_error(value)),
             RiplError::ArgsNumberError{received,expected}=>format!("Read wrong number of arguments. Expected {} but read {} args",expected.to_string().blue(),as_arg_error(received)),
             RiplError::EncounteredTuringError { error } => format!("Ran into the following turing error : {:?}", error),
-            RiplError::EncounteredParsingError { error } => format!("Ran into the following error during the parsing : {:?}", error)
+            RiplError::EncounteredParsingError { error } => format!("Ran into the following error during the parsing : {:?}", error),
+            RiplError::FileError { file_path } => format!("Ran into an error trying to acess/write into following file : {:?}", file_path),
+            RiplError::FileNotExistError { file_path } => format!("No file found at the given path : \"{}\"", as_arg_error(file_path))
                     }.red()
     )
 }

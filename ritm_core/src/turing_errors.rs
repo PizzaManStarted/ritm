@@ -42,6 +42,10 @@ pub enum TuringError {
 
 #[derive(Debug)]
 pub enum TuringParserError {
+    FileError {
+        given_path: String,
+        error_reason: String
+    },
     /// Error when failing to parse a given string value
     ParsingError {
         line_col_pos: Option<(usize, usize)>,

@@ -128,6 +128,9 @@ impl TuringMachines
         if word.is_empty() {
             return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
         }
+        
+        self.set_word(word);
+
         // Reset reading ribbon
         self.get_reading_ribbon().feed_word(word.clone());
 
@@ -233,6 +236,13 @@ impl TuringMachines {
     fn get_word(&self) -> &String {
         match self {
             TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &data.word,
+        }
+    }
+
+    /// Gets the word that was feed to this machine.
+    fn set_word(&mut self, word: &String) {
+        match self {
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.word = word.to_string(),
         }
     }
     

@@ -1,9 +1,11 @@
 
 
+use std::env;
 use std::fmt::Display;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use colored::Colorize;
 use ritm_repl::modes::choice_modes::{collect_enum_values, print_help, ModeEvent, Modes};
 use ritm_repl::modes::execute_mode::ExecuteTuringMode;
 use ritm_repl::modes::modify_mode::ModifyTuringMode;
@@ -38,14 +40,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
     .expect("Error setting Ctrl-C handler");
 
     // Creates the data storage
-    let mut storage = DataStorage {graph: None, iterator: None, is_running: running};
+    let mut storage = DataStorage {
+        graph: None, 
+        iterator: None, 
+        is_running: running, 
+        curr_path: {
+            match env::current_dir() {
+                Ok(dir) => {
+                    Some(dir)
+                },
+                Err(e) => {
+                    println!("{} {}", "Could not open the current directory: ".red(), e);
+                    None
+                },
+            } 
+        }
+    };
     
     // Choose the first mode
     let mut curr_mode = Modes::Start;
     let mut prev_mode = Modes::Execute;
-
-    // Clear terminal
-    rl.clear_screen().unwrap();
 
     loop {
         let status = match curr_mode {

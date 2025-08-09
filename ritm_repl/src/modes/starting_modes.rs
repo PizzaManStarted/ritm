@@ -1,4 +1,4 @@
-use std::{fmt::Display, fs::File};
+use std::{fmt::Display, fs::File, path::{Path, PathBuf}};
 
 use crate::{modes::choice_modes::{ModeEvent, Modes}, query_string, query_usize, ripl_error::{print_error_help, RiplError}, DataStorage};
 use colored::Colorize;
@@ -44,7 +44,7 @@ impl ModeEvent for StartingMode {
                 create_tm(rl)
             },
             StartingMode::LoadTM => {
-                load_tm(rl)
+                load_tm(rl, &storage.curr_path)
             },
         };
         if let Err(e) = res {
@@ -83,19 +83,46 @@ fn create_tm(rl: &mut Editor<(), FileHistory>) -> Result<TuringMachineGraph, Rip
 
 
 
-fn load_tm(rl: &mut Editor<(), FileHistory>) -> Result<TuringMachineGraph, RiplError>
+fn load_tm(rl: &mut Editor<(), FileHistory>, current_path: &Option<PathBuf>) -> Result<TuringMachineGraph, RiplError>
 {
-    let res = query_string(rl, format!("Enter the {} the Turing machine to read:", "path".blue()));
+    let path = query_string(rl, format!("Enter the {} the Turing machine to read:", "path".blue()));
 
-    if let Err(e) = res {
+    if let Err(e) = path {
         return Err(e);
     }
-
-    let tm = parse_turing_graph_file_path(res.unwrap());
+    
+    // Check if the path is absolute or not 
+    let path_str = path.unwrap();
+    let path = Path::new(&path_str);
+    
+    let abs_path = {
+        if !path.is_absolute() {
+            // Create the absolute path
+            match current_path {
+                Some(curr_path) => {
+                    let abs_path = curr_path.join(path);
+                    abs_path.to_str()
+                },
+                None => {
+                    path.to_str()
+                },
+            };
+        }
+        path.to_str()
+    };
+    if let None = abs_path {
+       return Err(RiplError::FileError { file_path: None }); 
+    }
+    if !Path::new(abs_path.unwrap()).exists() {
+       return Err(RiplError::FileNotExistError { file_path: abs_path.unwrap().to_string() }); 
+    }
+    
+    let tm = parse_turing_graph_file_path(abs_path.unwrap().to_string());
     if let Err(e) = tm {
         return Err(RiplError::EncounteredParsingError { error: e });
     }
-    
     Ok(tm.unwrap())
+    
+    
 
 }
