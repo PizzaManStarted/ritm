@@ -4,34 +4,24 @@ use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringE
 const TM_ACCEPT_XX : &str = "// Turing machine that only accepts words of the form : xx
 q_i {ç, ç -> R, ç, R} q_1;
 
-// Get to the end of the word
 q_1 {0, _ -> R, 0, R
     |1, _ -> R, 1, R} q_1;
-
-// At some point, leave q1 to q2
 q_1 {0, _ -> N, _, L
     |1, _ -> N, _, L} q_2;
 
-// Get to the end of the writing ribbon
 q_2 { 0, 0 -> N, 0, L
     | 0, 1 -> N, 1, L
     | 1, 0 -> N, 0, L
     | 1, 1 -> N, 1, L} q_2;
-
-
-// When at the end of the writing ribbon
 q_2 { 0, ç -> N, ç, R 
     | 1, ç -> N, ç, R } q_3;
 
-// Move at the end of both ribbons
 q_3 { 0, 0 -> R, 0, R 
     | 1, 1 -> R, 1, R } q_3;
-
-
-// When both ends are reached AT THE SAME TIME, accept the word
 q_3 { $, _ -> N, _, N } q_a;";
 
-
+const TM_INF : &str = "// Turing machine is infinite 
+q_i {ç, ç -> N, ç, N} q_i;";
 
 #[test]
 fn save_all_accept()
@@ -140,7 +130,7 @@ fn stop_first_reject()
 
 /// Gets a graph that forces one complete descent before doing one backtracking and finishing.
 /// Feed it `0...0` in order for it to suceed
-fn get_smaller_non_deter_graph() -> TuringMachineGraph 
+fn _get_smaller_non_deter_graph() -> TuringMachineGraph 
 {
     let q2 = &String::from("q2");
     let mut graph = TuringMachineGraph::new(1).unwrap();
@@ -229,10 +219,10 @@ fn get_path_to_accept_test() {
     let mut tm = TuringMachines::new(tm, String::from("1010"), Mode::SaveAll).unwrap();
 
     let mut count = 0;
-    let path = tm.get_path_to_accept(Some(|| {
+    let path = tm.get_path_to_accept(|| {
         count += 1;
         return count <= 2000;
-    })).unwrap();
+    }).unwrap();
 
     let mut path_iter = path.iter();
     // Skip first step
@@ -264,4 +254,53 @@ fn get_path_to_accept_test() {
     }
     // Of course the last state must also be the accepting one
     assert_eq!(TuringStateType::Accepting, last_step_type)
+}
+
+#[test]
+fn get_path_to_accept_exit_condition_test() {
+    // Checks that the exist condition works by using an infinite turing machine
+    let tm = parse_turing_graph_string(TM_INF.to_string()).unwrap();
+
+
+    // Here the mode will not allow the machine to end, therefore only the exit condition can force the execution to stop
+    let mut tm = TuringMachines::new(tm, String::from("1"), Mode::SaveAll).unwrap();
+    let mut count = 0;
+    let path = tm.get_path_to_accept(|| {
+        count += 1;
+        return count <= 10000;
+    });
+
+    if let Some(_) = path {
+        panic!("Expected no path to be found but a value was returned.");   
+    }
+}
+
+#[test]
+fn get_path_to_accept_exit_mode_test() {
+    // Checks that the exist condition works by using an infinite turing machine
+    let tm = parse_turing_graph_string(TM_INF.to_string()).unwrap();
+
+    let mut tm = TuringMachines::new(tm, String::from("1"), Mode::StopAfter(10)).unwrap();
+    // No exit condition, therefore it could loop forever, if not for the mode
+    let path = tm.get_path_to_accept(|| true);
+
+    if let Some(_) = path {
+        panic!("Expected no path to be found but a value was returned.");   
+    }
+}
+
+
+#[test]
+fn get_path_to_accept_rejected_test(){
+    let tm = parse_turing_graph_string(TM_ACCEPT_XX.to_string()).unwrap();
+
+    let mut tm = TuringMachines::new(tm, String::from("10101"), Mode::SaveAll).unwrap();
+
+    // Checks that it returns none when no path exists (no inf loop here)
+
+    let path = tm.get_path_to_accept(|| true);
+    
+    if let Some(_) = path {
+        panic!("Expected no path to be found but a value was returned.");   
+    }
 }

@@ -182,9 +182,9 @@ impl ModeEvent for ExecuteTuringMode {
             },
             ExecuteTuringMode::FakeGuessing => {
                 storage.is_running.store(true, std::sync::atomic::Ordering::SeqCst);
-                let res = tm.get_path_to_accept(Some(|| {
+                let res = tm.get_path_to_accept(|| {
                     storage.is_running.load(std::sync::atomic::Ordering::SeqCst)
-                }));
+                });
                 if let Some(vec) = res {
                     for p in vec {
                         print_step(rl, &p, false);

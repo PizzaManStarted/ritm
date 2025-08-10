@@ -185,17 +185,15 @@ impl TuringMachines
     /// **Beware** that this function will loop forever **if** the related turing machine graph loops for the given input.
     /// In order to prevent this, it is possible to supply a function that will be called before every iteration to check if it is allowed to continue it's execution.
     /// Another mitigation would be to simply change the execution [Mode] of this turing machine. 
-    pub fn get_path_to_accept<F>(&mut self, mut exit_condition: Option<F>) 
+    pub fn get_path_to_accept<F>(&mut self, mut exit_condition: F) 
         -> Option<Vec<TuringExecutionSteps>> where F: FnMut() -> bool
     {
         self.reset();
         let mut path = Vec::<TuringExecutionSteps>::new();
         let mut last_step_type = None;
         for step in &mut *self {
-            if let Some(ref mut condition) = exit_condition {
-                if !condition() {
-                    return None;
-                }
+            if !exit_condition() {
+                return None;
             }
             last_step_type = Some(step.get_current_state().state_type.clone());
             match &step {
