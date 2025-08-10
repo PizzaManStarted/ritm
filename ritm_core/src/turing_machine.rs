@@ -4,6 +4,7 @@ use std::{collections::VecDeque, fmt::{Debug, Display}, iter};
 use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringStateType, TuringTransitionMultRibbons}};
 
 
+#[derive(Clone)]
 /// Represents the different mode a turing machine can have during it's execution
 pub enum Mode {
     /// Explores all possible paths (and possibilities using backtracking) until an accepting state is found or no path is left is to take. 
@@ -155,7 +156,19 @@ impl TuringMachines
         
         Ok(())
     }
+    /// Resets and changes the current execution mode of the turing machine.
+    pub fn set_mode(&mut self, mode: &Mode) -> Result<(), TuringError> {
+        // Reset
+        if let Err(e) = self.reset() {
+            return Err(e);
+        }
 
+        // Change mode
+        match self {
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.mode = mode.clone(),
+        }
+        Ok(())
+    }
 }
 
 

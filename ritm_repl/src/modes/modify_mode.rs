@@ -99,7 +99,7 @@ impl ModeEvent for ModifyTuringMode {
                     print_error_help(e);
                 }
                 else {
-                    let res = TuringMachines::new(tm.clone(), res.unwrap(), ritm_core::turing_machine::Mode::SaveAll);
+                    let res = TuringMachines::new(tm.clone(), res.unwrap(), storage.exec_mode.clone());
                     if let Err(e) = res {
                         print_error_help(RiplError::EncounteredTuringError { error: e });
                     }

@@ -1,8 +1,8 @@
 use core::time;
-use std::{fmt::Display};
+use std::fmt::{format, Display};
 
 use colored::{Color, ColoredString, Colorize};
-use ritm_core::{turing_machine::{TuringExecutionSteps, TuringMachines}, turing_state::{TuringState, TuringStateType}};
+use ritm_core::{turing_machine::{Mode, TuringExecutionSteps, TuringMachines}, turing_state::{TuringState, TuringStateType}};
 use strum_macros::EnumIter;
 
 use crate::{modes::choice_modes::{ModeEvent, Modes}, query_prim, query_string, query_usize, ripl_error::{print_error_help, RiplError}};
@@ -19,6 +19,7 @@ pub enum ExecuteTuringMode {
     FeedWord,
     ToggleClearAfterStep,
     SetExecutionMode,
+    FakeGuessing,
     SummaryGraph,
     SummaryExecution,
     Stop,
@@ -38,6 +39,7 @@ impl Display for ExecuteTuringMode {
             ExecuteTuringMode::SetExecutionMode => "Sets the execution mode",
             ExecuteTuringMode::SummaryGraph => "Print a summary of the graph",
             ExecuteTuringMode::SummaryExecution => "Print a summary of the execution",
+            ExecuteTuringMode::FakeGuessing => "Iterate over the correct path (if any)",
             ExecuteTuringMode::Stop => "Stop the execution",
         })
     }
@@ -46,7 +48,21 @@ impl Display for ExecuteTuringMode {
 
 impl ModeEvent for ExecuteTuringMode {
     fn print_help(&self) {
-        todo!()
+        println!("{}", match self {
+            ExecuteTuringMode::NextStep => todo!(),
+            ExecuteTuringMode::SkipSteps => todo!(),
+            ExecuteTuringMode::AutoPlay => todo!(),
+            ExecuteTuringMode::Finish => todo!(),
+            ExecuteTuringMode::Reset => todo!(),
+            ExecuteTuringMode::FeedWord => todo!(),
+            ExecuteTuringMode::ToggleClearAfterStep => todo!(),
+            ExecuteTuringMode::SetExecutionMode => todo!(),
+            ExecuteTuringMode::FakeGuessing => format!("Resets and executes completly the machine. And if a correct path is found, 
+                                                        then the next iterations will only lead to the outcome where the word is accepted."),
+            ExecuteTuringMode::SummaryGraph => todo!(),
+            ExecuteTuringMode::SummaryExecution => todo!(),
+            ExecuteTuringMode::Stop => todo!(),
+        })
     }
 
     fn choose_option(&self, rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, storage: &mut crate::DataStorage) -> Modes {
@@ -158,8 +174,20 @@ impl ModeEvent for ExecuteTuringMode {
                 None
             },
             ExecuteTuringMode::SetExecutionMode => {
-                None
-            }
+                match query_mode(rl) {
+                    Ok(mode) => {
+                        if let Err(e) = tm.set_mode(&mode) {
+                            Some(RiplError::EncounteredTuringError { error: e })
+                        }
+                        else {
+                            storage.exec_mode = mode;
+                            None
+                        }
+                    },
+                    Err(e) => Some(e),
+                }
+            },
+            ExecuteTuringMode::FakeGuessing => todo!(),
         };
         if let Some(e) = res {
             print_error_help(e);
@@ -220,7 +248,7 @@ fn print_step(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, s
 
             
         },
-        TuringExecutionSteps::Backtracked { previous_state, reached_state, state_pointer, read_ribbon, write_ribbons, iteration } => {
+        TuringExecutionSteps::Backtracked { previous_state, reached_state, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration:_ } => {
             println!("{} {}", "* Iteration: ".bold().yellow(), st.get_nb_iterations().to_string().bold());
             print!("{}", "\t-> Backtracked: ".bold().yellow());
             println!("From {} to {}", color_state(previous_state), color_state(reached_state));
@@ -247,4 +275,40 @@ fn format_ribbons(st: &TuringExecutionSteps, color: Color) -> ColoredString
         second = format!("{}{}", second, format!("{}\n", rib).white());
     }
     format!("{}{}", first, second).color(color)
+}
+
+
+
+fn query_mode(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>) -> Result<Mode, RiplError>
+{
+    let save_all = "SaveAll";
+    let stop_after = "StopAfter";
+    let stop_first_reject = "StopFirstReject";
+
+    let color_val = |val: &str| -> ColoredString { val.blue().bold() };
+
+    loop {
+        let ans = query_string(rl, format!("Choose a mode between {}, {} or {}", color_val(save_all), 
+                                                                                                                color_val(stop_after), 
+                                                                                                                color_val(stop_first_reject)));
+        if let Err(e) = ans {
+            return Err(e);
+        }
+        let ans = ans.unwrap().to_lowercase();
+        // check that the string is valid
+        if ans == save_all.to_lowercase() {
+            return Ok(Mode::SaveAll);
+        }
+        else if ans == stop_after.to_lowercase() {
+            let steps = query_prim::<usize>(rl, format!("Give the maximum number of {} :",  color_val("steps")));
+            if let Err(e) = steps {
+                return Err(e);
+            }
+            return Ok(Mode::StopAfter(steps.unwrap()));    
+        }
+        else if ans == stop_first_reject.to_lowercase() {
+            return Ok(Mode::StopFirstReject);
+        }
+        println!("{}", "Unknown mode".red()) 
+    }
 }
