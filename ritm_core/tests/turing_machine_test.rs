@@ -1,4 +1,36 @@
-use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringExecutionSteps, TuringMachines}, turing_ribbon::TuringRibbon, turing_state::{TuringDirection, TuringStateType, TuringTransitionMultRibbons}};
+use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringExecutionSteps, TuringMachines}, turing_parser::parse_turing_graph_string, turing_ribbon::TuringRibbon, turing_state::{TuringDirection, TuringStateType, TuringTransitionMultRibbons}};
+
+
+const TM_ACCEPT_XX : &str = "// Turing machine that only accepts words of the form : xx
+q_i {ç, ç -> R, ç, R} q_1;
+
+// Get to the end of the word
+q_1 {0, _ -> R, 0, R
+    |1, _ -> R, 1, R} q_1;
+
+// At some point, leave q1 to q2
+q_1 {0, _ -> N, _, L
+    |1, _ -> N, _, L} q_2;
+
+// Get to the end of the writing ribbon
+q_2 { 0, 0 -> N, 0, L
+    | 0, 1 -> N, 1, L
+    | 1, 0 -> N, 0, L
+    | 1, 1 -> N, 1, L} q_2;
+
+
+// When at the end of the writing ribbon
+q_2 { 0, ç -> N, ç, R 
+    | 1, ç -> N, ç, R } q_3;
+
+// Move at the end of both ribbons
+q_3 { 0, 0 -> R, 0, R 
+    | 1, 1 -> R, 1, R } q_3;
+
+
+// When both ends are reached AT THE SAME TIME, accept the word
+q_3 { $, _ -> N, _, N } q_a;";
+
 
 
 #[test]
@@ -188,4 +220,48 @@ fn get_small_inf_machine(mode: Mode) -> TuringMachines
     graph.append_rule_state_by_name(&q1, transition.clone(), &q1).unwrap();
     
     TuringMachines::new(graph, String::from("1"), mode).unwrap()
+}
+
+#[test]
+fn get_path_to_accept_test() {
+    let tm = parse_turing_graph_string(TM_ACCEPT_XX.to_string()).unwrap();
+
+    let mut tm = TuringMachines::new(tm, String::from("1010"), Mode::SaveAll).unwrap();
+
+    let mut count = 0;
+    let path = tm.get_path_to_accept(Some(|| {
+        count += 1;
+        return count <= 2000;
+    })).unwrap();
+
+    let mut path_iter = path.iter();
+    // Skip first step
+    let first_step = path_iter.next().unwrap();
+
+    let mut read_ribbon= first_step.get_reading_ribbon().clone();
+    let mut writting_ribbons = first_step.get_writting_ribbons().clone();
+
+    let mut last_step_type = first_step.get_current_state().state_type.clone();
+    // Check that the path leads to the correct output.
+    tm.reset();
+    for step in path_iter {
+        last_step_type = step.get_current_state().state_type.clone();
+        match &step {
+            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken, read_ribbon:_, write_ribbons:_, iteration:_ } => {
+                assert!(read_ribbon.try_apply_transition(transition_taken.chars_read[0], ' ', &transition_taken.move_read).unwrap());
+                for i in 0..(transition_taken.get_number_of_affected_ribbons() - 1) {
+                    assert!(writting_ribbons[i as usize].try_apply_transition(transition_taken.chars_read[(i+1) as usize],
+                                                                                            transition_taken.chars_write[i as usize].0, &transition_taken.chars_write[i as usize].1).unwrap());
+                }
+            },
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration:_, backtracked_iteration:_ } => {
+                panic!("No backtracking step was supposed to be found here");
+            },
+            TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => {
+                panic!("Wrong step struct found");
+            },
+        }
+    }
+    // Of course the last state must also be the accepting one
+    assert_eq!(TuringStateType::Accepting, last_step_type)
 }

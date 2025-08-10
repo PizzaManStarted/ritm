@@ -175,7 +175,7 @@ impl TuringMachines
 
     /// Gets the path to the accepting state if any exists. 
     /// In other terms, it will only store the steps that will lead to an accepting path without any backtracking.
-    /// 
+    /// Always resets the execution before starting (but doesn't reset after ending). 
     /// ## Returns
     /// [None] if no path to an accepting state is found.
     /// [Some] containing a [Vec] of [TuringExecutionSteps] leading to the accepting state.
@@ -185,14 +185,14 @@ impl TuringMachines
     /// **Beware** that this function will loop forever **if** the related turing machine graph loops for the given input.
     /// In order to prevent this, it is possible to supply a function that will be called before every iteration to check if it is allowed to continue it's execution.
     /// Another mitigation would be to simply change the execution [Mode] of this turing machine. 
-    pub fn get_path_to_accept<F>(&mut self, exit_condition: Option<F>) 
-        -> Option<Vec<TuringExecutionSteps>> where F: Fn() -> bool
+    pub fn get_path_to_accept<F>(&mut self, mut exit_condition: Option<F>) 
+        -> Option<Vec<TuringExecutionSteps>> where F: FnMut() -> bool
     {
         self.reset();
         let mut path = Vec::<TuringExecutionSteps>::new();
         let mut last_step_type = None;
         for step in &mut *self {
-            if let Some(ref condition) = exit_condition {
+            if let Some(ref mut condition) = exit_condition {
                 if !condition() {
                     return None;
                 }
