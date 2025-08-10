@@ -30,7 +30,7 @@ fn save_all_accept()
             TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_ , iteration:_, state_pointer:_ } => {
                 assert_eq!(TuringStateType::Accepting, reached_state.state_type)
             },
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, read_ribbon:_, write_ribbons:_ , iteration:_, state_pointer:_ } => panic!("Wrong outcome"),
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, read_ribbon:_, write_ribbons:_ , iteration:_, state_pointer:_, backtracked_iteration:_ } => panic!("Wrong outcome"),
         }
     }
 }
@@ -54,7 +54,7 @@ fn save_all_not_accept()
             TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_ , iteration:_, state_pointer:_ } => {
                 assert_ne!(TuringStateType::Accepting, reached_state.state_type)
             },
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, read_ribbon:_, write_ribbons:_ , iteration:_ , state_pointer:_ } => panic!("Wrong outcome"),
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, read_ribbon:_, write_ribbons:_ , iteration:_ , state_pointer:_, backtracked_iteration:_ } => panic!("Wrong outcome"),
         }
     }
 }

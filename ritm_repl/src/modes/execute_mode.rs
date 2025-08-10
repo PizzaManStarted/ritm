@@ -138,13 +138,9 @@ impl ModeEvent for ExecuteTuringMode {
                 return Modes::Modify;
             },
             ExecuteTuringMode::Reset => {
-                if let Err(e) = tm.reset() {
-                    Some(RiplError::EncounteredTuringError { error: e })
-                }
-                else {
-                    next_step(rl, &mut tm, storage.clear_after_step);
-                    None
-                }
+                tm.reset();
+                next_step(rl, &mut tm, storage.clear_after_step);
+                None
             },
             ExecuteTuringMode::FeedWord => {
                 let word = query_string(rl, String::from("Give a new input to replace the current one with: "));
@@ -166,6 +162,7 @@ impl ModeEvent for ExecuteTuringMode {
                 None
             },
             ExecuteTuringMode::SummaryExecution => {
+                // TODO :  
                 None
             },
             ExecuteTuringMode::ToggleClearAfterStep => {
@@ -176,18 +173,28 @@ impl ModeEvent for ExecuteTuringMode {
             ExecuteTuringMode::SetExecutionMode => {
                 match query_mode(rl) {
                     Ok(mode) => {
-                        if let Err(e) = tm.set_mode(&mode) {
-                            Some(RiplError::EncounteredTuringError { error: e })
-                        }
-                        else {
-                            storage.exec_mode = mode;
-                            None
-                        }
+                        tm.set_mode(&mode);
+                        storage.exec_mode = mode;
+                        None
                     },
                     Err(e) => Some(e),
                 }
             },
-            ExecuteTuringMode::FakeGuessing => todo!(),
+            ExecuteTuringMode::FakeGuessing => {
+                storage.is_running.store(true, std::sync::atomic::Ordering::SeqCst);
+                let res = tm.get_path_to_accept(Some(|| {
+                    storage.is_running.load(std::sync::atomic::Ordering::SeqCst)
+                }));
+                if let Some(vec) = res {
+                    for p in vec {
+                        print_step(rl, &p, false);
+                    }
+                }
+                else {
+                    println!("No path");
+                }
+                None
+            },
         };
         if let Some(e) = res {
             print_error_help(e);
@@ -248,10 +255,10 @@ fn print_step(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, s
 
             
         },
-        TuringExecutionSteps::Backtracked { previous_state, reached_state, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration:_ } => {
+        TuringExecutionSteps::Backtracked { previous_state, reached_state, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration , backtracked_iteration} => {
             println!("{} {}", "* Iteration: ".bold().yellow(), st.get_nb_iterations().to_string().bold());
             print!("{}", "\t-> Backtracked: ".bold().yellow());
-            println!("From {} to {}", color_state(previous_state), color_state(reached_state));
+            println!("From iteration {} to {}. From state {} to {}", iteration.to_string().yellow(), backtracked_iteration.to_string().yellow(), color_state(previous_state), color_state(reached_state));
             println!("{}", format_ribbons(st, Color::Yellow));
         },
     }

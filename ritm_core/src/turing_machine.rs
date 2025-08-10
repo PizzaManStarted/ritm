@@ -24,7 +24,9 @@ pub struct SavedState {
     /// The value of the [TuringReadRibbon] when it was saved
     saved_read_ribbon : TuringReadRibbon,
     /// The value of the [TuringWriteRibbon] when they were saved
-    saved_write_ribbons : Vec<TuringWriteRibbon>
+    saved_write_ribbons : Vec<TuringWriteRibbon>,
+    /// The value of the iteration that was saved.
+    iteration: usize,
 }
 
 impl Debug for SavedState {
@@ -35,7 +37,13 @@ impl Debug for SavedState {
 
 impl Clone for SavedState {
     fn clone(&self) -> Self {
-        Self { saved_state_index: self.saved_state_index.clone(), next_transitions: self.next_transitions.clone(), saved_read_ribbon: self.saved_read_ribbon.clone(), saved_write_ribbons: self.saved_write_ribbons.clone() }
+        Self { 
+            saved_state_index: self.saved_state_index.clone(), 
+            next_transitions: self.next_transitions.clone(), 
+            saved_read_ribbon: self.saved_read_ribbon.clone(), 
+            saved_write_ribbons: self.saved_write_ribbons.clone(),
+            iteration: self.iteration 
+        }
     }
 }
 
@@ -115,10 +123,10 @@ impl TuringMachines
     }
 
     /// Resets the turing machine to its initial state and re-feeds it the current stored word.
-    pub fn reset(&mut self) -> Result<(), TuringError>
+    pub fn reset(&mut self)
     {
         let word = self.get_word().clone();
-        return self.reset_word(&word);
+        self.reset_word(&word).unwrap();
     }
 
     /// Resets the turing machine to its initial state and feeds it the given word.
@@ -156,18 +164,64 @@ impl TuringMachines
         
         Ok(())
     }
-    /// Resets and changes the current execution mode of the turing machine.
-    pub fn set_mode(&mut self, mode: &Mode) -> Result<(), TuringError> {
-        // Reset
-        if let Err(e) = self.reset() {
-            return Err(e);
-        }
-
+    /// Changes the current execution mode of the turing machine.
+    pub fn set_mode(&mut self, mode: &Mode) 
+    {
         // Change mode
         match self {
             TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.mode = mode.clone(),
         }
-        Ok(())
+    }
+
+    /// Gets the path to the accepting state if any exists. 
+    /// In other terms, it will only store the steps that will lead to an accepting path without any backtracking.
+    /// 
+    /// ## Returns
+    /// [None] if no path to an accepting state is found.
+    /// [Some] containing a [Vec] of [TuringExecutionSteps] leading to the accepting state.
+    /// 
+    /// 
+    /// ## Infinite iterations problems
+    /// **Beware** that this function will loop forever **if** the related turing machine graph loops for the given input.
+    /// In order to prevent this, it is possible to supply a function that will be called before every iteration to check if it is allowed to continue it's execution.
+    /// Another mitigation would be to simply change the execution [Mode] of this turing machine. 
+    pub fn get_path_to_accept<F>(&mut self, exit_condition: Option<F>) 
+        -> Option<Vec<TuringExecutionSteps>> where F: Fn() -> bool
+    {
+        self.reset();
+        let mut path = Vec::<TuringExecutionSteps>::new();
+        let mut last_step_type = None;
+        for step in &mut *self {
+            if let Some(ref condition) = exit_condition {
+                if !condition() {
+                    return None;
+                }
+            }
+            last_step_type = Some(step.get_current_state().state_type.clone());
+            match &step {
+                TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => {
+                    path.push(step);
+                },
+                TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_, iteration:_ } => {
+                    path.push(step);
+                },
+                TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration:_, backtracked_iteration } => {
+                    // Pop stack until we find the iteration we backtracked to
+                    while path.last().unwrap().get_nb_iterations() != *backtracked_iteration {
+                        path.pop();
+                    }
+                },
+            }
+        }
+        // If the last step did not result in an accepting state, 
+        // then we know that no path results in an accepting state.
+        if let Some(t) = last_step_type {
+            if TuringStateType::Accepting != t {
+                return None;
+            }
+        }
+
+        Some(path)
     }
 }
 
@@ -357,6 +411,8 @@ pub enum TuringExecutionSteps
         write_ribbons: Vec<TuringWriteRibbon>,
         /// The current number of iterations already done
         iteration : usize,
+        /// The number of the iteration that was bactracked to
+        backtracked_iteration: usize
     }
 }
 
@@ -463,7 +519,8 @@ impl<'a> Iterator for &mut TuringMachines
                         read_ribbon: self.get_reading_ribbon().clone(),
                         write_ribbons: self.get_writting_ribbons().clone(),
                         iteration : prev_iter,
-                        state_pointer: self.get_state_pointer() });
+                        state_pointer: self.get_state_pointer(),
+                        backtracked_iteration: saved_state.iteration });
                 }
             }
         
@@ -476,7 +533,8 @@ impl<'a> Iterator for &mut TuringMachines
                 let to_save = SavedState { saved_state_index:self.get_state_pointer(), 
                                                         next_transitions: next_transitions, 
                                                         saved_read_ribbon: self.get_reading_ribbon().clone(), 
-                                                        saved_write_ribbons: self.get_writting_ribbons().clone() };
+                                                        saved_write_ribbons: self.get_writting_ribbons().clone(),
+                                                        iteration: prev_iter - 1 };
 
                 self.push_to_memory_stack(to_save);
             }
@@ -544,14 +602,14 @@ impl<'a> Display for TuringExecutionSteps{
 
                     write!(f, "* Left state : {}\n* Current state : {}\n* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", previous_state, reached_state, transition_taken, read_ribbon, write_str_rib)
             },
-            TuringExecutionSteps::Backtracked { previous_state, reached_state, read_ribbon, write_ribbons, iteration:_ , state_pointer:_} => {
+            TuringExecutionSteps::Backtracked { previous_state, reached_state, read_ribbon, write_ribbons, iteration:_ , state_pointer:_, backtracked_iteration} => {
                 let mut write_str_rib = String::from(format!("{}", write_ribbons[0]));
                 for i in 1..write_ribbons.len() 
                 {
                     write_str_rib.push_str(format!("\n{}", write_ribbons[i]).as_str());
                 }
 
-                write!(f, "* Backtracked from : {}\n* To  : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", previous_state, reached_state, read_ribbon, write_str_rib)
+                write!(f, "* Backtracked from : {}\n* To  : {}(back to iteration: {})\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", previous_state, reached_state, backtracked_iteration, read_ribbon, write_str_rib)
             },
         }
         
@@ -565,7 +623,7 @@ impl TuringExecutionSteps {
         match self {
             TuringExecutionSteps::FirstIteration { init_state, init_read_ribbon:_, init_write_ribbons:_ } => init_state,
             TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_, iteration:_ } => reached_state,
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration:_ } => reached_state,
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration:_, backtracked_iteration:_ } => reached_state,
         }
     }
 
@@ -574,7 +632,7 @@ impl TuringExecutionSteps {
         match self {
             TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => None,
             TuringExecutionSteps::TransitionTaken { previous_state, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_, iteration:_ } => Some(previous_state),
-            TuringExecutionSteps::Backtracked { previous_state, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration:_ } => Some(previous_state),
+            TuringExecutionSteps::Backtracked { previous_state, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration:_, backtracked_iteration:_ } => Some(previous_state),
         }
     }
 
@@ -583,7 +641,7 @@ impl TuringExecutionSteps {
         match self {
             TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => 0,
             TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_, iteration } => *iteration,
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration } => *iteration,
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration, backtracked_iteration:_ } => *iteration,
         }
     }
 
@@ -593,7 +651,7 @@ impl TuringExecutionSteps {
         match self {
             TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => 0,
             TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_, iteration :_} => *state_pointer,
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer, read_ribbon:_, write_ribbons:_, iteration:_ } => *state_pointer,
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer, read_ribbon:_, write_ribbons:_, iteration:_, backtracked_iteration:_ } => *state_pointer,
         }
     }
 
@@ -601,7 +659,7 @@ impl TuringExecutionSteps {
         match self {
             TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon, init_write_ribbons:_ } => init_read_ribbon,
             TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon, write_ribbons:_, iteration:_ } => read_ribbon,
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon, write_ribbons:_, iteration:_ } => read_ribbon,
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon, write_ribbons:_, iteration:_, backtracked_iteration:_ } => read_ribbon,
         }
     }
 
@@ -610,9 +668,7 @@ impl TuringExecutionSteps {
         match self {
             TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons } => init_write_ribbons,
             TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons, iteration:_ } => write_ribbons,
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons, iteration:_ } => write_ribbons,
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons, iteration:_, backtracked_iteration:_ } => write_ribbons,
         }
     }
-
-
 }
