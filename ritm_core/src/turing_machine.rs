@@ -476,9 +476,11 @@ impl<'a> Iterator for &mut TuringMachines
 
     fn next(&mut self) -> Option<Self::Item>
     {
-        let last_step = next_iteration(self);
-        self.set_last_step(last_step.clone());
-        last_step
+        // Get next step
+        let next_step = next_iteration(self);
+        // Save & return it
+        self.set_last_step(next_step.clone());
+        next_step
     }
 }
 

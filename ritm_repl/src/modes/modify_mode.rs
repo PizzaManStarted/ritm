@@ -43,17 +43,16 @@ impl ModeEvent for ModifyTuringMode {
     fn print_help(&self) {
         let tm_it_bold = "Turing Machine".italic().bold();
         print!("-> ");
-        match self {
-            ModifyTuringMode::PrintSummary => println!("Prints a detailed overview of the current {tm_it_bold}"),
-            ModifyTuringMode::AddState => println!("Adds a {} to the current {tm_it_bold}", "state".purple()),
-            ModifyTuringMode::AddTransitions => println!("Adds one or multiple {} to the current {tm_it_bold}", "transitions".purple()),
-            ModifyTuringMode::RemoveTransitions => println!("Removes one or multiple {} from the current {tm_it_bold}", "transitions".purple()),
-            ModifyTuringMode::RemoveState => println!("Removes a {} from the current {tm_it_bold}", "state".purple()),
-            ModifyTuringMode::SaveTM => println!("Saves the current {tm_it_bold} as a file"),
-            ModifyTuringMode::FeedWord => println!("Feeds a word to the {tm_it_bold} and starts executing it"),
-            ModifyTuringMode::UnloadTM => println!("Unloads the current Turing Machine and go back to the turing machine creation phase")
-        }
-        println!("")
+        println!("{}", match self {
+                ModifyTuringMode::PrintSummary => format!("Prints a detailed overview of the current {tm_it_bold}"),
+                ModifyTuringMode::AddState => format!("Adds a {} to the current {tm_it_bold}", "state".purple()),
+                ModifyTuringMode::AddTransitions => format!("Adds one or multiple {} to the current {tm_it_bold}", "transitions".purple()),
+                ModifyTuringMode::RemoveTransitions => format!("Removes one or multiple {} from the current {tm_it_bold}", "transitions".purple()),
+                ModifyTuringMode::RemoveState => format!("Removes a {} from the current {tm_it_bold}", "state".purple()),
+                ModifyTuringMode::SaveTM => format!("Saves the current {tm_it_bold} as a file"),
+                ModifyTuringMode::FeedWord => format!("Feeds a word to the {tm_it_bold} and starts executing it"),
+                ModifyTuringMode::UnloadTM => format!("Unloads the current Turing Machine and go back to the turing machine creation phase")
+            }.green())
     }
     
     fn choose_option(&self, rl: &mut Editor<(), FileHistory>, storage: &mut DataStorage) -> Modes {    

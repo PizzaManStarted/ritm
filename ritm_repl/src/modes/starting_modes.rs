@@ -29,13 +29,12 @@ impl ModeEvent for StartingMode {
     fn print_help(&self) {
         let tm_it = "Turing Machine".italic().bold();
         print!("-> ");
-        match self {
-            StartingMode::CreateTM => println!("Creates a new {tm_it} by specifying the {}", 
+        println!("{}", match self {
+            StartingMode::CreateTM => format!("Creates a new {tm_it} by specifying the {}", 
                                                 "number of writting ribbons".purple()),
-            StartingMode::LoadTM => println!("Loads a new {tm_it} by specifying a {} to it from",
+            StartingMode::LoadTM => format!("Loads a new {tm_it} by specifying a {} to it from",
                                                 "file path".purple()),
-        }
-        println!("")
+        }.green());
     }
     
     fn choose_option(&self, rl: &mut Editor<(), FileHistory>, storage: &mut DataStorage) -> Modes {

@@ -15,11 +15,11 @@ pub enum ExecuteTuringMode {
     SkipSteps,
     AutoPlay,
     Finish,
+    FakeGuessing,
     Reset,
     FeedWord,
     ToggleClearAfterStep,
     SetExecutionMode,
-    FakeGuessing,
     SummaryGraph,
     SummaryExecution,
     Stop,
@@ -39,7 +39,7 @@ impl Display for ExecuteTuringMode {
             ExecuteTuringMode::SetExecutionMode => "Sets the execution mode",
             ExecuteTuringMode::SummaryGraph => "Print a summary of the graph",
             ExecuteTuringMode::SummaryExecution => "Print a summary of the execution",
-            ExecuteTuringMode::FakeGuessing => "Iterate over the correct path (if any)",
+            ExecuteTuringMode::FakeGuessing => "Iterate over the correct path, if any (can loop forever)",
             ExecuteTuringMode::Stop => "Stop the execution",
         })
     }
@@ -48,21 +48,25 @@ impl Display for ExecuteTuringMode {
 
 impl ModeEvent for ExecuteTuringMode {
     fn print_help(&self) {
+        print!("-> ");
         println!("{}", match self {
-            ExecuteTuringMode::NextStep => todo!(),
-            ExecuteTuringMode::SkipSteps => todo!(),
-            ExecuteTuringMode::AutoPlay => todo!(),
-            ExecuteTuringMode::Finish => todo!(),
-            ExecuteTuringMode::Reset => todo!(),
-            ExecuteTuringMode::FeedWord => todo!(),
-            ExecuteTuringMode::ToggleClearAfterStep => todo!(),
-            ExecuteTuringMode::SetExecutionMode => todo!(),
-            ExecuteTuringMode::FakeGuessing => format!("Resets and executes completly the machine. And if a correct path is found, 
-                                                        then the next iterations will only lead to the outcome where the word is accepted."),
-            ExecuteTuringMode::SummaryGraph => todo!(),
-            ExecuteTuringMode::SummaryExecution => todo!(),
-            ExecuteTuringMode::Stop => todo!(),
-        })
+            ExecuteTuringMode::NextStep => format!("Advances the execution to the next iteration (if possible) and show the result."),
+            ExecuteTuringMode::SkipSteps => format!("Skips a specified number of steps. If the execution finishes before the derised number of steps were passed, then it simply displays it and stops."),
+            ExecuteTuringMode::AutoPlay => format!("{}\n{} {}", "Advances the execution by one step periodically until it reaches the end (if any exists).",
+                                                    "But this can be interrupted at any time by using","CTRL+C".red().bold() ),
+            ExecuteTuringMode::Finish => format!("{}\n{} {}","Tries to completly finish the execution and show the last step found." ,
+                                                  "However, since it is possible for turing machines to loop forever, it's possible that this call never ends too. But it can be interrupted at any time by using", 
+                                                  "CTRL+C".red().bold()),
+            ExecuteTuringMode::Reset => format!("Resets the execution to the first iteration while keeping the first word."),
+            ExecuteTuringMode::FeedWord => format!("Feeds a new word to the turing machine resets the execution to the first iteration."),
+            ExecuteTuringMode::ToggleClearAfterStep => format!("Chooses wether the terminal should be cleared before showing an iteration. Clearing before an execution can lead to an easier way to follow an execution but it might also delete some important informations between steps."),
+            ExecuteTuringMode::SetExecutionMode => format!("Sets the current execution mode of the Turing Machine. Different mode will result in different behaviors. It's recommended to use modes like StopAfter when it isn't clear if the machine can loop forever or not."),
+            ExecuteTuringMode::FakeGuessing => format!("{}\n{} {}","Resets and executes completly the machine. And if a correct path is found, then the next iterations will only lead to the outcome where the word is accepted.",
+                                                "Due to the nature of this call, if an infinite execution arises, stop the execution by pressing", "CTRL+C".red().bold()),
+            ExecuteTuringMode::SummaryGraph => format!("Prints a detailed overview of the current Turing Machine"),
+            ExecuteTuringMode::SummaryExecution => format!("Summarizes the current execution by showing some important informations, like the last iteration, the state of the memory."),
+            ExecuteTuringMode::Stop => format!("Stops the execution of this machine and goes back to the graph modification mode"),
+        }.green())
     }
 
     fn choose_option(&self, rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, storage: &mut crate::DataStorage) -> Modes {
