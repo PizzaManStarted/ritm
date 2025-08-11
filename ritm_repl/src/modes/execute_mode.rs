@@ -158,11 +158,12 @@ impl ModeEvent for ExecuteTuringMode {
                 }
             },
             ExecuteTuringMode::SummaryGraph => {
-                println!("{}", tm.get_turing_machine_graph_ref());
+                println!("{}", tm.get_graph_ref());
                 None
             },
             ExecuteTuringMode::SummaryExecution => {
                 // TODO :  
+                summarise_execution(tm);
                 None
             },
             ExecuteTuringMode::ToggleClearAfterStep => {
@@ -318,4 +319,12 @@ fn query_mode(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>) -
         }
         println!("{}", "Unknown mode".red()) 
     }
+}
+
+
+fn summarise_execution(tm: &TuringMachines)
+{
+    println!("{:?}", tm.get_memory());
+
+    
 }

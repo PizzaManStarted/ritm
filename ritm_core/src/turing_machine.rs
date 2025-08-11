@@ -59,7 +59,7 @@ pub enum TuringMachines
     }
 }
 
-struct IterationData {
+pub struct IterationData {
     /// The reading rubbon containing the word
     reading_ribbon:  TuringReadRibbon,
     /// A vector containing all writting rubbons
@@ -111,7 +111,7 @@ impl TuringMachines
             iteration : 0
         };
         // Add the word to the reading ribbon
-        s.get_reading_ribbon().feed_word(word);
+        s.get_reading_ribbon_mut().feed_word(word);
         
         Ok(s)
     }
@@ -140,11 +140,11 @@ impl TuringMachines
         self.set_word(word);
 
         // Reset reading ribbon
-        self.get_reading_ribbon().feed_word(word.clone());
+        self.get_reading_ribbon_mut().feed_word(word.clone());
 
         // Reset write ribbons
-        for i in 0..self.get_writting_ribbons().len() {
-            self.get_writting_ribbons()[i] = TuringWriteRibbon::new();
+        for i in 0..self.get_writting_ribbons_mut().len() {
+            self.get_writting_ribbons_mut()[i] = TuringWriteRibbon::new();
         }
 
         // Reset state pointers
@@ -184,7 +184,7 @@ impl TuringMachines
     /// ## Infinite iterations problems
     /// **Beware** that this function will loop forever **if** the related turing machine graph loops for the given input.
     /// In order to prevent this, it is possible to supply a function that will be called before every iteration to check if it is allowed to continue it's execution.
-    /// Another mitigation would be to simply change the execution [Mode] of this turing machine. 
+    /// Another mitigation would be to simply change the execution mode of this turing machine. 
     pub fn get_path_to_accept<F>(&mut self, mut exit_condition: F) 
         -> Option<Vec<TuringExecutionSteps>> where F: FnMut() -> bool
     {
@@ -226,14 +226,16 @@ impl TuringMachines
 
 impl TuringMachines {
     /// Gets *reference* of the stored turing machine graph.
-    pub fn get_turing_machine_graph_ref(&self) -> &TuringMachineGraph {
+    pub fn get_graph_ref(&self) -> &TuringMachineGraph {
         match self {
             TuringMachines::TuringMachine { graph, data:_, iteration:_ } => &graph,
         }
     }
 
     /// Gets *mutable reference* of the stored turing machine graph.
-    pub fn get_turing_machine_graph_mut_ref(&mut self) -> &mut TuringMachineGraph {
+    /// **Beware** that modifying the graph can cause some errors since this iterator won't be able to take into acount the changes made.
+    /// So use it at your own risk.
+    pub fn get_graph_mut_ref(&mut self) -> &mut TuringMachineGraph {
         match self {
             TuringMachines::TuringMachine { graph, data:_, iteration:_ } => graph,
         }
@@ -241,8 +243,8 @@ impl TuringMachines {
 
     /// Gets the stored turing machine graph.
     /// 
-    /// This will free the turing machine since it will drop the ownership
-    pub fn get_turing_machine_graph(self) -> TuringMachineGraph {
+    /// This will free the turing machine iterator since it will drop the ownership of this graph.
+    pub fn get_graph(self) -> TuringMachineGraph {
         match self {
             TuringMachines::TuringMachine { graph, data:_, iteration:_ } => graph,
         }
@@ -265,13 +267,19 @@ impl TuringMachines {
         }
     }
     
-    /// Gets the reading ribbon stored inside this struct.
-    fn get_reading_ribbon(&mut self) -> &mut TuringReadRibbon {
+    /// Gets mutable ref to the reading ribbon stored inside this struct.
+    fn get_reading_ribbon_mut(&mut self) -> &mut TuringReadRibbon {
         match self {
             TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &mut data.reading_ribbon,
         }
     }
-    
+
+    /// Gets ref to the reading ribbon stored inside this struct.
+    pub fn get_reading_ribbon(&self) -> &TuringReadRibbon {
+        match self {
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &data.reading_ribbon,
+        }
+    }
 
     /// Sets the reading ribbon stored inside this struct.
     fn set_reading_ribbon(&mut self, ribbon: TuringReadRibbon) {
@@ -281,10 +289,17 @@ impl TuringMachines {
     }
     
 
-    /// Gets the writtings ribbons stored inside this struct.
-    fn get_writting_ribbons(&mut self) -> &mut Vec<TuringWriteRibbon> {
+    /// Gets the mut ref writtings ribbons stored inside this struct.
+    fn get_writting_ribbons_mut(&mut self) -> &mut Vec<TuringWriteRibbon> {
         match self {
             TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &mut data.write_ribbons,
+        }
+    }
+
+    /// Gets the reference to the writtings ribbons stored inside this struct.
+    pub fn get_writting_ribbons(&self) -> &Vec<TuringWriteRibbon> {
+        match self {
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &data.write_ribbons,
         }
     }
     
@@ -297,7 +312,7 @@ impl TuringMachines {
     }
     
     /// Gets the word that was feed to this machine.
-    fn get_word(&self) -> &String {
+    pub fn get_word(&self) -> &String {
         match self {
             TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &data.word,
         }
@@ -326,7 +341,7 @@ impl TuringMachines {
     }
     
     /// Fetches the mode of the iterator.
-    fn get_mode(&self) -> &Mode {
+    pub fn get_mode(&self) -> &Mode {
         match self {
             TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &data.mode,
         }
@@ -338,12 +353,20 @@ impl TuringMachines {
             TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &mut data.memory,
         }
     }
+    
+    /// Get the reference to the stack containing all the [SavedState].
+    pub fn get_memory(&self) -> &VecDeque<SavedState> {
+        match self {
+            TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &data.memory,
+        }
+    }
 
     fn get_backtracking_info(&self) -> Option<usize> {
         match self {
             TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.backtracked_info,
         }
     }
+
     fn set_backtracking_info(&mut self, val: Option<usize>) {
         match self {
             TuringMachines::TuringMachine { graph:_, data, iteration:_ } => data.backtracked_info = val,
@@ -356,7 +379,7 @@ impl TuringMachines {
         }
     }
 
-    fn get_iteration(&self) -> usize {
+    pub fn get_iteration(&self) -> usize {
         match self {
             TuringMachines::TuringMachine { graph:_, data:_, iteration } => *iteration,
         }
@@ -434,7 +457,7 @@ impl<'a> Iterator for &mut TuringMachines
         self.set_iteration(prev_iter + 1);
 
         // Fetch the current state
-        let curr_state =  self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().clone();
+        let curr_state =  self.get_graph_ref().get_state(self.get_state_pointer()).unwrap().clone();
 
         let mut transition_index_taken = None;
 
@@ -449,8 +472,8 @@ impl<'a> Iterator for &mut TuringMachines
                 self.set_first_iteration(false);
 
                 return Some(TuringExecutionSteps::FirstIteration { init_state: curr_state, 
-                    init_read_ribbon: self.get_reading_ribbon().clone(), 
-                    init_write_ribbons: self.get_writting_ribbons().clone() });
+                    init_read_ribbon: self.get_reading_ribbon_mut().clone(), 
+                    init_write_ribbons: self.get_writting_ribbons_mut().clone() });
             }
 
             /* Checks if the state is accepting */
@@ -464,8 +487,8 @@ impl<'a> Iterator for &mut TuringMachines
 
             // If one of the transition condition is true,
             // Get all current char read by **all** ribbons
-            let mut char_vec = vec!(self.get_reading_ribbon().read_curr_char().clone());
-            for ribbon in self.get_writting_ribbons() {
+            let mut char_vec = vec!(self.get_reading_ribbon_mut().read_curr_char().clone());
+            for ribbon in self.get_writting_ribbons_mut() {
                 char_vec.push(ribbon.read_curr_char());
             }
             
@@ -513,9 +536,9 @@ impl<'a> Iterator for &mut TuringMachines
                     // Return backtracking info
                     return Some(TuringExecutionSteps::Backtracked { 
                         previous_state: curr_state, 
-                        reached_state: self.get_turing_machine_graph_ref().get_state(saved_state.saved_state_index).unwrap().clone(),
-                        read_ribbon: self.get_reading_ribbon().clone(),
-                        write_ribbons: self.get_writting_ribbons().clone(),
+                        reached_state: self.get_graph_ref().get_state(saved_state.saved_state_index).unwrap().clone(),
+                        read_ribbon: self.get_reading_ribbon_mut().clone(),
+                        write_ribbons: self.get_writting_ribbons_mut().clone(),
                         iteration : prev_iter,
                         state_pointer: self.get_state_pointer(),
                         backtracked_iteration: saved_state.iteration });
@@ -530,8 +553,8 @@ impl<'a> Iterator for &mut TuringMachines
 
                 let to_save = SavedState { saved_state_index:self.get_state_pointer(), 
                                                         next_transitions: next_transitions, 
-                                                        saved_read_ribbon: self.get_reading_ribbon().clone(), 
-                                                        saved_write_ribbons: self.get_writting_ribbons().clone(),
+                                                        saved_read_ribbon: self.get_reading_ribbon_mut().clone(), 
+                                                        saved_write_ribbons: self.get_writting_ribbons_mut().clone(),
                                                         iteration: prev_iter - 1 };
 
                 self.push_to_memory_stack(to_save);
@@ -542,15 +565,15 @@ impl<'a> Iterator for &mut TuringMachines
         }
         // if a viable transition was found
         if let Some(ind) = transition_index_taken {
-            let transition = self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().transitions[ind as usize].clone();
+            let transition = self.get_graph_ref().get_state(self.get_state_pointer()).unwrap().transitions[ind as usize].clone();
             // Apply the transition
             // to the read ribbons
-            self.get_reading_ribbon().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
+            self.get_reading_ribbon_mut().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
             
             // to the write ribbons
-            for i in 0..self.get_turing_machine_graph_ref().get_k()
+            for i in 0..self.get_graph_ref().get_k()
             {
-                self.get_writting_ribbons()[i as usize].try_apply_transition(transition.chars_read[(i+1) as usize],
+                self.get_writting_ribbons_mut()[i as usize].try_apply_transition(transition.chars_read[(i+1) as usize],
                                                                                         transition.chars_write[i as usize].0, &transition.chars_write[i as usize].1).unwrap();
             }
     
@@ -560,11 +583,11 @@ impl<'a> Iterator for &mut TuringMachines
             Some(TuringExecutionSteps::TransitionTaken
             {
                 previous_state: curr_state.clone(),
-                reached_state: self.get_turing_machine_graph_ref().get_state(self.get_state_pointer()).unwrap().clone(),
+                reached_state: self.get_graph_ref().get_state(self.get_state_pointer()).unwrap().clone(),
                 transition_index_taken : ind as usize,
                 transition_taken: transition.clone(),
-                read_ribbon: self.get_reading_ribbon().clone(),
-                write_ribbons: self.get_writting_ribbons().clone(),
+                read_ribbon: self.get_reading_ribbon_mut().clone(),
+                write_ribbons: self.get_writting_ribbons_mut().clone(),
                 iteration: prev_iter,
                 state_pointer: self.get_state_pointer()
             })
