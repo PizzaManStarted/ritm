@@ -80,10 +80,20 @@ impl ModeEvent for ExecuteTuringMode {
                 }
                 else {
                     let total = total.unwrap();
+                    let mut before_last_step = None;
+                    let mut last_step = None;
                     if total != 0 {
                         for _ in 0..total-1 {
-                            if let None = tm.next() {
+                            before_last_step = last_step;
+                            last_step = tm.next();
+                            if let None = last_step {
                                 break;
+                            }
+                        }
+
+                        if let None = last_step {
+                            if let Some(ending_step) = before_last_step {
+                                print_step(rl, &ending_step, storage.clear_after_step);
                             }
                         }
                         next_step(rl, &mut tm, storage.clear_after_step);
@@ -100,7 +110,15 @@ impl ModeEvent for ExecuteTuringMode {
                 else {
                     let sleep_time = time::Duration::from_secs_f32(speed.unwrap());
                     storage.is_running.store(true, std::sync::atomic::Ordering::SeqCst);
-
+                    // print first step (to check if the exec is finished or not)
+                    let first_step = tm.next();
+                    if let Some(step) = first_step {
+                        print_step(rl, &step, storage.clear_after_step);    
+                    }
+                    else {
+                        println!("{}", "The execution is already finished".blue());
+                    }
+                    
                     for step in &mut *tm {
                         // Allow the user to stop the execution if it is taking too long (or infinite)
                         if !storage.is_running.load(std::sync::atomic::Ordering::SeqCst) {
@@ -128,7 +146,7 @@ impl ModeEvent for ExecuteTuringMode {
                     print_step(rl, &step, storage.clear_after_step);
                 }
                 else {
-                    println!("Already finished");
+                    println!("{}", "Already finished".blue());
                 }
                 None
             },
@@ -168,7 +186,10 @@ impl ModeEvent for ExecuteTuringMode {
             },
             ExecuteTuringMode::ToggleClearAfterStep => {
                 storage.clear_after_step = !storage.clear_after_step;
-                println!("Set to : {}", storage.clear_after_step.to_string().blue());
+                println!("{} {}{}", "Will".blue(), match storage.clear_after_step {
+                    false => "not ".blue().italic(),
+                    true => "".into(),
+                }, "clear the terminal after every steps".blue());
                 None
             },
             ExecuteTuringMode::SetExecutionMode => {
@@ -324,7 +345,9 @@ fn query_mode(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>) -
 
 fn summarise_execution(tm: &TuringMachines)
 {
-    println!("{:?}", tm.get_memory());
+    // Show the last iteration
+    // Show mode
+    println!("{:?}", tm.is_over());
 
     
 }
