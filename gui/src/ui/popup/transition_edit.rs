@@ -1,5 +1,5 @@
 use egui::{
-    include_image, scroll_area::ScrollBarVisibility, style::WidgetVisuals, vec2, Align, AtomExt, Button, Color32, Frame, Id, Image, ImageButton, Label, Layout, Margin, Modal, RichText, ScrollArea, Shadow, Stroke, TextEdit, Ui, Vec2b
+    include_image, scroll_area::ScrollBarVisibility, style::WidgetVisuals, vec2, Align, AtomExt, Button, Color32, Context, Frame, Id, Image, ImageButton, Label, Layout, Margin, Modal, RichText, ScrollArea, Shadow, Stroke, TextEdit, Ui, Vec2b
 };
 use ritm_core::turing_state::{TuringDirection, TuringTransitionMultRibbons};
 
@@ -9,7 +9,7 @@ use crate::{
     ui::{component::combobox::ComboBox, font::Font, theme::Theme},
 };
 
-pub fn show(app: &mut App, ui: &mut Ui) {
+pub fn show(app: &mut App, ctx: &Context) {
     Modal::new(Id::new("transition_edit"))
         .frame(Frame {
             fill: app.theme.white,
@@ -18,7 +18,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             corner_radius: 10.into(),
             ..Default::default()
         })
-        .show(ui.ctx(), |ui: &mut Ui| {
+        .show(ctx, |ui: &mut Ui| {
             let selected_transition = app.selected_transition.unwrap();
 
             // Main layout

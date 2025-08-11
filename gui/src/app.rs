@@ -1,8 +1,8 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap}, sync::{atomic::AtomicBool, Arc}
+    collections::{BTreeMap, BTreeSet, HashMap}, sync::{atomic::AtomicBool, Arc}, time::{Duration, Instant}
 };
 
-use egui::{FontData, FontDefinitions, FontFamily, Pos2, Rect, vec2};
+use egui::{vec2, FontData, FontDefinitions, FontFamily, Pos2, Rect};
 use egui_extras::install_image_loaders;
 use rand::random;
 use ritm_core::{
@@ -13,7 +13,7 @@ use ritm_core::{
 
 use crate::{
     turing::{State, Transition, TransitionEdit},
-    ui::{self, theme::Theme, utils::FileDialog},
+    ui::{self, popup::Popup, theme::Theme, utils::FileDialog},
 };
 
 /// The only structure that is persistent each redraw of the application
@@ -60,6 +60,11 @@ pub struct App {
 
     /// File loaded
     pub file: FileDialog,
+
+    /// Which popup to display
+    pub popup: Popup,
+
+    pub last_step: f64,
 }
 
 /// Keep the state of the application
@@ -89,9 +94,6 @@ pub struct Event {
 
     /// Do we need to go to the next iteration ?
     pub is_next: Arc<AtomicBool>,
-
-    /// Is the selected element in editing mode ?
-    pub is_editing: bool,
 
     /// Do we need to recenter the graph ?
     pub need_recenter: bool,
@@ -125,6 +127,8 @@ impl Default for App {
             rules_edit: vec![],
             pin_count: 0,
             file: FileDialog::default(),
+            popup: Popup::None,
+            last_step: 0.0,
         };
 
         // Update the graph data with the turing data at initialization
@@ -145,7 +149,6 @@ impl Default for Event {
             is_dragging: false,
             has_changed: false,
             is_next: AtomicBool::new(false).into(),
-            is_editing: false,
             need_recenter: false,
             are_settings_visible: false,
             is_code_closed: false,
@@ -228,8 +231,6 @@ impl App {
             .append_rule_state(self.selected_state.unwrap(), transition, target)
             .ok();
 
-        println!("{:?}", self.turing.graph_ref());
-
         let source = State::get_mut(self, self.selected_state.unwrap());
         let transition =
             Transition::new(transition_rule, source.transitions.len(), source.id, target);
@@ -270,7 +271,7 @@ impl App {
 
     /// Reset the machine execution with the new input
     pub fn set_input(&mut self) {
-        let _ = self.turing.reset();
+        let _ = self.turing.reset_word(&self.input);
         self.step = self.turing.next().unwrap();
         self.event.is_accepted = None;
     }
@@ -303,13 +304,13 @@ impl App {
 
             State::get_mut(self, selected_transition.0).transitions = transitions_gui;
         };
-        self.event.is_editing = false;
+        self.popup = Popup::None;
     }
 
     /// Cancel the changes made to the transition
     pub fn cancel_transition_change(&mut self) {
         self.rules_edit.clear();
-        self.event.is_editing = false;
+        self.popup = Popup::None;
     }
 
     pub fn graph_to_code(&mut self) {
@@ -411,6 +412,16 @@ impl eframe::App for App {
         }
 
         ui::show(self, ctx);
+
+        if self.event.is_running {
+
+            if ctx.input(|r| r.time) - self.last_step >= 2.0_f32.powi(self.interval) as f64 {
+                self.next();
+                self.last_step = ctx.input(|r| r.time);
+            }
+        }
+
+        ctx.request_repaint_after(Duration::from_secs(2.0_f32.powi(self.interval) as u64));
     }
 }
 

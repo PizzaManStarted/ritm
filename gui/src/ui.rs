@@ -15,9 +15,19 @@ pub mod theme;
 pub mod utils;
 pub mod popup;
 
-use crate::{App, ui::font::Font};
+use crate::{ui::{font::Font, popup::{help, setting, state_edit, transition_edit}}, App};
 
 pub fn show(app: &mut App, ctx: &egui::Context) {
+
+    // Display the popup
+    match app.popup {
+        popup::Popup::None => {},
+        popup::Popup::TransitionEdit => transition_edit::show(app, ctx),
+        popup::Popup::StateEdit => state_edit::show(app, ctx),
+        popup::Popup::Setting => setting::show(app, ctx),
+        popup::Popup::Help => help::show(app, ctx),
+    }
+
     CentralPanel::default()
         .frame(Frame {
             outer_margin: Margin::same(0),

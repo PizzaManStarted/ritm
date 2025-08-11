@@ -1,14 +1,6 @@
-use std::{
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-    thread,
-    time::Duration,
-};
 
 use egui::{
-    include_image, vec2, Align, Align2, Button, Color32, Context, Frame, Image, ImageButton, Label, Layout, RichText, Sense, TextEdit, Ui, Vec2
+    include_image, vec2, Align, Align2, Button, Frame, Image, ImageButton, Label, Layout, RichText, Sense, TextEdit, Ui, Vec2
 };
 use egui_flex::{Flex, FlexAlign, FlexAlignContent, item};
 
@@ -30,191 +22,30 @@ pub fn show(app: &mut App, ui: &mut Ui) {
         grid.place(ui, 1, 3, |ui| step(app, ui));
         grid.place(ui, 2, 3, |ui| state(app, ui));
 
-        // ui.columns(3, |cols| {
-
-        //     Flex::vertical()
-        //         .align_items(FlexAlign::Center)
-        //         .align_content(FlexAlignContent::SpaceBetween)
-        //         .align_items_content(Align2::CENTER_CENTER)
-        //         .show(&mut cols[1], |flex| {
-        //             flex.add_flex(item(), Flex::horizontal(), |flex| {
-        //                 if app.event.is_running {
-        //                     if flex
-        //                         .add(
-        //                             item(),
-        //                             ImageButton::new(
-        //                                 Image::new(include_image!("../../assets/icon/pause.svg"))
-        //                                     .fit_to_exact_size(vec2(
-        //                                         Constant::CONTROL_ICON_SIZE,
-        //                                         Constant::CONTROL_ICON_SIZE,
-        //                                     ))
-        //                                     .tint(if app.event.is_accepted.is_none() {
-        //                                         app.theme.white
-        //                                     } else {
-        //                                         app.theme.gray
-        //                                     }),
-        //                             )
-        //                             .frame(false)
-        //                             .sense(
-        //                                 if app.event.is_accepted.is_none() {
-        //                                     Sense::click()
-        //                                 } else {
-        //                                     Sense::empty()
-        //                                 },
-        //                             ),
-        //                         )
-        //                         .clicked()
-        //                     {
-        //                         app.event.is_running = false;
-        //                     }
-
-        //                     if app.event.is_next.load(Ordering::Relaxed) {
-        //                         if app.event.is_running {
-        //                             app.next();
-        //                             app.event.is_next.store(false, Ordering::Relaxed);
-        //                             interval(
-        //                                 app.event.is_next.clone(),
-        //                                 flex.ui().ctx().clone(),
-        //                                 Duration::from_millis(
-        //                                     (2.0_f32.powi(app.interval) * 1000.0) as u64,
-        //                                 ),
-        //                             );
-        //                         }
-        //                     }
-        //                 } else {
-        //                     if flex
-        //                         .add(
-        //                             item(),
-        //                             ImageButton::new(
-        //                                 Image::new(include_image!("../../assets/icon/play.svg"))
-        //                                     .fit_to_exact_size(vec2(
-        //                                         Constant::CONTROL_ICON_SIZE,
-        //                                         Constant::CONTROL_ICON_SIZE,
-        //                                     ))
-        //                                     .tint(if app.event.is_accepted.is_none() {
-        //                                         app.theme.white
-        //                                     } else {
-        //                                         app.theme.gray
-        //                                     }),
-        //                             )
-        //                             .frame(false)
-        //                             .sense(
-        //                                 if app.event.is_accepted.is_none() {
-        //                                     Sense::click()
-        //                                 } else {
-        //                                     Sense::empty()
-        //                                 },
-        //                             ),
-        //                         )
-        //                         .clicked()
-        //                     {
-        //                         app.next();
-        //                         app.event.is_next.store(false, Ordering::Relaxed);
-        //                         app.event.is_running = true;
-        //                         interval(
-        //                             app.event.is_next.clone(),
-        //                             flex.ui().ctx().clone(),
-        //                             Duration::from_millis(
-        //                                 (2.0_f32.powi(app.interval) * 1000.0) as u64,
-        //                             ),
-        //                         );
-        //                     }
-        //                 }
-
-        //                 if flex
-        //                     .add(
-        //                         item(),
-        //                         ImageButton::new(
-        //                             Image::new(include_image!("../../assets/icon/next.svg"))
-        //                                 .fit_to_exact_size(vec2(
-        //                                     Constant::CONTROL_ICON_SIZE,
-        //                                     Constant::CONTROL_ICON_SIZE,
-        //                                 ))
-        //                                 .tint(if app.event.is_accepted.is_none() {
-        //                                     app.theme.white
-        //                                 } else {
-        //                                     app.theme.gray
-        //                                 }),
-        //                         )
-        //                         .frame(false)
-        //                         .sense(
-        //                             if app.event.is_accepted.is_none() {
-        //                                 Sense::click()
-        //                             } else {
-        //                                 Sense::empty()
-        //                             },
-        //                         ),
-        //                     )
-        //                     .clicked()
-        //                 {
-        //                     app.next();
-        //                 }
-
-        //                 if flex
-        //                     .add(
-        //                         item(),
-        //                         ImageButton::new(
-        //                             Image::new(include_image!("../../assets/icon/reset.svg"))
-        //                                 .fit_to_exact_size(vec2(
-        //                                     Constant::CONTROL_ICON_SIZE,
-        //                                     Constant::CONTROL_ICON_SIZE,
-        //                                 ))
-        //                                 .tint(if app.step.get_nb_iterations() != 0 {
-        //                                     app.theme.white
-        //                                 } else {
-        //                                     app.theme.gray
-        //                                 }),
-        //                         )
-        //                         .frame(false),
-        //                     )
-        //                     .clicked()
-        //                 {
-        //                     app.reset();
-        //                 }
-        //             });
-
-        //             flex.add_flex(
-        //                 item(),
-        //                 Fl
-        //         });
-
-        //     Flex::vertical()
-        //         .align_content(FlexAlignContent::Center)
-        //         .align_items_content(Align2::CENTER_CENTER)
-        //         .align_items(FlexAlign::Center)
-        //         .height(68.0).show(&mut cols[2], |flex| {
-        //         flex.add(
-        //             item(),
-        //             Label::new(format!("Steps : {}", app.step.get_nb_iterations())),
-        //         );
-
-        //         let (text, color) = if let Some(r) = app.event.is_accepted {
-        //             if r {
-        //                 ("Accepted", app.theme.valid)
-        //             } else {
-        //                 ("Rejected", app.theme.invalid)
-        //             }
-        //         } else {
-        //             if app.event.is_running {
-        //                 ("Running", app.theme.gray)
-        //             } else {
-        //                 ("Idle", app.theme.gray)
-        //             }
-        //         };
-
-        //         flex.add(item(), Label::new(RichText::new(text).color(color)));
-        //     });
-        // });
     });
 }
 
-fn interval(is_next: Arc<AtomicBool>, ctx: Context, duration: Duration) {
-    thread::spawn(move || {
-        thread::sleep(duration);
-        is_next.store(true, Ordering::Relaxed);
-        ctx.request_repaint();
-    });
-}
+// #[cfg(not(target_arch = "wasm32"))]
+// fn interval(is_next: Arc<AtomicBool>, ctx: Context, duration: Duration) {
+//     thread::spawn(move || {
+//         thread::sleep(duration);
+//         is_next.store(true, Ordering::Relaxed);
+//         ctx.request_repaint();
+//     });
+// }
+
+// #[cfg(target_arch = "wasm32")]
+// fn interval(is_next: Arc<AtomicBool>, ctx: Context, duration: Duration) {
+
+//     use wasm_thread as thread;
+
+//     thread::spawn(move || {
+//         thread::sleep(duration);
+//         is_next.store(true, Ordering::Relaxed);
+//         ctx.request_repaint();
+//     });
+// }
+
 
 fn input(app: &mut App, ui: &mut Ui) {
     ui.allocate_ui_with_layout(
@@ -222,7 +53,6 @@ fn input(app: &mut App, ui: &mut Ui) {
         Layout::right_to_left(Align::Center),
         |ui| {
             if ui.add(Button::new("Submit")).clicked() {
-                println!("{}", &app.input);
                 let res = app.turing.reset_word(&app.input);
                 match res {
                     Ok(_) => app.next(),
@@ -281,18 +111,6 @@ fn control(app: &mut App, ui: &mut Ui) {
                     app.event.is_running = false;
                 }
 
-                // And load the next step each interval
-                if app.event.is_next.load(Ordering::Relaxed) {
-                    if app.event.is_running {
-                        app.next();
-                        app.event.is_next.store(false, Ordering::Relaxed);
-                        interval(
-                            app.event.is_next.clone(),
-                            flex.ui().ctx().clone(),
-                            Duration::from_millis((2.0_f32.powi(app.interval) * 1000.0) as u64),
-                        );
-                    }
-                }
             } else {
                 // Else display play button
                 if flex
@@ -316,14 +134,7 @@ fn control(app: &mut App, ui: &mut Ui) {
                     )
                     .clicked()
                 {
-                    app.next();
-                    app.event.is_next.store(false, Ordering::Relaxed);
                     app.event.is_running = true;
-                    interval(
-                        app.event.is_next.clone(),
-                        flex.ui().ctx().clone(),
-                        Duration::from_millis((2.0_f32.powi(app.interval) * 1000.0) as u64),
-                    );
                 }
             }
 

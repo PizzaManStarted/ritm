@@ -1,8 +1,8 @@
 use egui::{
-    include_image, vec2, Align, Color32, Frame, Id, Image, ImageButton, LayerId, Layout, Margin, Rect, Sense, Shadow, Stroke, Ui, UiBuilder
+    include_image, vec2, Align, Button, Color32, ComboBox, Frame, Id, Image, ImageButton, LayerId, Layout, Margin, Rect, Sense, Shadow, Stroke, Ui, UiBuilder
 };
 
-use crate::{turing::State, ui::theme::Theme, App};
+use crate::{turing::State, ui::{popup::Popup, theme::Theme}, App};
 
 /// Control of the graph
 pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
@@ -150,7 +150,12 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                         )
                                         .clicked()
                                 {
-                                    app.event.is_editing ^= true;
+                                    if state_selected {
+                                        app.popup = Popup::StateEdit;
+                                    }
+                                    if transition_selected {
+                                        app.popup = Popup::TransitionEdit
+                                    }
                                 }
 
 

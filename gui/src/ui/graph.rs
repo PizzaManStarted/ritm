@@ -26,11 +26,6 @@ pub fn show(app: &mut App, ui: &mut Ui) {
         apply_force(app);
     }
 
-    // Editing popup for transition
-    if app.event.is_editing && app.selected_transition.is_some() {
-        transition_edit::show(app, ui);
-    }
-
     let scene_response = Scene::new()
         .zoom_range(0.0..=1.5)
         .show(ui, &mut scene_rect, |ui| {

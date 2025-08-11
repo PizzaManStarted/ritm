@@ -123,6 +123,7 @@ impl TuringMachines
     {
         // Reset reading ribbon
         self.get_reading_ribbon().feed_word(word.clone());
+        self.set_word(word.clone());
 
         // Reset write ribbons
         for i in 0..self.get_writting_ribbons().len() {
@@ -226,6 +227,12 @@ impl TuringMachines {
     fn get_word(&self) -> &String {
         match self {
             TuringMachines::TuringMachine { graph:_, data, iteration:_ } => &data.word,
+        }
+    }
+
+    fn set_word(&mut self, word: String) {
+        match self {
+            TuringMachines::TuringMachine { data, .. } => data.word = word,
         }
     }
     
