@@ -114,9 +114,12 @@ impl TuringMachines
             last_iteration: None
         };
         // Add the word to the reading ribbon
-        s.get_reading_ribbon_mut().feed_word(word);
-        
-        Ok(s)
+        if let Err(e) = s.get_reading_ribbon_mut().feed_word(word) {
+            Err(e)
+        }
+        else {
+            Ok(s)
+        }
     }
 
     /// Adds a new [SavedState] to the front of the memory stack.
@@ -139,11 +142,13 @@ impl TuringMachines
         if word.is_empty() {
             return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
         }
+        // Reset reading ribbon
+        if let Err(e) = self.get_reading_ribbon_mut().feed_word(word.clone()) {
+            return Err(e);
+        }
         
         self.set_word(word);
 
-        // Reset reading ribbon
-        self.get_reading_ribbon_mut().feed_word(word.clone());
 
         // Reset write ribbons
         for i in 0..self.get_writting_ribbons_mut().len() {
