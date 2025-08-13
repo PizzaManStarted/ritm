@@ -77,7 +77,8 @@ impl Display for TuringParserError {
                             String::from("")
                         }
                     }),
-                TuringParserError::EncounteredTuringError { line_col_pos, turing_error, value } => todo!(),
+                TuringParserError::EncounteredTuringError { line_col_pos, turing_error, value } => 
+                    format!(" {:?}", turing_error),
             }
         })
     }
