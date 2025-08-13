@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display};
+use std::fmt::{write, Debug, Display};
 
 #[derive(Debug)]
 pub enum TuringError {
@@ -16,8 +16,6 @@ pub enum TuringError {
         accessed_index : usize,
         states_len : usize,
     },
-    /// Error when a word given to a turing machine did not end on an accepting state
-    WordNotAcceptedError,
     /// Error when a transition cannot be added due to the number of ribbons it affects 
     IncompatibleTransitionError{
         /// Number of writting ribbons expected
@@ -38,6 +36,34 @@ pub enum TuringError {
     UnknownStateError {
         state_name : String
     },
+}
+
+impl Display for TuringError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            TuringError::IllegalActionError { cause } => {
+                format!("The following action could cause an error or is simply not authorised : \n{}", cause)
+            },
+            TuringError::OutofRangeRibbonError { accessed_index, ribbon_size } => {
+                format!("A transition caused the ribbon pointer to point ouside the bounds of the ribbon. Tried to access {} but the length of the ribbon was {}", accessed_index, ribbon_size)
+            },
+            TuringError::OutOfRangeTransitionError { accessed_index, states_len } => {
+                format!("Tried to access a transition from the vector of transition in a state, but it was out of range. Tried to access the index {} but there are only {} transitions", accessed_index, states_len)
+            },
+            TuringError::IncompatibleTransitionError { expected, received } => {
+                format!("Tried to append a transition affecting \"{received}\" ribbons while all others only affect \"{expected}\" ribbons")
+            },
+            TuringError::TransitionArgsError { reason } => {
+                format!("There was a problem during the creation of a transition : \n{}", reason)
+            },
+            TuringError::OutOfRangeStateError { accessed_index, states_len } => {
+                format!("Tried to access a state from the vector of states in the graph, but it was out of range. Tried to access the index {} but there are only {} states", accessed_index, states_len)
+            },
+            TuringError::UnknownStateError { state_name } => {
+                format!("Tried to access a state called \"{}\", but it doesn't exists", state_name)
+            },
+        })
+    }
 }
 
 #[derive(Debug)]
@@ -78,7 +104,7 @@ impl Display for TuringParserError {
                         }
                     }),
                 TuringParserError::EncounteredTuringError { line_col_pos, turing_error, value } => 
-                    format!(" {:?}", turing_error),
+                    format!("Encountered an error at the following line: \n{}\nReason: {}", get_arrow_under(value, line_col_pos), turing_error),
             }
         })
     }
@@ -87,8 +113,8 @@ impl Display for TuringParserError {
 fn get_arrow_under(value: &String, line_col_pos : &Option<(usize, usize)>)  -> String
 {
     if let Some((line, col)) = line_col_pos {
-        let line_str = (line - 1).to_string();
-        format!("{line_str}: {value}\n{}{}^", String::from(" ").repeat(line_str.len() + 2), String::from("-").repeat(col-2))
+        let line_str = (line).to_string();
+        format!("{line_str}: {value}\n{}{}^", String::from(" ").repeat(line_str.len() + 2), String::from("-").repeat(col-1))
     }
     else {
         value.to_string()

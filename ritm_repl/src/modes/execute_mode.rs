@@ -217,7 +217,7 @@ impl ModeEvent for ExecuteTuringMode {
                     }
                 }
                 else {
-                    println!("No path");
+                    println!("{}", format!("No path found to an accepting state").cyan());
                 }
                 None
             },
