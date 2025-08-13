@@ -35,11 +35,11 @@ Creating a blank graph is as easy as specifying the number of working ribbons th
 
 This is because every transitions will have to respect this value when you will add them later.
 
-
-A blank graph consists of three default states :
-* $q_i$ : The **initial** state where every execution will start from.
-* $q_a$ : The **accepting** state where an execution should end to *accept* an input.
-* $q_r$ : The **rejecting** state. This state can be use to directly *reject* an input.
+> [!NOTE]
+> A blank graph consists of three default states :
+> * $q_i$ : The **initial** state where every execution will start from.
+> * $q_a$ : The **accepting** state where an execution should end to *accept* an input.
+> * $q_r$ : The **rejecting** state. This state can be use to directly *reject* an input.
 
 ### Load
 
@@ -54,9 +54,10 @@ This path can be **absolute** or even **relative** to where the REPL was execute
 
 This command will simply display a *summary* of the current graph that you are editing. 
 
-This summary includes : 
-* The states present in the machine and their type
-* All the transitions contained in the machine per pair of states.
+> [!NOTE]
+> This summary includes : 
+> * The states present in the machine and their type
+> * All the transitions contained in the machine per pair of states.
 
 The latter can be copied to an external text file in order to *save* this graph for later uses.
 
@@ -68,7 +69,8 @@ Adds another **normal** state to the graph.
 
 Use this command to append one or multiple transition between two states. 
 
-If one of the given state does not currently exists, then it will be **automatically** added.  
+> [!TIP]
+> If one of the given state does not currently exists, then it will be **automatically** added.  
 
 The inputs must respect the parser rules for transitions. 
 
@@ -84,16 +86,26 @@ Removes the given state and **any** mention of it inside the graph.
 
 This means that every transitions leaving or entering it will also be removed.
 
-It is not possible to remove any of the default states of the graph like $q_i$, $q_a$ or even $q_r$.
+> [!WARNING]
+> It is not possible to remove any of the default states of the graph like $q_i$, $q_a$ or even $q_r$.
 
 ### Save this TM as a file
 
 Use this command to save the turing machine you are working with as a text file (by default it will add a `.tm` extension but you can change it as you desire).
 
-The path proposed will be
+The program will propose you a default path. This path will be current current one, but you can change it to fit your needs.
+
 
 ### Feed a word and start executing this Turing Machine
-### Unload the current Turing Machin
+
+Feed a string to the turing machine and start executing it.
+
+> [!WARNING]
+> The word cannot contain any special symbols like `$`, `ç` and `_`. And empty string are not accepted. 
+
+
+
+### Unload the current Turing Machine
 
 
 
@@ -105,6 +117,12 @@ The path proposed will be
 ### Skip multiple steps
 ### Execute at a given speed the TM
 ### Finish the execution (can loop forever)
+
+
+> [!CAUTION]
+> Please be aware that if 
+
+
 ### Reset the execution
 ### Feed a new word and reset
 ### Toggle on/off clearing after each step
