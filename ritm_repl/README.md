@@ -27,7 +27,7 @@ You can safely exit the program. But beware that nothing will be saved, includin
 
 ## 1) Load/Create Turing Machine Graph
 
-In this mode you can either create a new empty turing machine graph or load an existing one.
+In this mode you can either create a new empty turing machine graph or load an existing one. Both options will lead to the [graph modification mode](#2-modify-turing-machine-graph).
 
 ### Create
 
@@ -98,7 +98,7 @@ The program will propose you a default path. This path will be current current o
 
 ### Feed a word and start executing this Turing Machine
 
-Feed a string to the turing machine and start executing it.
+Feed a string to the turing machine and start executing it. This leads the program to the [execution mode](#3-execute-turing-machine).
 
 > [!WARNING]
 > The word cannot contain any special symbols like `$`, `ç` and `_`. And empty string are not accepted. 
@@ -107,27 +107,84 @@ Feed a string to the turing machine and start executing it.
 
 ### Unload the current Turing Machine
 
+Delete the current graph and goes back the [first mode](#1-loadcreate-turing-machine-graph).
 
 
 
 ## 3) Execute Turing Machine
 
+This mode covers everything related to the execution of a turing machine for a given input.
+
+> [!NOTE]
+> An iteration is when a transition is taken or when backtracking occurs. 
 
 ### Move to next step
+
+Go to the next iteration if any are still left.
+
 ### Skip multiple steps
+
+Advances the execution for a specified number of steps and prints the last iteration.
+
+If the execution finishes before the desired number of steps, then the last iteration is still printed. 
+
 ### Execute at a given speed the TM
+
+Will go to the next iteration every number 
+
+> [!CAUTION]
+> Please be aware that some turing machines are able to loop forever. Meaning this command can also never stop. But you can leave by simply pressing : $\texttt{CTRL+C}$
+
+
+
 ### Finish the execution (can loop forever)
+
+Goes to the last iteration of the execution.
+
+> [!CAUTION]
+> Please be aware that some turing machines are able to loop forever. Meaning this command can also never stop. But you can leave by simply pressing : $\texttt{CTRL+C}$
+
+
+### Iterate over the correct path, if any (can loop forever)
+
+When working with *non deterministic* Turing Machines, we often think about the concept of ***guessing*** the correct value between steps.
+
+This command will try to completly execute the given input. And if the input leads to an **accepting** state, then it will only keep the iterations that lead to this state without the need of backtracking. 
 
 
 > [!CAUTION]
-> Please be aware that if 
+> Please be aware that some turing machines are able to loop forever. Meaning this command can also never stop. But you can leave by simply pressing : $\texttt{CTRL+C}$
 
 
 ### Reset the execution
+
+Goes back to the first iteration.
+
 ### Feed a new word and reset
+
+Changes the current input of the turing machine with a new word and resets the execution.
+
+> [!WARNING]
+> The word cannot contain any special symbols like `$`, `ç` and `_`. And empty string are not accepted. 
+
+
 ### Toggle on/off clearing after each step
+
+Toggles wether or not, the screen should be cleared after printing an iteration.
+
+
 ### Sets the execution mode
+
+
+
 ### Print a summary of the graph
+
+Prints a summary of the graph used for the execution. The summary is the same as explained in this [section](#print-a-summary-of-the-turing-machine).
+
 ### Print a summary of the execution
-### Iterate over the correct path, if any (can loop forever)
+
+
+
 ### Stop the execution
+
+Goes back to the [graph modification mode](#2-modify-turing-machine-graph).
