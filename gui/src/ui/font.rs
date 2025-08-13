@@ -39,7 +39,7 @@ impl Font {
     pub fn bold() -> FontId {
         FontId {
             family: FontFamily::Name("RobotoMono-Bold".into()),
-            size: Font::MEDIUM_SIZE
+            size: Self::MEDIUM_SIZE
         }
     }
 

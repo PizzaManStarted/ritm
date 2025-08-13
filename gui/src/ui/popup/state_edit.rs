@@ -15,9 +15,6 @@ pub fn show(app: &mut App, ctx: &Context) {
             ..Default::default()
         })
         .show(ctx, |ui: &mut Ui| {
-
-            ui.set_max_size(ui.available_size()/2.0);
-            ui.set_min_size(ui.available_size()/2.0);
             
             ui.vertical_centered(|ui| {
                 ui.style_mut().spacing.item_spacing = vec2(0.0, 10.0);

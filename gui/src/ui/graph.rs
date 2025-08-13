@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use egui::{
-    include_image, vec2, Id, Image, ImageButton, LayerId, Rect, Scene, Sense, Ui, UiBuilder, Vec2
+    include_image, vec2, Id, Image, ImageButton, LayerId, Rect, Scene, Ui, UiBuilder, Vec2
 };
 
 use crate::{
-    ui::{constant::Constant, edit, popup::transition_edit, utils}, App
+    ui::{constant::Constant, edit, utils}, App
 };
 
 pub mod state;
@@ -51,7 +51,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             )
             .frame(false),
         ).clicked() {
-            todo!("Convert graph to code")
+            app.graph_to_code();
         }
     });
 

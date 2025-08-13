@@ -13,7 +13,7 @@ use crate::{
 pub fn show(app: &mut App, ui: &mut Ui) {
     let ribbon_count = app.turing.graph_ref().get_k() + 1;
 
-    let square_size = Constant::scale(ui, Constant::SQUARE_SIZE);
+    let square_size = Constant::SQUARE_SIZE;
 
     // Ribbons frame
     Frame::new()
@@ -40,8 +40,8 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             ScrollArea::horizontal()
                 .scroll_source(ScrollSource::NONE)
                 .scroll_bar_visibility(ScrollBarVisibility::AlwaysHidden)
-                .horizontal_scroll_offset(3.0 + // 3.0 is the margin of the center square
-                    square_size
+                .horizontal_scroll_offset(3.0 // 3.0 is the margin of the center square
+                        + square_size
                         + Constant::HORIZONTAL_SPACE
                         + (ribbon_size - ui.available_width()) / 2.0,
                 ) // this offset center the symbol
@@ -72,9 +72,8 @@ pub fn show(app: &mut App, ui: &mut Ui) {
 
 /// Draw a ribbon with the correct spacing and character
 fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
-    let square_size = Constant::scale(ui, Constant::SQUARE_SIZE);
     ui.allocate_ui_with_layout(
-        vec2(0.0, square_size + 6.0),
+        vec2(0.0, Constant::SQUARE_SIZE + 6.0),
         Layout::left_to_right(Align::Center)
             .with_cross_justify(false)
             .with_cross_align(Align::Center),
@@ -82,7 +81,7 @@ fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
             ui.style_mut().spacing.item_spacing = (Constant::HORIZONTAL_SPACE, 0.0).into();
 
             let square_count: usize = ((width + Constant::HORIZONTAL_SPACE)
-                / (Constant::HORIZONTAL_SPACE + square_size)) as usize
+                / (Constant::HORIZONTAL_SPACE + Constant::SQUARE_SIZE)) as usize
                 + 2;
 
             // Get the chars and pointer from reading or writing ribbon
@@ -124,9 +123,8 @@ fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
 
 // Draw a single square with the character wanted
 fn square(app: &mut App, ui: &mut Ui, character: char, is_current: bool) {
-    let square_size = Constant::scale(ui, Constant::SQUARE_SIZE);
     Frame::new().show(ui, |ui| {
-        let size = square_size + if is_current {6.0} else {0.0};
+        let size = Constant::SQUARE_SIZE + if is_current {6.0} else {0.0};
         let (rect, _res) = ui.allocate_exact_size((size, size).into(), Sense::empty());
 
         ui.painter().rect(
@@ -144,7 +142,7 @@ fn square(app: &mut App, ui: &mut Ui, character: char, is_current: bool) {
             rect,
             Label::new(
                 RichText::new(character)
-                    .size(square_size / 2.0)
+                    .size(Constant::SQUARE_SIZE / 2.0)
                     .color(app.theme.gray),
             ),
         );

@@ -131,7 +131,13 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                 }
             }
 
-            ui.grow();
+            let width_left = ui.grow().rect.width();
+            
+            app.event.is_small_window = width_left <= 0.0;
+
+            if app.event.is_small_window {
+                app.event.is_code_closed = true;
+            }
 
             if ui
                 .add(

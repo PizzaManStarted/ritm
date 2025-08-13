@@ -102,9 +102,8 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     })
                     .resizable(false)
                     .show_separator_line(false)
-                    .min_width(100.0)
-                    .default_width(ui.ctx().screen_rect().width() - 650.0)
                     .max_width(ui.available_width() / 3.0)
+                    .min_width(ui.available_width() / 3.0)
                     .show_inside(ui, |ui| {
                         TopBottomPanel::top("settings")
                             .frame(Frame {

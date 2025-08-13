@@ -1,19 +1,17 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap}, sync::{atomic::AtomicBool, Arc}, time::{Duration, Instant}
+    collections::{BTreeMap, BTreeSet, HashMap}, sync::{atomic::AtomicBool, Arc, Condvar}, time::Duration
 };
 
 use egui::{vec2, FontData, FontDefinitions, FontFamily, Pos2, Rect};
 use egui_extras::install_image_loaders;
 use rand::random;
 use ritm_core::{
-    turing_graph::TuringMachineGraph,
-    turing_machine::{Mode, TuringExecutionSteps, TuringMachines},
-    turing_state::{TuringDirection, TuringStateType, TuringTransitionMultRibbons},
+    turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringExecutionSteps, TuringMachines}, turing_parser::graph_to_string, turing_state::{TuringDirection, TuringStateType, TuringTransitionMultRibbons}
 };
 
 use crate::{
     turing::{State, Transition, TransitionEdit},
-    ui::{self, popup::Popup, theme::Theme, utils::FileDialog},
+    ui::{self, constant::Constant, popup::Popup, theme::Theme, utils::FileDialog},
 };
 
 /// The only structure that is persistent each redraw of the application
@@ -103,6 +101,8 @@ pub struct Event {
 
     /// Is the code section closed ?
     pub is_code_closed: bool,
+
+    pub is_small_window: bool,
 }
 
 impl Default for App {
@@ -152,22 +152,19 @@ impl Default for Event {
             need_recenter: false,
             are_settings_visible: false,
             is_code_closed: false,
+            is_small_window: false,
         }
     }
 }
 
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // cc.egui_ctx.set_debug_on_hover(true);
+        cc.egui_ctx.set_debug_on_hover(true);
 
         // Load the fonts used in the application
         load_font(cc);
 
         let app: App = Default::default();
-
-        cc.egui_ctx.set_zoom_factor(1.0); // TODO add a computed zoom based on window size
-
-        println!("{}", cc.egui_ctx.screen_rect());
 
         Theme::set_global_theme(&app.theme, &cc.egui_ctx);
 
@@ -314,12 +311,7 @@ impl App {
     }
 
     pub fn graph_to_code(&mut self) {
-
-        let mut code = String::new();
-        for (i, state) in &self.states {
-
-            code.push_str(&state.name);
-        }
+        self.code = graph_to_string(self.turing.graph_ref());
     }
 
     /// Create a graphical representation of a turing machine by copying each states and transitions information into GUI-oriented struct
@@ -406,10 +398,6 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         install_image_loaders(ctx);
-
-        if ctx.screen_rect().width() < 600.0 {
-            self.event.is_code_closed = true;
-        }
 
         ui::show(self, ctx);
 
