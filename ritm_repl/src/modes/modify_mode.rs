@@ -4,7 +4,7 @@ use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::TuringMachines
 use rustyline::{history::FileHistory, Editor};
 use strum_macros::EnumIter;
 
-use colored::Colorize;
+use colored::{ColoredString, Colorize};
 
 use crate::{modes::{choice_modes::{ModeEvent, Modes}, execute_mode}, query_string, ripl_error::{print_error_help, RiplError}, DataStorage};
 
@@ -67,7 +67,9 @@ impl ModeEvent for ModifyTuringMode {
                     print_error_help(e);
                 }
                 else {
-                    tm.add_state(&res.unwrap());
+                    let name = &res.unwrap();
+                    tm.add_state(name);
+                    println!("{}", format!("Successfully added the state \'q_{}\'.", name.yellow()).green())
                 }
             },
             ModifyTuringMode::AddTransitions => {
@@ -86,8 +88,12 @@ impl ModeEvent for ModifyTuringMode {
                     print_error_help(e);
                 }
                 else {
-                    if let Err(e) = tm.remove_state_with_name(&res.unwrap()) {
+                    let name = &res.unwrap();
+                    if let Err(e) = tm.remove_state_with_name(&name) {
                         print_error_help(RiplError::EncounteredTuringError { error: e });
+                    }
+                    else {
+                        println!("{}", format!("Successfully removed the state \'q_{}\' and all related transitions.", name.yellow()).green())
                     }
                 }
             },
@@ -114,8 +120,20 @@ impl ModeEvent for ModifyTuringMode {
                 }
             },
             ModifyTuringMode::UnloadTM => {
-                storage.graph = None;
-                return Modes::Start;
+                // If it does, ask user for confirmation before deleting the current graph it
+                let choice = query_string(rl, format!("Unloading this graph will delete it. Are you sure ? {}: ", "Y(es) or N(o)".italic().blue()));
+                match choice {
+                    Ok(choice) => {
+                        let choice = choice.to_lowercase();
+                        if choice.eq("y") || choice.eq("yes") {
+                            storage.graph = None;
+                            return Modes::Start;
+                        }
+                    },
+                    Err(e) => {
+                        print_error_help(e);
+                    },
+                }
             },
         }
         Modes::Modify
@@ -131,9 +149,24 @@ impl ModeEvent for ModifyTuringMode {
 
 fn get_state_name(rl: &mut Editor<(), FileHistory>) -> Result<String, RiplError>
 {
-    let name = query_string(rl, format!("Enter the {} of the state: ", "name".blue()));
+    let name_res = query_string(rl, format!("Enter the {} of the state: ", "name".blue()));
 
-    name
+    match name_res {
+        Ok(name) => {
+            if name.starts_with("q_") {
+                Ok(name.strip_prefix("q_").unwrap().to_string())
+            }
+            else if name.starts_with("q") {
+                Ok(name.strip_prefix("q").unwrap().to_string())    
+            }
+            else {
+                Ok(name)
+            }
+        },
+        Err(e) => {
+            Err(e)
+        },
+    }
 }
 
 
@@ -153,7 +186,7 @@ fn add_transition(rl: &mut Editor<(), FileHistory>, turing_graph: &mut TuringMac
             print_error_help(RiplError::EncounteredTuringError { error: e });
         }
         else {
-            println!("{}{}", "Successfully added the transition : ".green(), transition.to_string().yellow())
+            println!("{}{}", "Successfully added the transition : ".green(), format_transition(&q1, &transition, &q2))
         }
     }
 
@@ -176,13 +209,18 @@ fn remove_transition(rl: &mut Editor<(), FileHistory>, turing_graph: &mut Turing
             print_error_help(RiplError::EncounteredTuringError { error: e });
         }
         else {
-            println!("{}{}", "Successfully removed the transition : ".green(), transition.to_string().yellow())
+            println!("{}{}", "Successfully removed the transition : ".green(), format_transition(&q1, &transition, &q2))
         }
     }
 
     Ok(())
 }
 
+
+fn format_transition(from: &String, transition: &TuringTransitionMultRibbons, to: &String) -> ColoredString
+{
+    format!("q_{} {}{}{} q_{}", from, "{", transition, "}", to).yellow()
+}
 
 
 
