@@ -21,10 +21,11 @@ So it is also possible to use this crate for your own needs.
 
 ### Using the REPL (Read-Eval-Print Loop)
 
+
+![REPL_example](resources/repl_example.gif)
+
 The REPL has multiple modes, each with a different purpose.
 
-
-TODO : Show gif with example of execution
 
 
 ## Parser
@@ -100,6 +101,8 @@ q_3 { $, _ -> N, _, N } q_a;
 q_3 { 0, 0 -> R, 0, R 
     | 1, 1 -> R, 1, R } q_3;
 ```
+
+This graph was used for the execution shown in the following [section](#using-the-repl-read-eval-print-loop).
 
 
 ## Acknowledgments
