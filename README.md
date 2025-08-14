@@ -77,7 +77,7 @@ The following action will result in **errors** being returned.
 ### Example
 
 This *non-deterministic* machine accepts the following language :
-$L = \{ xx | x \in \Sigma^*_{bool} \}$
+$L =$ { $xx | x \in \Sigma^*_{bool}$ }
 ```
 q_i { ç, ç -> R, ç, R } q_1;
 
@@ -94,7 +94,6 @@ q_2 { 0, 0 -> N, 0, L
 
 q_2 { 0, ç -> N, ç, R 
     | 1, ç -> N, ç, R } q_3;
-
 
 q_3 { $, _ -> N, _, N } q_a;
 
