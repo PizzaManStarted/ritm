@@ -2,7 +2,9 @@
 
 ## Default commands
 
-The following commands are always accessible.
+The following commands are always accessible. 
+
+If not already done, don't forget to read to first [README.md](../README.md) file since it contains some important informations related to some issues you might face.
 
 ### Print help
 

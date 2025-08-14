@@ -1,4 +1,4 @@
-use std::{f32::consts::E, fmt::Display, fs::File, io::Write, ops::DerefMut, path::{Path, PathBuf}};
+use std::{fmt::Display, fs::File, io::Write, path::{Path, PathBuf}, vec};
 
 use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::TuringMachines, turing_parser::{self, parse_transition_string}, turing_state::TuringTransitionMultRibbons};
 use rustyline::{history::FileHistory, Editor};
@@ -6,7 +6,7 @@ use strum_macros::EnumIter;
 
 use colored::Colorize;
 
-use crate::{modes::{choice_modes::{ModeEvent, Modes}, execute_mode, starting_modes::StartingMode}, query_prim, query_string, ripl_error::{print_error_help, RiplError}, DataStorage};
+use crate::{modes::{choice_modes::{ModeEvent, Modes}, execute_mode}, query_string, ripl_error::{print_error_help, RiplError}, DataStorage};
 
 
 
@@ -75,7 +75,11 @@ impl ModeEvent for ModifyTuringMode {
                     print_error_help(e);
                 }
             },
-            ModifyTuringMode::RemoveTransitions => todo!(),
+            ModifyTuringMode::RemoveTransitions => {
+                if let Err(e) = remove_transition(rl, tm) {
+                    print_error_help(e);
+                }
+            },
             ModifyTuringMode::RemoveState => {
                 let res = get_state_name(rl);
                 if let Err(e) = res {
@@ -145,8 +149,34 @@ fn add_transition(rl: &mut Editor<(), FileHistory>, turing_graph: &mut TuringMac
     let (q1, vec_tm, q2) = transitions.unwrap();
 
     for transition in vec_tm {
-        if let Err(e) = turing_graph.append_rule_state_by_name(&q1, transition, &q2) {
-            return Err(RiplError::EncounteredTuringError { error: e });
+        if let Err(e) = turing_graph.append_rule_state_by_name(&q1, transition.clone(), &q2) {
+            print_error_help(RiplError::EncounteredTuringError { error: e });
+        }
+        else {
+            println!("{}{}", "Successfully added the transition : ".green(), transition.to_string().yellow())
+        }
+    }
+
+    Ok(())
+}
+
+
+fn remove_transition(rl: &mut Editor<(), FileHistory>, turing_graph: &mut TuringMachineGraph) -> Result<(), RiplError>
+{
+    let transitions = query_transition(rl, format!("Enter one or multiple {} to {} from the the graph: ", "transitions".blue(), "remove".bold()));
+
+    if let Err(e) = transitions {
+        return Err(e);
+    }
+
+    let (q1, vec_tm, q2) = transitions.unwrap();
+
+    for transition in vec_tm {
+        if let Err(e) = turing_graph.remove_transition(&q1, &transition, &q2) {
+            print_error_help(RiplError::EncounteredTuringError { error: e });
+        }
+        else {
+            println!("{}{}", "Successfully removed the transition : ".green(), transition.to_string().yellow())
         }
     }
 

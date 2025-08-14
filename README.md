@@ -24,9 +24,7 @@ So it is also possible to use this crate for your own needs.
 
 ![REPL_example](resources/repl_example.gif)
 
-The REPL has multiple modes, each with a different purpose.
-
-
+The REPL has multiple modes, each with a different purpose. For more information look at the relevant [README.md](ritm_repl/README.md) file.
 
 ## Parser
 
