@@ -41,16 +41,17 @@ In this section we will only go over the main details to take into accounts when
 
 
 
-| Name                 | Description                                                    | Rule                                      |
-| -------------------- | -------------------------------------------------------------- | ----------------------------------------- |
-| Initial character    | The starting character of any ribbons.                         | `ç`                                       |
-| End character        | The last character of the reading ribbon.                      | `$`                                       |
-| Blank character      | The character representing an empty value in a writing ribbon. | `_`                                       |
-| State name           | The name of a state inside a turing graph.                     | (`q_` or `q`) + name                      |
-| Direction            | The movement to take after reading a character in a ribbon.    | `L` : *left*, `R` : *right*, `N`: *none*. |
-| Simple transition    | A transition between two states.                               | dsdsds                                    |
-| Multiple transitions | dsdsds                                                         | dsdsds                                    |
-| Turing machine       | dsdsds                                                         | A list of (transitions + `;`)             |
+| Name                 | Description                                                                                                  | Rule                                                                                                                                            |
+| -------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Initial character    | The starting character of any ribbons.                                                                       | `ç`                                                                                                                                             |
+| End character        | The last character of the reading ribbon.                                                                    | `$`                                                                                                                                             |
+| Blank character      | The character representing an empty value in a writing ribbon.                                               | `_`                                                                                                                                             |
+| State name           | The name of a state inside a turing graph.                                                                   | (`q_` or `q`) + name                                                                                                                            |
+| Direction            | The movement to take after reading a character in a ribbon.                                                  | `L` : *left*, `R` : *right*, `N`: *none*.                                                                                                       |
+| Simple transition    | A transition between two states.                                                                             | state *from* { reading ribbon char, chars to read, ... -> dir for reading ribbon pointer,  dirs to take, chars to replace them,... } state *to* |
+| Multiple transitions | A list of transitions going between two nodes.                                                               | state *from* { transition content $1$ \| transition content $2$ \| ... \| transition content $n$  } state *to*                                  |
+| Turing machine       | A Turing Machine, or in other words a Turing Graph, is simply a list of multiple transitions between states. | A list of (transitions + `;`)                                                                                                                   |
+| Comment              | A line that will be ignored during the parsing.                                                              | `//` + line of text                                                                                                                             |
 
 
 
@@ -102,7 +103,7 @@ q_3 { 0, 0 -> R, 0, R
     | 1, 1 -> R, 1, R } q_3;
 ```
 
-This graph was used for the execution shown in the following [section](#using-the-repl-read-eval-print-loop).
+This graph was used for the execution shown in the following [section](#using-the-repl-read-eval-print-loop) with the input : $\texttt{10000000000000000011000000000000000001}$.
 
 
 ## Acknowledgments
