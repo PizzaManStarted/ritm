@@ -40,16 +40,35 @@ In this section we will only go over the main details to take into accounts when
 
 
 
-| Name                    | Description | Rule   |
-| ----------------------- | ----------- | ------ |
-| Initial character : `ç` | dsdsds      | dsdsds |
-| End character : `$`     | dsdsds      | dsdsds |
-| Blank character : `_`   | dsdsds      | dsdsds |
-| State                   | dsdsds      | dsdsds |
-| Direction               | dsdsds      | dsdsds |
-| Simple transition       | dsdsds      | dsdsds |
-| Multiple transitions    | dsdsds      | dsdsds |
-| Turing machine          | dsdsds      | dsdsds |
+| Name                 | Description                                                    | Rule                                      |
+| -------------------- | -------------------------------------------------------------- | ----------------------------------------- |
+| Initial character    | The starting character of any ribbons.                         | `ç`                                       |
+| End character        | The last character of the reading ribbon.                      | `$`                                       |
+| Blank character      | The character representing an empty value in a writing ribbon. | `_`                                       |
+| State name           | The name of a state inside a turing graph.                     | (`q_` or `q`) + name                      |
+| Direction            | The movement to take after reading a character in a ribbon.    | `L` : *left*, `R` : *right*, `N`: *none*. |
+| Simple transition    | A transition between two states.                               | dsdsds                                    |
+| Multiple transitions | dsdsds                                                         | dsdsds                                    |
+| Turing machine       | dsdsds                                                         | A list of (transitions + `;`)             |
+
+
+
+### Illegal actions
+
+> [!WARNING]
+> In order to protect the execution of a turing machine, some preventions were implemented to forbid some actions considered *dangerous*. Don't worry you will not run into any of these if you are writing a normal turing machine.
+
+The following action will result in **errors** being returned.
+
+| Concerned  | Action                                                           | Reason                                                                                        | Fix                                                |
+| ---------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Transition | Doing a read-move like : `$` + `R`.                              | Risk of going out of bounds of the ribbon.                                                    | Use `L` or `N` instead.                            |
+| Transition | Doing a read-move like : `ç` + `L`.                              | Risk of going out of bounds of the ribbon.                                                    | Use `R` or `N` instead.                            |
+| Transition | Replacing `ç` by another char.                                   | Turing ribbons are supposed to start by `ç` and then there is a risk of going out of bounds.  | Replace it with itself.                            |
+| Transition | Replacing `$` by another char.                                   | The reading ribbon is supposed to end by `$` and then there is a risk of going out of bounds. | Replace it with itself.                            |
+| Transition | Replacing another char by `$` or `ç`.                            | Again, only the program should deal with special symbols.                                     | Replace it with a normal character.                |
+| Word       | The word contains `_`, `ç` or even `$`.                          | These character can only be used by the program.                                              | Only use them in transitions.                      |
+| States     | Adding transitions that don't affect the same number of ribbons. | Transitions should affect the same number of ribbons inside a graph.                          | Remove the problematic transitions or modify them. |
 
 
 
@@ -58,7 +77,7 @@ In this section we will only go over the main details to take into accounts when
 ### Example
 
 This *non-deterministic* machine accepts the following language :
-$L = \{ xx \,|\, x \in \Sigma^*_{bool} \}$
+$L = \{ xx | x \in \Sigma^*_{bool} \}$
 ```
 q_i { ç, ç -> R, ç, R } q_1;
 
