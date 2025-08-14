@@ -159,7 +159,7 @@ impl Default for Event {
 
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        cc.egui_ctx.set_debug_on_hover(true);
+        // cc.egui_ctx.set_debug_on_hover(true);
 
         // Load the fonts used in the application
         load_font(cc);

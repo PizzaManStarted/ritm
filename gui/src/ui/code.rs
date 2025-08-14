@@ -17,10 +17,10 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                     ui.spacing_mut().item_spacing = vec2(0.0, 0.0);
 
                     let code_width =
-                        ui.available_width() - 35.0 - Font::get_width(ui, &Font::default()) * 3.0;
+                        ui.available_width() - 35.0 - Font::get_width(ui, &Font::default_medium()) * 3.0;
                     let job = LayoutJob::simple(
                         app.code.clone(),
-                        Font::default(),
+                        Font::default_medium(),
                         Color32::PLACEHOLDER,
                         code_width,
                     );
@@ -34,7 +34,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
 
                     let code = TextEdit::multiline(&mut app.code)
                         .code_editor()
-                        .font(Font::default())
+                        .font(Font::default_medium())
                         .frame(false)
                         .margin(Margin::same(0))
                         .background_color(Color32::from_black_alpha(50));
@@ -47,8 +47,8 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                     ui.add_space(10.0);
                     ui.add_sized(
                         vec2(
-                            Font::get_width(ui, &Font::default()) * 3.0,
-                            Font::get_heigth(ui, &Font::default()) * galley.rows.len() as f32,
+                            Font::get_width(ui, &Font::default_medium()) * 3.0,
+                            Font::get_heigth(ui, &Font::default_medium()) * galley.rows.len() as f32,
                         ),
                         line_number,
                     );

@@ -1,7 +1,7 @@
 use std::i32;
 
 use egui::{
-    epaint::PathShape, scroll_area::{ScrollBarVisibility, ScrollSource}, vec2, Align, Frame, Label, Layout, Margin, RichText, ScrollArea, Sense, Stroke, StrokeKind, Ui
+    epaint::PathShape, scroll_area::{ScrollBarVisibility, ScrollSource}, vec2, Align, Frame, Label, Layout, Margin, RichText, ScrollArea, Sense, Stroke, StrokeKind, Ui, Vec2
 };
 use ritm_core::turing_ribbon::TuringRibbon;
 
@@ -13,7 +13,12 @@ use crate::{
 pub fn show(app: &mut App, ui: &mut Ui) {
     let ribbon_count = app.turing.graph_ref().get_k() + 1;
 
-    let square_size = Constant::SQUARE_SIZE;
+    // Apply a scale correction to element for small screen
+    let square_size = Constant::scale(ui, Constant::SQUARE_SIZE);
+    let horizontal_space = Constant::scale(ui, Constant::HORIZONTAL_SPACE);
+    let vertical_space = Constant::scale(ui, Constant::VERTICAL_SPACE);
+    let scale = Constant::scale(ui, 1.0);
+
 
     // Ribbons frame
     Frame::new()
@@ -21,20 +26,20 @@ pub fn show(app: &mut App, ui: &mut Ui) {
         .outer_margin(Margin::same(0))
         .fill(app.theme.ribbon)
         .show(ui, |ui| {
-            ui.spacing_mut().item_spacing = (0.0, Constant::VERTICAL_SPACE).into();
+            ui.spacing_mut().item_spacing = (0.0, vertical_space).into();
 
             // Get the center of the ribbons layout
             let center = ui.available_rect_before_wrap().left() + ui.available_width() / 2.0;
-            let mut square_count = ((ui.available_width() + Constant::HORIZONTAL_SPACE)
-                / (Constant::HORIZONTAL_SPACE + square_size))
+            let mut square_count = ((ui.available_width() + horizontal_space)
+                / (horizontal_space + square_size))
                 as usize;
 
             if square_count % 2 == 0 {
                 square_count += 1
             }
             let ribbon_size = square_count as f32
-                * (square_size + Constant::HORIZONTAL_SPACE)
-                - Constant::HORIZONTAL_SPACE;
+                * (square_size + horizontal_space)
+                - horizontal_space;
 
             // Scroll area to center and display the ribbon
             ScrollArea::horizontal()
@@ -42,7 +47,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                 .scroll_bar_visibility(ScrollBarVisibility::AlwaysHidden)
                 .horizontal_scroll_offset(3.0 // 3.0 is the margin of the center square
                         + square_size
-                        + Constant::HORIZONTAL_SPACE
+                        + horizontal_space
                         + (ribbon_size - ui.available_width()) / 2.0,
                 ) // this offset center the symbol
                 .show(ui, |ui| {
@@ -58,9 +63,9 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                         // Draw the arrow on top of the ribbon
                         ui.painter().add(PathShape::convex_polygon(
                             vec![
-                                (center - 9.0, top).into(),
-                                (center + 9.0, top).into(),
-                                (center, top + 12.0).into(),
+                                (center - 9.0 * scale, top).into(),
+                                (center + 9.0 * scale, top).into(),
+                                (center, top + 12.0 * scale).into(),
                             ],
                             app.theme.gray,
                             Stroke::NONE,
@@ -72,16 +77,21 @@ pub fn show(app: &mut App, ui: &mut Ui) {
 
 /// Draw a ribbon with the correct spacing and character
 fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
+
+    // Apply a scale correction to element for small screen
+    let horizontal_space = Constant::scale(ui, Constant::HORIZONTAL_SPACE);
+    let square_size = Constant::scale(ui, Constant::SQUARE_SIZE);
+
     ui.allocate_ui_with_layout(
-        vec2(0.0, Constant::SQUARE_SIZE + 6.0),
+        vec2(0.0, square_size + 6.0),
         Layout::left_to_right(Align::Center)
             .with_cross_justify(false)
             .with_cross_align(Align::Center),
         |ui| {
-            ui.style_mut().spacing.item_spacing = (Constant::HORIZONTAL_SPACE, 0.0).into();
+            ui.style_mut().spacing.item_spacing = (horizontal_space, 0.0).into();
 
-            let square_count: usize = ((width + Constant::HORIZONTAL_SPACE)
-                / (Constant::HORIZONTAL_SPACE + Constant::SQUARE_SIZE)) as usize
+            let square_count: usize = ((width + horizontal_space)
+                / (horizontal_space + square_size)) as usize
                 + 2;
 
             // Get the chars and pointer from reading or writing ribbon
@@ -103,6 +113,7 @@ fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
                     ..(pointer + ribbon_center + 1).min(chars.len() as i32) as usize]
                     .to_vec(),
             );
+
             ribbon_vec.append(&mut vec![
                 ' ';
                 (ribbon_center - (chars.len() as i32 - pointer - 1)).max(0)
@@ -123,10 +134,15 @@ fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
 
 // Draw a single square with the character wanted
 fn square(app: &mut App, ui: &mut Ui, character: char, is_current: bool) {
-    Frame::new().show(ui, |ui| {
-        let size = Constant::SQUARE_SIZE + if is_current {6.0} else {0.0};
-        let (rect, _res) = ui.allocate_exact_size((size, size).into(), Sense::empty());
 
+    // Apply a scale correction to element for small screen
+    let square_size = Constant::scale(ui, Constant::SQUARE_SIZE);
+
+    Frame::new().show(ui, |ui| {
+        let size = square_size + if is_current {6.0} else {0.0};
+        let (rect, _res) = ui.allocate_exact_size(Vec2::splat(size), Sense::empty());
+
+        // Draw the square, with a border if center one
         ui.painter().rect(
             rect,
             Constant::SQUARE_CORNER,
@@ -138,11 +154,13 @@ fn square(app: &mut App, ui: &mut Ui, character: char, is_current: bool) {
             },
             StrokeKind::Inside
         );
+
+        // Add the character into the frame
         ui.put(
             rect,
             Label::new(
                 RichText::new(character)
-                    .size(Constant::SQUARE_SIZE / 2.0)
+                    .size(square_size / 2.0)
                     .color(app.theme.gray),
             ),
         );

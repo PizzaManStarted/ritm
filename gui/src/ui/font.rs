@@ -12,7 +12,15 @@ impl Font {
     pub const SMALL_SIZE: f32 = 12.0;
 
     /// default font used in the application
-    pub fn default() -> FontId {
+    pub fn default(size: f32) -> FontId {
+        FontId {
+            family: FontFamily::Name("RobotoMono-regular".into()),
+            size: size,
+        }
+    }
+
+    /// default font used in the application
+    pub fn default_medium() -> FontId {
         FontId {
             family: FontFamily::Name("RobotoMono-regular".into()),
             size: Self::MEDIUM_SIZE,

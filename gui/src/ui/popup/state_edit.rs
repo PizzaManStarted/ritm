@@ -1,9 +1,10 @@
 use egui::{
-    Align, Context, Frame, Id, Image, Layout, Margin, Modal, Stroke, TextEdit, Ui,
-    Vec2, include_image, vec2,
+    include_image, vec2, Align, AtomExt, Button, Color32, Context, Frame, Id, Image, Layout, Margin, Modal, RichText, Stroke, TextEdit, Ui, Vec2
 };
 
-use crate::{App, turing::State, ui::font::Font};
+use crate::{
+    turing::State, ui::{font::Font, popup::Popup, theme::Theme}, App
+};
 
 pub fn show(app: &mut App, ctx: &Context) {
     Modal::new(Id::new("state_edit"))
@@ -15,17 +16,20 @@ pub fn show(app: &mut App, ctx: &Context) {
             ..Default::default()
         })
         .show(ctx, |ui: &mut Ui| {
-            
-            ui.vertical_centered(|ui| {
+            ui.allocate_ui_with_layout(vec2(0.0, 0.0), Layout::top_down(Align::Center).with_cross_justify(true) ,|ui| {
                 ui.style_mut().spacing.item_spacing = vec2(0.0, 10.0);
 
+
                 ui.allocate_ui_with_layout(
-                    vec2(ui.available_width() / 2.0, 0.0),
+                    vec2(200.0, 0.0),
                     Layout::right_to_left(Align::Center),
                     |ui| {
+                        // ui.set_width(200.0);
                         ui.add(
                             Image::new(include_image!("../../../assets/icon/edit.svg"))
-                                .fit_to_exact_size(Vec2::splat(20.0))
+                                .fit_to_exact_size(Vec2::splat(
+                                    Font::get_heigth(ui, &Font::default_big()) + 4.0,
+                                ))
                                 .tint(app.theme.gray),
                         );
 
@@ -33,10 +37,34 @@ pub fn show(app: &mut App, ctx: &Context) {
 
                         let edit = TextEdit::singleline(&mut state.name)
                             .font(Font::default_big())
-                            .frame(false);
+                            .background_color(Color32::from_black_alpha(20))
+                            .char_limit(5);
+
                         ui.add(edit)
                     },
-                )
+                );
+
+                let state = State::get(app, app.selected_state.unwrap());
+
+                let text = RichText::new("Save")
+                        .color(Theme::constrast_color(app.theme.valid))
+                        .font(Font::default_medium())
+                        .atom_grow(true);
+
+                if ui
+                        .add(
+                            Button::new(text)
+                                .stroke(Stroke::new(2.0, app.theme.gray))
+                                .fill(if state.name.is_empty() {app.theme.gray} else {app.theme.valid})
+                                .corner_radius(10.0),
+                        )
+                        .clicked()
+                    {
+                        if !state.name.is_empty() {app.popup = Popup::None}
+                        let state = State::get(app, app.selected_state.unwrap());
+                        app.turing.graph_mut().get_state_mut(app.selected_state.unwrap()).unwrap().name = state.name.clone();
+                    };
+
             });
         });
 }

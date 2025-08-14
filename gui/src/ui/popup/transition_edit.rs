@@ -32,7 +32,7 @@ pub fn show(app: &mut App, ctx: &Context) {
                         State::get(app, selected_transition.0).name,
                         State::get(app, selected_transition.1).name
                     ))
-                    .font(Font::default()),
+                    .font(Font::default_medium()),
                 );
 
                 // List of the rule
@@ -131,7 +131,7 @@ pub fn show(app: &mut App, ctx: &Context) {
                 ui.columns(2, |columns| {
                     let text = RichText::new("Save")
                         .color(Theme::constrast_color(app.theme.valid))
-                        .font(Font::default())
+                        .font(Font::default_medium())
                         .atom_grow(true);
                     if columns[0]
                         .add(
@@ -147,7 +147,7 @@ pub fn show(app: &mut App, ctx: &Context) {
 
                     let text = RichText::new("Cancel")
                         .color(Theme::constrast_color(app.theme.invalid))
-                        .font(Font::default())
+                        .font(Font::default_medium())
                         .atom_grow(true);
                     if columns[1]
                         .add(
@@ -232,7 +232,7 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                     // Layout single character TextEdit
                     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
                         ui.spacing_mut().item_spacing = vec2(5.0, 0.0);
-                        ui.set_height(Font::get_heigth(ui, &Font::default()) + margin.y * 2.0);
+                        ui.set_height(Font::get_heigth(ui, &Font::default_medium()) + margin.y * 2.0);
 
                         // Textedit for each reading character
                         for i in 0..transition.chars_read.len() {
@@ -252,9 +252,9 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                                     TextEdit::singleline(&mut transition.chars_read[i])
                                         .background_color(Color32::LIGHT_GRAY)
                                         .frame(true)
-                                        .font(Font::default())
+                                        .font(Font::default_medium())
                                         .margin(margin)
-                                        .desired_width(Font::get_width(ui, &Font::default()))
+                                        .desired_width(Font::get_width(ui, &Font::default_medium()))
                                         .char_limit(1),
                                 );
                             });
@@ -276,7 +276,7 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                                     TuringDirection::Right => "R".to_string(),
                                     TuringDirection::None => "N".to_string(),
                                 })
-                                .font(Font::default()),
+                                .font(Font::default_medium()),
                             )
                             .width(20.0) // TODO change and think about this value, I hardcoded it
                             .show_ui(ui, |ui| {
@@ -317,9 +317,9 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                                     TextEdit::singleline(&mut transition.chars_write[i].0)
                                         .background_color(Color32::LIGHT_GRAY)
                                         .frame(true)
-                                        .font(Font::default())
+                                        .font(Font::default_medium())
                                         .margin(margin)
-                                        .desired_width(Font::get_width(ui, &Font::default()))
+                                        .desired_width(Font::get_width(ui, &Font::default_medium()))
                                         .char_limit(1),
                                 );
                             });
@@ -335,7 +335,7 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                                         TuringDirection::Right => "R".to_string(),
                                         TuringDirection::None => "N".to_string(),
                                     })
-                                    .font(Font::default()),
+                                    .font(Font::default_medium()),
                                 )
                                 .width(20.0) // TODO change and think about this value, I hardcoded it
                                 .show_ui(ui, |ui| {

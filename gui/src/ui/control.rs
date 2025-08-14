@@ -61,9 +61,9 @@ fn input(app: &mut App, ui: &mut Ui) {
             }
 
             ui.add_sized(
-                vec2(ui.available_width(), 4.0 + Font::get_heigth(ui, &Font::default())), // 4.0 is 2 times the hardcoded default vertical margin of textedit
+                vec2(ui.available_width(), 4.0 + Font::get_heigth(ui, &Font::default_medium())), // 4.0 is 2 times the hardcoded default vertical margin of textedit
                 TextEdit::singleline(&mut app.input)
-                    .font(Font::default())
+                    .font(Font::default_medium())
                     .hint_text("Input..."),
             );
         },
@@ -221,7 +221,7 @@ fn speed_control(app: &mut App, ui: &mut Ui) {
                 item(),
                 Label::new(
                     RichText::new(format!("{}X", 2.0_f32.powi(app.interval as i32 * -1)))
-                        .font(Font::default())
+                        .font(Font::default_medium())
                         .color(app.theme.gray),
                 ),
             );

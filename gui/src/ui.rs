@@ -37,7 +37,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
         })
         .show(ctx, |ui| {
             ui.spacing_mut().indent = 10.0;
-            ui.style_mut().override_font_id = Some(Font::default()); // TODO check if there is not a better way to do that
+            ui.style_mut().override_font_id = Some(Font::default_medium()); // TODO check if there is not a better way to do that
 
             if app.event.is_code_closed {
 
