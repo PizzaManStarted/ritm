@@ -2,7 +2,7 @@ use std::{
     char, f32::consts::E, fmt::{Debug, Display}
 };
 
-use crate::turing_errors::TuringError;
+use crate::{turing_errors::TuringError, turing_ribbon::{self, TuringRibbon}};
 
 
 /// Represents the different types of states that can be found inside a turing machine graph
@@ -143,7 +143,7 @@ impl TuringState {
                 if index_to_state == to_index_curr 
                 {
                     t.index_to_state = Some(to_index_new);
-                    println!("changing it : from {} to {}", index_to_state, to_index_new);    
+                    // println!("changing it : from {} to {}", index_to_state, to_index_new);    
                 }
             }
         }
@@ -334,6 +334,54 @@ impl TuringTransitionMultRibbons {
         {
             chars_write_dir.push((*chars_write.get(i-1).unwrap(), directions.get(i).unwrap().clone()));        
         }
+        
+        // Check for illegal actions
+        let ill_act_error = |c: char, inc_char: char, d: &TuringDirection, inc_dir: &TuringDirection| -> Result<(), TuringError> {
+            if inc_char == c && inc_dir == d {
+                Err(TuringError::IllegalActionError { cause: format!("Detected the couple : (\"{}\", \"{}\"), this could result in going out of bounds of the ribbon. Change the given direction to None for example.", c, d) })
+            }
+            else {
+                Ok(())
+            }
+        };
+
+        //  Only applies to the reading ribbon
+        if let Err(e) = ill_act_error(*chars_read.first().unwrap(), turing_ribbon::END_CHAR, &move_read, &TuringDirection::Right) {
+            return Err(e);
+        }
+
+
+        //  Applies to all ribbons, therefore we need to iterate over all of them
+        
+        // check for reading first
+        if let Err(e) = ill_act_error(*chars_read.first().unwrap(), turing_ribbon::INIT_CHAR, &move_read, &TuringDirection::Left) {
+            return Err(e);
+        }
+        // then for writting ribbons
+        for i in 1..chars_read.len() {
+            let char_read = chars_read.get(i).unwrap();
+            
+            let (char_relacement, char_dir) = chars_write_dir.get(i-1).unwrap();
+
+            if let Err(e) = ill_act_error( *char_read, turing_ribbon::INIT_CHAR, char_dir, &TuringDirection::Left) {
+                return Err(e);
+            }
+            if *char_read == turing_ribbon::INIT_CHAR {
+                if *char_read != *char_relacement {
+                    return Err(TuringError::IllegalActionError { cause: format!("Tried to replace a special character ('{}') with another character ('{}') for the writting ribbon {}", char_read, char_relacement, i-1) });
+                }
+            } 
+            else {
+                if *char_relacement == turing_ribbon::INIT_CHAR {
+                return Err(TuringError::IllegalActionError { cause: format!("Tried to replace a normal character ('{}') with a special character ('{}') for the writting ribbon {}", char_read, char_relacement, i-1) });
+                }
+            }
+        }
+        
+        if turing_ribbon::INIT_CHAR == *chars_read.first().unwrap() && TuringDirection::Left == move_read {
+            
+        }
+
         Ok(
             Self {
                 chars_read,

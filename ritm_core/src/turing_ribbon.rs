@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display};
 
-use crate::{turing_errors::TuringError, turing_state::TuringDirection};
+use crate::{turing_errors::TuringError, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
 
 
 /// Represents the initial character stored at the start of every ribbon
@@ -42,7 +42,6 @@ pub trait TuringRibbon : Display + Clone
     /// Returns the index of the char being pointed by the ribbon
     fn get_pointer(&self) -> usize;
 }
-
 
 
 /// Represents a ribbon made to write and read characters.
@@ -163,8 +162,11 @@ impl TuringRibbon for TuringReadRibbon
 impl TuringReadRibbon 
 {
     /// Feed a word into the read ribbon, and also adds [INIT_CHAR] and [END_CHAR] to the extremities of it
-    pub fn feed_word(&mut self, word: String)
+    pub fn feed_word(&mut self, word: String) -> Result<(), TuringError>
     {
+        if let Err(e) = check_word_validity(&word) {
+            return Err(e);
+        }
         self.chars_vec.clear();
         self.chars_vec.push(INIT_CHAR);
         for ch in word.chars() {
@@ -172,15 +174,24 @@ impl TuringReadRibbon
         }
         self.chars_vec.push(END_CHAR);
         self.pointer = 0;
+        Ok(())
     }
 }
 
 
 fn check_replacement_validity(og_char: char, new_char: char) -> Result<(), TuringError>
 {
-    if og_char != new_char && (new_char == INIT_CHAR || new_char == END_CHAR) {
-        return Err(TuringError::IllegalActionError { cause: format!("Tried to replace a char with a special char : {}", new_char) });
+    if og_char == new_char { return Ok(()) ;}
+
+
+    if new_char == INIT_CHAR || new_char == END_CHAR {
+        return Err(TuringError::IllegalActionError { cause: format!("Tried to replace a char (`{}`) with a special char (`{}`)", og_char, new_char) });
     }
+
+    if og_char == INIT_CHAR || new_char == END_CHAR {
+        return Err(TuringError::IllegalActionError { cause: format!("Tried to replace a special char (`{}`) with another char (`{}`)", og_char, new_char) });
+    }
+    
     Ok(())
 }
 
@@ -257,6 +268,19 @@ impl Clone for TuringWriteRibbon {
 }
 
 
+fn check_word_validity(word: &String) -> Result<(), TuringError>
+{
+    let forbidden_chars = vec!(INIT_CHAR, BLANK_CHAR, END_CHAR);
+    for char in forbidden_chars {
+        if word.contains(char) {
+            return Err(TuringError::IllegalActionError { cause: format!("The given input \"{}\" contains the following forbidden character : \'{}\'", word, char) });
+        }   
+    }
+    Ok(())
+}
+
+
+
 // Keeping the unit test here because we need to access private fields
 #[cfg(test)]
 mod tests{
@@ -280,9 +304,37 @@ mod tests{
     {
         let mut ribbon = TuringReadRibbon::new();
         
-        ribbon.feed_word("test".to_string());
+        ribbon.feed_word("test".to_string()).unwrap();
 
         assert_eq!(ribbon.chars_vec, vec!(INIT_CHAR, 't', 'e', 's', 't', END_CHAR));
+    }
+
+    #[test]
+    fn test_feed_word_ribbon_illegal_char()
+    {
+        let mut ribbon = TuringReadRibbon::new();
+        
+        match ribbon.feed_word("dsdçaaz".to_string()) {
+            Ok(_) => panic!("Exepected an error"),
+            Err(te) => expect_ill_action_error(te),
+        }
+        match ribbon.feed_word("dsdaaz$".to_string()) {
+            Ok(_) => panic!("Exepected an error"),
+            Err(te) => expect_ill_action_error(te),
+        }
+        match ribbon.feed_word("_dsdaaz".to_string()) {
+            Ok(_) => panic!("Exepected an error"),
+            Err(te) => expect_ill_action_error(te),
+        }
+
+    }
+
+    fn expect_ill_action_error(te: TuringError) 
+    {
+        match te {
+            TuringError::IllegalActionError { cause:_ } => {}
+            _ => panic!("Exepected an IllegalActionError, but received the following error : {:?}", te),
+        }
     }
 
 
@@ -291,7 +343,7 @@ mod tests{
     {
         let mut ribbon = TuringReadRibbon::new();
         
-        ribbon.feed_word("test".to_string());
+        ribbon.feed_word("test".to_string()).unwrap();
 
         ribbon.try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::Right).unwrap();
         assert_eq!(ribbon.pointer, 1);
@@ -322,7 +374,7 @@ mod tests{
     }
 
     #[test]
-    fn test_illagal_replacement()
+    fn test_illegal_replacement()
     {
         let mut ribbon = TuringWriteRibbon::new();
         
@@ -330,9 +382,32 @@ mod tests{
         ribbon.try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::Right).unwrap();
         assert_eq!(ribbon.pointer, 1);
 
-        if let Ok(_) = ribbon.try_apply_transition(BLANK_CHAR, 'ç', &TuringDirection::Right) {
+        if let Ok(_) = ribbon.try_apply_transition(BLANK_CHAR, INIT_CHAR, &TuringDirection::Right) {
             panic!("An error should have been returned");
         }
+
+        ribbon.try_apply_transition(BLANK_CHAR, BLANK_CHAR, &TuringDirection::Left).unwrap();
+        ribbon.try_apply_transition(BLANK_CHAR, BLANK_CHAR, &TuringDirection::Left).unwrap();
+
+
+        match ribbon.try_apply_transition(INIT_CHAR, 'p', &TuringDirection::Right)
+        {
+            Ok(_) => panic!("Exected an error"),
+            Err(te) => expect_ill_action_error(te),
+        }
+
+        match ribbon.try_apply_transition(INIT_CHAR, END_CHAR, &TuringDirection::Right)
+        {
+            Ok(_) => panic!("Exected an error"),
+            Err(te) => expect_ill_action_error(te),
+        }
+
+        match ribbon.try_apply_transition(INIT_CHAR, BLANK_CHAR, &TuringDirection::Right)
+        {
+            Ok(_) => panic!("Exected an error"),
+            Err(te) => expect_ill_action_error(te),
+        }
+        
     }
 
     
