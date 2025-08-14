@@ -81,6 +81,9 @@ For example :
 * Adding **four** transitions between $q_2$ and $q_2$ : `q_2 { 0, 0 -> N, 0, L | 0, 1 -> N, 1, L  | 1, 0 -> N, 0, L  | 1, 1 -> N, 1, L } q_2`
 
 ### Remove one or multiple transition
+
+Remove one or multiple transitions matching the ones given as inputs.
+
 ### Remove a state
 
 Removes the given state and **any** mention of it inside the graph.

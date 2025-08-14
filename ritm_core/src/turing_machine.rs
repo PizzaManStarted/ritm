@@ -16,17 +16,28 @@ pub enum Mode {
 }
 
 
+impl Display for Mode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Mode::SaveAll => format!("Saves All and does a full exploration"),
+            Mode::StopAfter(val) => format!("Stops After {} iterations", val),
+            Mode::StopFirstReject => format!("Stops after the First Reject"),
+        })
+    }
+}
+
+
 pub struct SavedState {
     /// The index of the saved state
-    saved_state_index : usize,
+    pub saved_state_index : usize,
     /// A stack containing all the indexes of the transitions left to take 
-    next_transitions : VecDeque<usize>,
+    pub next_transitions : VecDeque<usize>,
     /// The value of the [TuringReadRibbon] when it was saved
-    saved_read_ribbon : TuringReadRibbon,
+    pub saved_read_ribbon : TuringReadRibbon,
     /// The value of the [TuringWriteRibbon] when they were saved
-    saved_write_ribbons : Vec<TuringWriteRibbon>,
+    pub saved_write_ribbons : Vec<TuringWriteRibbon>,
     /// The value of the iteration that was saved.
-    iteration: usize,
+    pub iteration: usize,
 }
 
 impl Debug for SavedState {
@@ -56,8 +67,10 @@ pub enum TuringMachines
         data : IterationData,
         /// The current number of iterations already done
         iteration : usize,
-        /// Reference to the last iteration (if any).
-        last_iteration : Option<TuringExecutionSteps>
+        /// Copy of the iteration step returned (if any).
+        last_iteration : Option<TuringExecutionSteps>,
+        /// Checks wether or not the iteration is over or not
+        is_over : bool
     }
 }
 
@@ -111,7 +124,8 @@ impl TuringMachines
             },
             graph: mt,
             iteration : 0,
-            last_iteration: None
+            last_iteration: None,
+            is_over: false
         };
         // Add the word to the reading ribbon
         if let Err(e) = s.get_reading_ribbon_mut().feed_word(word) {
@@ -167,6 +181,10 @@ impl TuringMachines
         // Reset backtracking info
         self.set_backtracking_info(None);
 
+        self.set_last_step(None);
+
+        self.set_is_over(false);
+
         // And clear memory
         self.get_memory_mut().clear();
         
@@ -177,7 +195,7 @@ impl TuringMachines
     {
         // Change mode
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => data.mode = mode.clone(),
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ , is_over:_} => data.mode = mode.clone(),
         }
     }
 
@@ -236,7 +254,7 @@ impl TuringMachines {
     /// Gets *reference* of the stored turing machine graph.
     pub fn get_graph_ref(&self) -> &TuringMachineGraph {
         match self {
-            TuringMachines::TuringMachine { graph, data:_, iteration:_, last_iteration:_ } => &graph,
+            TuringMachines::TuringMachine { graph, data:_, iteration:_, last_iteration:_, is_over:_ } => &graph,
         }
     }
 
@@ -245,7 +263,7 @@ impl TuringMachines {
     /// So use it at your own risk.
     pub fn get_graph_mut_ref(&mut self) -> &mut TuringMachineGraph {
         match self {
-            TuringMachines::TuringMachine { graph, data:_, iteration:_, last_iteration:_ } => graph,
+            TuringMachines::TuringMachine { graph, data:_, iteration:_, last_iteration:_, is_over:_ } => graph,
         }
     }
 
@@ -254,7 +272,7 @@ impl TuringMachines {
     /// This will free the turing machine iterator since it will drop the ownership of this graph.
     pub fn get_graph(self) -> TuringMachineGraph {
         match self {
-            TuringMachines::TuringMachine { graph, data:_, iteration:_, last_iteration:_ } => graph,
+            TuringMachines::TuringMachine { graph, data:_, iteration:_, last_iteration:_, is_over:_ } => graph,
         }
     }
 
@@ -263,35 +281,35 @@ impl TuringMachines {
     /// Gets the current state pointer of this struct.
     pub fn get_state_pointer(&self) -> usize {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => data.state_pointer,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => data.state_pointer,
         }
     }
     
     /// Sets a new value to the state pointer.
     fn set_state_pointer(&mut self, new_val: usize) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => data.state_pointer = new_val,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => data.state_pointer = new_val,
         }
     }
     
     /// Gets mutable ref to the reading ribbon stored inside this struct.
     fn get_reading_ribbon_mut(&mut self) -> &mut TuringReadRibbon {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => &mut data.reading_ribbon,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &mut data.reading_ribbon,
         }
     }
 
     /// Gets ref to the reading ribbon stored inside this struct.
     pub fn get_reading_ribbon(&self) -> &TuringReadRibbon {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => &data.reading_ribbon,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &data.reading_ribbon,
         }
     }
 
     /// Sets the reading ribbon stored inside this struct.
     fn set_reading_ribbon(&mut self, ribbon: TuringReadRibbon) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => data.reading_ribbon = ribbon,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ , is_over:_} => data.reading_ribbon = ribbon,
         }
     }
     
@@ -299,14 +317,14 @@ impl TuringMachines {
     /// Gets the mut ref writtings ribbons stored inside this struct.
     fn get_writting_ribbons_mut(&mut self) -> &mut Vec<TuringWriteRibbon> {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => &mut data.write_ribbons,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &mut data.write_ribbons,
         }
     }
 
     /// Gets the reference to the writtings ribbons stored inside this struct.
     pub fn get_writting_ribbons(&self) -> &Vec<TuringWriteRibbon> {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => &data.write_ribbons,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &data.write_ribbons,
         }
     }
     
@@ -314,21 +332,21 @@ impl TuringMachines {
     /// Sets the writting ribbons stored inside this struct.
     fn set_writting_ribbons(&mut self, ribbons: Vec<TuringWriteRibbon>) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => data.write_ribbons = ribbons,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => data.write_ribbons = ribbons,
         }
     }
     
     /// Gets the word that was feed to this machine.
     pub fn get_word(&self) -> &String {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => &data.word,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &data.word,
         }
     }
 
     /// Gets the word that was feed to this machine.
     fn set_word(&mut self, word: &String) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => data.word = word.to_string(),
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ , is_over:_} => data.word = word.to_string(),
         }
     }
     
@@ -336,59 +354,59 @@ impl TuringMachines {
     /// Checks if the current iteration is the first iteration or not.
     fn is_first_iteration(&mut self) -> bool {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => data.is_first_state,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ , is_over:_} => data.is_first_state,
         }
     }
     
     /// Sets the state of this turing machine to be considered or not its first iteration.
     fn set_first_iteration(&mut self, set: bool) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => data.is_first_state = set,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => data.is_first_state = set,
         }
     }
     
     /// Fetches the mode of the iterator.
     pub fn get_mode(&self) -> &Mode {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => &data.mode,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ , is_over:_} => &data.mode,
         }
     }
     
     /// Get the **mutable** stack containing all the [SavedState].
     fn get_memory_mut(&mut self) -> &mut VecDeque<SavedState> {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => &mut data.memory,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ , is_over:_} => &mut data.memory,
         }
     }
     
     /// Get the reference to the stack containing all the [SavedState].
     pub fn get_memory(&self) -> &VecDeque<SavedState> {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => &data.memory,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &data.memory,
         }
     }
 
     fn get_backtracking_info(&self) -> Option<usize> {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => data.backtracked_info,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ , is_over:_} => data.backtracked_info,
         }
     }
 
     fn set_backtracking_info(&mut self, val: Option<usize>) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ } => data.backtracked_info = val,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ , is_over:_} => data.backtracked_info = val,
         }
     }
 
     fn set_iteration(&mut self, val: usize) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data:_, iteration, last_iteration:_ } => *iteration = val,
+            TuringMachines::TuringMachine { graph:_, data:_, iteration, last_iteration:_ , is_over:_} => *iteration = val,
         }
     }
 
     pub fn get_iteration(&self) -> usize {
         match self {
-            TuringMachines::TuringMachine { graph:_, data:_, iteration , last_iteration:_} => *iteration,
+            TuringMachines::TuringMachine { graph:_, data:_, iteration , last_iteration:_, is_over:_} => *iteration,
         }
     }
 
@@ -397,14 +415,14 @@ impl TuringMachines {
     pub fn get_last_step(&self) -> &Option<TuringExecutionSteps>
     {
         match self {
-            TuringMachines::TuringMachine { graph:_, data:_, iteration:_, last_iteration } => last_iteration,
+            TuringMachines::TuringMachine { graph:_, data:_, iteration:_, last_iteration, is_over:_ } => last_iteration,
         }
     }
 
     fn set_last_step(&mut self, step: Option<TuringExecutionSteps>) 
     {
         match self {
-            TuringMachines::TuringMachine { graph:_, data:_, iteration:_, last_iteration } => *last_iteration = step
+            TuringMachines::TuringMachine { graph:_, data:_, iteration:_, last_iteration, is_over:_ } => *last_iteration = step
         }
     }
 
@@ -412,12 +430,15 @@ impl TuringMachines {
     pub fn is_over(&self) -> bool
     {
         match self {
-            TuringMachines::TuringMachine { graph:_, data:_, iteration, last_iteration } => {
-                if let None = last_iteration {
-                    return *iteration != 0;   
-                }
-                return false;
-            },
+            TuringMachines::TuringMachine { graph:_, data:_, iteration:_, last_iteration:_ , is_over} => { return *is_over;},
+        }
+    }
+
+
+    fn set_is_over(&mut self, val: bool)
+    {
+        match self {
+            TuringMachines::TuringMachine { graph:_, data:_, iteration:_, last_iteration:_, is_over } => *is_over = val,
         }
     }
 
@@ -483,9 +504,16 @@ impl<'a> Iterator for &mut TuringMachines
     {
         // Get next step
         let next_step = next_iteration(self);
-        // Save & return it
-        self.set_last_step(next_step.clone());
-        next_step
+        if let Some(step) = next_step {
+            // Save & return it
+            self.set_last_step(Some(step.clone()));
+
+            Some(step)
+        }
+        else {
+            self.set_is_over(true);
+            None
+        }
     }
 }
 

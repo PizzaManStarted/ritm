@@ -59,7 +59,7 @@ impl ModeEvent for ModifyTuringMode {
         let tm = storage.graph.as_mut().unwrap();
         match self {
             ModifyTuringMode::PrintSummary => {
-                println!("{}", tm);
+                println!("{}", tm.to_string().blue());
             },
             ModifyTuringMode::AddState => {
                 let res = get_state_name(rl);

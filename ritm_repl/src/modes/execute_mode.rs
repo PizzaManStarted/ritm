@@ -2,7 +2,7 @@ use core::time;
 use std::fmt::{format, Display};
 
 use colored::{Color, ColoredString, Colorize};
-use ritm_core::{turing_machine::{Mode, TuringExecutionSteps, TuringMachines}, turing_state::{TuringState, TuringStateType}};
+use ritm_core::{turing_machine::{Mode, TuringExecutionSteps, TuringMachines}, turing_ribbon::{TuringReadRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringStateType}};
 use strum_macros::EnumIter;
 
 use crate::{modes::choice_modes::{ModeEvent, Modes}, query_prim, query_string, query_usize, ripl_error::{print_error_help, RiplError}};
@@ -180,12 +180,12 @@ impl ModeEvent for ExecuteTuringMode {
                 }
             },
             ExecuteTuringMode::SummaryGraph => {
-                println!("{}", tm.get_graph_ref());
+                println!("{}{}\n", "Mode of execution : ".blue(), tm.get_mode().to_string().yellow());
+                println!("{}", tm.get_graph_ref().to_string().blue());
                 None
             },
             ExecuteTuringMode::SummaryExecution => {
-                // TODO :  
-                summarise_execution(tm);
+                summarise_execution(rl, tm, storage.clear_after_step);
                 None
             },
             ExecuteTuringMode::ToggleClearAfterStep => {
@@ -260,7 +260,7 @@ fn print_step(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, s
         TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => {
 
             println!("{} {}", "* Iteration: ".bold().magenta(), st.get_nb_iterations().to_string().bold());
-            println!("{}", format_ribbons(st, Color::Magenta));
+            println!("{}", format_ribbons(st.get_reading_ribbon(), st.get_writting_ribbons(), Color::Magenta));
         },
         TuringExecutionSteps::TransitionTaken { previous_state, reached_state, state_pointer:_, transition_index_taken:_, transition_taken, read_ribbon:_, write_ribbons:_, iteration:_ } => {        
             if let TuringStateType::Accepting = reached_state.state_type {
@@ -269,14 +269,14 @@ fn print_step(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, s
                 print!("{}", "* Transition taken: ".bold().green());
                 println!("{} {} {} {} {}", color_state(previous_state), "{", transition_taken, "}", color_state(reached_state));
 
-                println!("{}", format_ribbons(st, Color::Green));
+                println!("{}", format_ribbons(st.get_reading_ribbon(), st.get_writting_ribbons(), Color::Green));
             }
             else {
                 println!("{} {}", "* Iteration: ".bold().blue(), st.get_nb_iterations().to_string().bold());
     
                 print!("{}", "* Transition taken: ".bold().blue());
                 println!("{} {} {} {} {}", color_state(previous_state), "{", transition_taken, "}", color_state(reached_state));
-                println!("{}", format_ribbons(st, Color::Blue));                
+                println!("{}", format_ribbons(st.get_reading_ribbon(), st.get_writting_ribbons(), Color::Blue));                
             }
 
             
@@ -285,7 +285,7 @@ fn print_step(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, s
             println!("{} {}", "* Iteration: ".bold().yellow(), st.get_nb_iterations().to_string().bold());
             print!("{}", "\t-> Backtracked: ".bold().yellow());
             println!("From iteration {} to {}. From state {} to {}", iteration.to_string().yellow(), backtracked_iteration.to_string().yellow(), color_state(previous_state), color_state(reached_state));
-            println!("{}", format_ribbons(st, Color::Yellow));
+            println!("{}", format_ribbons(st.get_reading_ribbon(), st.get_writting_ribbons(), Color::Yellow));
         },
     }
 }
@@ -299,12 +299,12 @@ fn color_state(state: &TuringState) -> ColoredString
     })
 }
 
-fn format_ribbons(st: &TuringExecutionSteps, color: Color) -> ColoredString
+fn format_ribbons(reading_ribbon: &TuringReadRibbon, writing_ribbons: &Vec<TuringWriteRibbon>, color: Color) -> ColoredString
 {
-    let first = format!("{}\n{}\n", "* Reading ribbon: ".bold(), st.get_reading_ribbon().to_string().white());
+    let first = format!("{}\n{}\n", "* Reading ribbon: ".bold(), reading_ribbon.to_string().white());
 
     let mut second = format!("{}\n", "* Writing ribbons: ".bold());
-    for rib in st.get_writting_ribbons() {
+    for rib in writing_ribbons {
         second = format!("{}{}", second, format!("{}\n", rib).white());
     }
     format!("{}{}", first, second).color(color)
@@ -347,11 +347,34 @@ fn query_mode(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>) -
 }
 
 
-fn summarise_execution(tm: &TuringMachines)
+fn summarise_execution(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, tm: &TuringMachines, clear_after: bool)
 {
     // Show the last iteration
-    // Show mode
-    println!("{:?}", tm.is_over());
+    if let Some(it) = tm.get_last_step().as_ref() {
+        println!("{}", "Last iteration :".italic());
+        print_step(rl, it, clear_after);
+    }
+
+
+    println!("{}{}", "Is the execution over ? ".italic(), match tm.is_over() {
+        true => format!("Yes"),
+        false => format!("No"),
+    }.cyan());
+
+
+    println!("{}", format!("Memory stack (Size -> {}) :", tm.get_memory().len()).italic(), );
+
+    if tm.get_memory().is_empty() {
+        println!("{}", "\tEmpty".italic());
+    }
+    for saved_state in tm.get_memory() {
+        println!("{}", "-=".repeat(10).bold().underline());
+        println!("Saved at iteration : {}", saved_state.iteration);
+        println!("At state : {}", tm.get_graph_ref().get_state(saved_state.saved_state_index).unwrap());
+        println!("Ribbons at the time :\n{}", format_ribbons(&saved_state.saved_read_ribbon, &saved_state.saved_write_ribbons, Color::Cyan))
+    }
+
+
 
     
 }
