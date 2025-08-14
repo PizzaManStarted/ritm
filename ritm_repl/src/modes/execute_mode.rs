@@ -368,10 +368,11 @@ fn summarise_execution(rl: &mut rustyline::Editor<(), rustyline::history::FileHi
         println!("{}", "\tEmpty".italic());
     }
     for saved_state in tm.get_memory() {
-        println!("{}", "-=".repeat(10).bold().underline());
+        println!("{}", "-=".repeat(14).bold().underline());
         println!("Saved at iteration : {}", saved_state.iteration);
+        println!("Path left to explore : {}", saved_state.next_transitions.len().to_string().cyan());
         println!("At state : {}", tm.get_graph_ref().get_state(saved_state.saved_state_index).unwrap());
-        println!("Ribbons at the time :\n{}", format_ribbons(&saved_state.saved_read_ribbon, &saved_state.saved_write_ribbons, Color::Cyan))
+        println!("Saved Ribbons :\n{}", format_ribbons(&saved_state.saved_read_ribbon, &saved_state.saved_write_ribbons, Color::Cyan));
     }
 
 

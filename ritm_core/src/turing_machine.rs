@@ -607,6 +607,11 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
                 // Save the index of the transition found for the next call to `.next()`
                 tm.set_backtracking_info(transition_index_taken);
 
+                // If the saved state has no more transitions, it can already be removed
+                if saved_state.next_transitions.is_empty() {
+                    tm.get_memory_mut().pop_front();
+                }
+
                 // Return backtracking info
                 return Some(TuringExecutionSteps::Backtracked { 
                     previous_state: curr_state, 
