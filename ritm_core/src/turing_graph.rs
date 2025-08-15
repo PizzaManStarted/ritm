@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::{Debug, Display}, os::linux::raw::stat, usize};
+use std::{collections::HashMap, fmt::{Debug, Display}, usize};
 use crate::{turing_errors::TuringError, turing_state::{TuringStateType, TuringState, TuringTransitionMultRibbons}};
 
 

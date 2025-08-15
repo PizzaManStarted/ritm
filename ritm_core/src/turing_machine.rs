@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, fmt::{Debug, Display}, iter};
+use std::{collections::VecDeque, fmt::{Debug, Display}};
 
 
 use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringStateType, TuringTransitionMultRibbons}};

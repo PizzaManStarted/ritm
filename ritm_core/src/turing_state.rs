@@ -1,5 +1,5 @@
 use std::{
-    char, f32::consts::E, fmt::{Debug, Display}
+    char, fmt::{Debug, Display}
 };
 
 use crate::{turing_errors::TuringError, turing_ribbon::{self, TuringRibbon}};

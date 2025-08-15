@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display};
 
-use crate::{turing_errors::TuringError, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
+use crate::{turing_errors::TuringError, turing_state::TuringDirection};
 
 
 /// Represents the initial character stored at the start of every ribbon
