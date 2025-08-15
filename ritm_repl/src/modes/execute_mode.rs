@@ -112,26 +112,32 @@ impl ModeEvent for ExecuteTuringMode {
                     Some(e)
                 }
                 else {
-                    let sleep_time = time::Duration::from_secs_f32(speed.unwrap());
-                    storage.is_running.store(true, std::sync::atomic::Ordering::SeqCst);
-                    // print first step (to check if the exec is finished or not)
-                    let first_step = tm.next();
-                    if let Some(step) = first_step {
-                        print_step(rl, &step, storage.clear_after_step);    
+                    let speed = speed.unwrap();
+                    if speed < 0. {
+                        Some(RiplError::NegativeValueError { value: speed })
                     }
                     else {
-                        println!("{}", "The execution is already finished".blue());
-                    }
-                    
-                    for step in &mut *tm {
-                        // Allow the user to stop the execution if it is taking too long (or infinite)
-                        if !storage.is_running.load(std::sync::atomic::Ordering::SeqCst) {
-                            break;
+                        let sleep_time = time::Duration::from_secs_f32(speed);
+                        storage.is_running.store(true, std::sync::atomic::Ordering::SeqCst);
+                        // print first step (to check if the exec is finished or not)
+                        let first_step = tm.next();
+                        if let Some(step) = first_step {
+                            print_step(rl, &step, storage.clear_after_step);    
                         }
-                        print_step(rl, &step, storage.clear_after_step);
-                        std::thread::sleep(sleep_time);
+                        else {
+                            println!("{}", "The execution is already finished".blue());
+                        }
+                        
+                        for step in &mut *tm {
+                            // Allow the user to stop the execution if it is taking too long (or infinite)
+                            if !storage.is_running.load(std::sync::atomic::Ordering::SeqCst) {
+                                break;
+                            }
+                            print_step(rl, &step, storage.clear_after_step);
+                            std::thread::sleep(sleep_time);
+                        }
+                        None
                     }
-                    None
                 }
                 
             },
@@ -374,8 +380,4 @@ fn summarise_execution(rl: &mut rustyline::Editor<(), rustyline::history::FileHi
         println!("At state : {}", tm.get_graph_ref().get_state(saved_state.saved_state_index).unwrap());
         println!("Saved Ribbons :\n{}", format_ribbons(&saved_state.saved_read_ribbon, &saved_state.saved_write_ribbons, Color::Cyan));
     }
-
-
-
-    
 }
