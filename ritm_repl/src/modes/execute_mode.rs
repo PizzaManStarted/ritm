@@ -191,7 +191,7 @@ impl ModeEvent for ExecuteTuringMode {
                 None
             },
             ExecuteTuringMode::SummaryExecution => {
-                summarise_execution(rl, tm, storage.clear_after_step);
+                summarise_execution(rl, tm);
                 None
             },
             ExecuteTuringMode::ToggleClearAfterStep => {
@@ -353,12 +353,12 @@ fn query_mode(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>) -
 }
 
 
-fn summarise_execution(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, tm: &TuringMachines, clear_after: bool)
+fn summarise_execution(rl: &mut rustyline::Editor<(), rustyline::history::FileHistory>, tm: &TuringMachines)
 {
     // Show the last iteration
     if let Some(it) = tm.get_last_step().as_ref() {
         println!("{}", "Last iteration :".italic());
-        print_step(rl, it, clear_after);
+        print_step(rl, it, false);
     }
 
 
