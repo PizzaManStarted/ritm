@@ -2,7 +2,7 @@ use std::{
     char, fmt::{Debug, Display}
 };
 
-use crate::{turing_errors::TuringError, turing_ribbon::{self, TuringRibbon}};
+use crate::{turing_errors::TuringError, turing_ribbon::{self}};
 
 
 /// Represents the different types of states that can be found inside a turing machine graph

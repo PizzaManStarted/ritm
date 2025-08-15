@@ -21,6 +21,10 @@ pub enum ModifyTuringMode {
     SaveTM,
     FeedWord,
     UnloadTM,
+
+
+
+    
 }
 
 
