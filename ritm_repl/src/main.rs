@@ -6,7 +6,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use colored::Colorize;
-use ritm_core::turing_machine::SavedState;
 use ritm_repl::modes::choice_modes::{collect_enum_values, print_help, ModeEvent, Modes};
 use ritm_repl::modes::execute_mode::ExecuteTuringMode;
 use ritm_repl::modes::modify_mode::ModifyTuringMode;

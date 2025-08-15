@@ -1,4 +1,4 @@
-use std::{fmt::Display, fs::File, io::Write, path::{Path, PathBuf}, vec};
+use std::{fmt::Display, fs::File, io::Write, path::{Path, PathBuf}};
 
 use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::TuringMachines, turing_parser::{self, parse_transition_string}, turing_state::TuringTransitionMultRibbons};
 use rustyline::{history::FileHistory, Editor};

@@ -1,4 +1,4 @@
-use std::{fmt::Display, fs::File, path::{Path, PathBuf}};
+use std::{fmt::Display, path::{Path, PathBuf}};
 
 use crate::{modes::choice_modes::{ModeEvent, Modes}, query_string, query_usize, ripl_error::{print_error_help, RiplError}, DataStorage};
 use colored::Colorize;

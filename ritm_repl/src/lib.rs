@@ -1,6 +1,6 @@
 use std::{fmt::Debug, path::PathBuf, str::FromStr, sync::{atomic::AtomicBool, Arc}};
 
-use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::TuringMachines, turing_parser::parse_transition_string, turing_state::TuringTransitionMultRibbons};
+use ritm_core::{turing_graph::TuringMachineGraph, turing_machine::TuringMachines};
 use rustyline::{history::FileHistory, Editor};
 use ritm_core::turing_machine::Mode;
 

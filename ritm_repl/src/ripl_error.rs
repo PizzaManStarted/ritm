@@ -1,4 +1,4 @@
-use std::fmt::{format, Display};
+use std::fmt::Display;
 
 use colored::{ColoredString, Colorize};
 use ritm_core::turing_errors::{TuringError, TuringParserError};

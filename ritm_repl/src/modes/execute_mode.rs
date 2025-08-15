@@ -1,11 +1,11 @@
 use core::time;
-use std::fmt::{format, Display};
+use std::fmt::Display;
 
 use colored::{Color, ColoredString, Colorize};
 use ritm_core::{turing_machine::{Mode, TuringExecutionSteps, TuringMachines}, turing_ribbon::{TuringReadRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringStateType}};
 use strum_macros::EnumIter;
 
-use crate::{modes::choice_modes::{ModeEvent, Modes}, query_prim, query_string, query_usize, ripl_error::{print_error_help, RiplError}};
+use crate::{modes::choice_modes::{ModeEvent, Modes}, query_prim, query_string, ripl_error::{print_error_help, RiplError}};
 
 
 
