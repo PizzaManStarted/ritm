@@ -1,5 +1,13 @@
 # $\texttt{RITM}$ : *R*ead *E*val *P*rint *L*oop
 
+## How to run
+
+* To run the crate simply use the `cargo run` command inside the directory containing the REPL.
+
+* To create a binary file to share with people using the same OS :
+  1. Use the command : `cargo build --release`
+  2. Then execute the file : `../target/release/ritm_repl`
+
 ## Default commands
 
 The following commands are always accessible. 
