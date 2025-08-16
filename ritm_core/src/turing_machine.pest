@@ -1,0 +1,37 @@
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+COMMENT = _{ "//" ~ (!"\n" ~ ANY)* }
+
+turing_machine = { (WHITESPACE* ~ (transition ~ semicolon)+) ~ EOI }
+
+// Used when only reading a transition
+transition_only = _{ transition ~ EOI }
+
+transition = { (state_name) ~ (left_bracket ~ transition_content ~ ("|" ~ transition_content)* ~ right_bracket)+ ~ (state_name) }
+
+transition_content = { to_read ~ "->" ~ to_write_move }
+
+to_read = { char_special ~ ("," ~ char_special)* }
+
+to_write_move = { move ~ ("," ~ char_special ~ "," ~ move)* }
+
+move      = _{ dir_left | dir_right | dir_none }
+dir_left  =  { "L" }
+dir_right =  { "R" }
+dir_none  =  { "N" }
+
+state_name = { "q" ~ ("_")? ~ (str) }
+
+str = { (char)+ }
+
+// Char + special characters
+char_special = _{ (char | special_chars) }
+
+// Default characters
+char = { (ASCII_DIGIT | ASCII_ALPHA) }
+// Special characters
+special_chars = { ("ç" | "#" | "$" | "_") }
+
+// These rules only serve to give better error reports
+left_bracket = { "{" }
+right_bracket = { "}" }
+semicolon = { ";" }
