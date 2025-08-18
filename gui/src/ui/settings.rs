@@ -5,7 +5,7 @@ use ritm_core::{
     turing_parser::parse_turing_graph_string,
 };
 
-use crate::{App, ui::constant::Constant};
+use crate::{ui::{constant::Constant, popup::Popup}, App};
 
 /// Global application control, like settings, compile or load file
 pub fn show(app: &mut App, ui: &mut Ui) {
@@ -50,7 +50,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             )
             .clicked()
         {
-            app.event.are_settings_visible = true;
+            app.popup = Popup::Setting;
         }
 
         if ui

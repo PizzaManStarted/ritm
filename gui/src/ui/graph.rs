@@ -71,7 +71,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
         }
 
         // CLick on the scene reset selection and editing
-        app.event.is_adding_state = false;
+        app.event.is_adding_state = !app.settings.toggle_after_action;
         app.event.is_adding_transition = false;
         app.selected_state = None;
         app.selected_transition = None;

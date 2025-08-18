@@ -5,6 +5,8 @@
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
+    use eframe::icon_data;
+    use egui::IconData;
     use gui::App;
 
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
@@ -12,11 +14,12 @@ fn main() {
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1400.0, 800.0])
-            .with_min_inner_size([100.0, 100.0]),
+            .with_min_inner_size([100.0, 100.0])
+            .with_icon(icon_data::from_png_bytes(include_bytes!("../assets/icon/logo.png")).unwrap_or_default()),
         ..Default::default()
     };
     eframe::run_native(
-        "eframe template",
+        "RITM",
         native_options,
         Box::new(|cc| Ok(Box::new(App::new(cc)))),
     ).ok();

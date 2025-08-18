@@ -62,7 +62,9 @@ pub struct App {
     /// Which popup to display
     pub popup: Popup,
 
-    pub last_step: f64,
+    pub last_step_time: f64,
+
+    pub settings: Settings,
 }
 
 /// Keep the state of the application
@@ -105,11 +107,18 @@ pub struct Event {
     pub is_small_window: bool,
 }
 
+pub struct Settings {
+
+    pub turing_machine_mode: Mode,
+
+    pub toggle_after_action: bool,
+}
+
 impl Default for App {
     fn default() -> Self {
         let graph = TuringMachineGraph::new(1).ok().unwrap();
 
-        let mut turing = TuringMachines::new(graph, "".to_string(), Mode::SaveAll).unwrap();
+        let mut turing = TuringMachines::new(graph, "".to_string(), Mode::StopFirstReject).unwrap();
         let step = turing.next().unwrap();
 
         let mut sf = Self {
@@ -128,7 +137,11 @@ impl Default for App {
             pin_count: 0,
             file: FileDialog::default(),
             popup: Popup::None,
-            last_step: 0.0,
+            last_step_time: 0.0,
+            settings: Settings {
+                toggle_after_action: true,
+                turing_machine_mode: Mode::StopFirstReject
+            }
         };
 
         // Update the graph data with the turing data at initialization
@@ -403,9 +416,9 @@ impl eframe::App for App {
 
         if self.event.is_running {
 
-            if ctx.input(|r| r.time) - self.last_step >= 2.0_f32.powi(self.interval) as f64 {
+            if ctx.input(|r| r.time) - self.last_step_time >= 2.0_f32.powi(self.interval) as f64 {
                 self.next();
-                self.last_step = ctx.input(|r| r.time);
+                self.last_step_time = ctx.input(|r| r.time);
             }
         }
 

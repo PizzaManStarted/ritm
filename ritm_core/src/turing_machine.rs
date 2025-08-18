@@ -5,6 +5,7 @@ use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing
 
 
 /// Represents the different mode a turing machine can have during it's execution
+#[derive(PartialEq)]
 pub enum Mode {
     /// Explores all possible paths (and possibilities using backtracking) until an accepting state is found or no path is left is to take. 
     SaveAll, // May god bless your ram

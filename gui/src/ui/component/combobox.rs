@@ -218,7 +218,7 @@ impl ComboBox {
 
         let button_id = ui.make_persistent_id(id_salt);
 
-        // replace ui.horizontal(|ui|{ by allocate with the size of ui fixe the alignement
+        // replace ui.horizontal(|ui|{ by allocate with the size of ui fix the alignement
         ui.allocate_ui_with_layout(ui.available_size_before_wrap(), Layout::left_to_right(Align::Center), |ui| {
             let mut ir = combo_box_dyn(
                 ui,

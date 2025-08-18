@@ -33,8 +33,9 @@ wasm-bindgen = "0.2.100"
 js-sys = "0.3.77"
 console_error_panic_hook = "0.1.7"
 regex = "1.11.1"
-
-
+image = {version = "0.25", features = ["png"]}
+profiling = "1.0.17"
+profiling-procmacros = "1.0.17"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 env_logger = "0.11"

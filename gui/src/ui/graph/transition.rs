@@ -1,6 +1,6 @@
 use std::{collections::{btree_map::Entry, BTreeMap, HashMap, HashSet}, f32::{self, consts::PI}};
 
-use egui::{emath::Rot2, epaint::{CubicBezierShape, PathShape, QuadraticBezierShape, TextShape}, text::LayoutJob, vec2, Align2, Color32, Pos2, Rect, Sense, Stroke, TextFormat, Ui, Vec2};
+use egui::{emath::Rot2, epaint::{CubicBezierShape, PathShape, QuadraticBezierShape, TextShape}, text::LayoutJob, vec2, Align2, Color32, Pos2, Rect, Sense, Stroke, StrokeKind, TextFormat, Ui, Vec2};
 use ritm_core::turing_machine::{TuringExecutionSteps};
 use crate::{
     turing::{State, Transition, TransitionId}, ui::{constant::Constant, font::Font, theme::Theme, utils::{self}}, App
@@ -267,6 +267,8 @@ fn draw_labels(
         let bounding_rect = Rect::from_center_size(Pos2::ZERO, galley.size()).rotate_bb(Rot2::from_angle(angle));
 
         let row_i = if reverse {i} else {transitions.len() - 1 - i};
+
+        // From this point, the code has been summoned by pain (trigonometry) and blood (my tear)
         let position_rect = Rect::from_center_size(position + vec2(
             (-text_height * row_i as f32 - text_height/2.0) * angle.sin(),
             (text_height * row_i as f32 + text_height/2.0) * angle.cos()
@@ -287,7 +289,19 @@ fn draw_labels(
             .add(TextShape::new(position_rect.left_top() + anchor.to_vec2(), galley, Color32::BLACK)
                     .with_angle_and_anchor(angle, Align2::LEFT_TOP));
 
-        ui.allocate_rect(position_rect, Sense::click()).clicked().then(|| clicked = true);
+        let sub_count = 4;
+        let size = (position_rect.size()/sub_count as f32).max(Vec2::splat(text_height));
+        let (min, max) = if angle >= 0.0 {
+            (position_rect.left_top() + size/2.0, position_rect.right_bottom() - size/2.0)
+        } else {
+            (position_rect.left_bottom() + (size/2.0) * vec2(1.0, -1.0), position_rect.right_top() - (size/2.0) * vec2(1.0, -1.0))
+        };
+        
+        for i in 0..sub_count+1 {
+            let vec = (max-min)/sub_count as f32;
+            let rect = Rect::from_center_size(min + vec * i as f32, size);
+            ui.allocate_rect(rect, Sense::click()).clicked().then(|| clicked = true);
+        }
     }
     
     if clicked {
