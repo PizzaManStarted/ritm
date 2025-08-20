@@ -16,7 +16,8 @@ pub fn show(app: &mut App, ctx: &Context) {
             ..Default::default()
         })
         .show(ctx, |ui: &mut Ui| {
-            ui.allocate_ui_with_layout(vec2(0.0, 0.0), Layout::top_down(Align::Center).with_cross_justify(true) ,|ui| {
+
+            ui.allocate_ui_with_layout(vec2(200.0, 0.0), Layout::top_down(Align::Center).with_cross_justify(true) ,|ui| {
                 ui.style_mut().spacing.item_spacing = vec2(0.0, 10.0);
 
 
@@ -66,5 +67,10 @@ pub fn show(app: &mut App, ctx: &Context) {
                     };
 
             });
+
+            if app.event.close_popup {
+                app.event.close_popup = false;
+                app.popup = Popup::None;
+            }
         });
 }

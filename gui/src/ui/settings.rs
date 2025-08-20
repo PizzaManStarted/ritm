@@ -21,8 +21,15 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     };
 
     flex.show(ui, |ui| {
+
+        app.event.is_small_window = ui.ui().ctx().screen_rect().width() < ((Constant::ICON_SIZE + 10.0) * 6.0) * 3.0;
+
+        if app.event.is_small_window {
+            app.event.is_code_closed = true;
+        }
+
         if app.event.is_code_closed {
-            if ui
+            if !app.event.is_small_window && ui
                 .add(
                     item(),
                     ImageButton::new(
@@ -129,14 +136,6 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                         println!("{:?}", e);
                     }
                 }
-            }
-
-            let width_left = ui.grow().rect.width();
-            
-            app.event.is_small_window = width_left <= 0.0;
-
-            if app.event.is_small_window {
-                app.event.is_code_closed = true;
             }
 
             if ui

@@ -1,6 +1,6 @@
 use egui::{Context, Frame, Id, Margin, Modal, Stroke, Ui};
 
-use crate::App;
+use crate::{ui::popup::Popup, App};
 
 pub fn show(app: &mut App, ctx: &Context) {
     Modal::new(Id::new("help"))
@@ -12,6 +12,13 @@ pub fn show(app: &mut App, ctx: &Context) {
             ..Default::default()
         })
         .show(ctx, |ui: &mut Ui| {
+            ui.set_max_size(ui.ctx().screen_rect().size() * 0.8);
+            ui.set_min_size(ui.ctx().screen_rect().size() * 0.8);
 
+
+            if app.event.close_popup {
+                app.event.close_popup = false;
+                app.popup = Popup::None;
+            }
         });
 }

@@ -1,8 +1,8 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap}, sync::{atomic::AtomicBool, Arc, Condvar}, time::Duration
+    collections::{BTreeMap, BTreeSet, HashMap}, sync::{atomic::AtomicBool, Arc}, time::Duration
 };
 
-use egui::{vec2, FontData, FontDefinitions, FontFamily, Pos2, Rect};
+use egui::{vec2, FontData, FontDefinitions, FontFamily, Key, Pos2, Rect};
 use egui_extras::install_image_loaders;
 use rand::random;
 use ritm_core::{
@@ -11,7 +11,7 @@ use ritm_core::{
 
 use crate::{
     turing::{State, Transition, TransitionEdit},
-    ui::{self, constant::Constant, popup::Popup, theme::Theme, utils::FileDialog},
+    ui::{self, popup::Popup, theme::Theme, utils::FileDialog},
 };
 
 /// The only structure that is persistent each redraw of the application
@@ -51,10 +51,6 @@ pub struct App {
 
     /// Store the current editing of the transitions between 2 states
     pub rules_edit: Vec<TransitionEdit>,
-
-    /// NOT IMPLEMEMENTED how many state are pinned to avoid pointless feature proposition
-    #[allow(dead_code)]
-    pin_count: usize,
 
     /// File loaded
     pub file: FileDialog,
@@ -105,6 +101,10 @@ pub struct Event {
     pub is_code_closed: bool,
 
     pub is_small_window: bool,
+
+    pub close_popup: bool,
+
+    pub listen_to_keybind: bool,
 }
 
 pub struct Settings {
@@ -118,7 +118,7 @@ impl Default for App {
     fn default() -> Self {
         let graph = TuringMachineGraph::new(1).ok().unwrap();
 
-        let mut turing = TuringMachines::new(graph, "".to_string(), Mode::StopFirstReject).unwrap();
+        let mut turing = TuringMachines::new(graph, "".to_string(), Mode::StopAfter(500)).unwrap();
         let step = turing.next().unwrap();
 
         let mut sf = Self {
@@ -134,13 +134,12 @@ impl Default for App {
             selected_transition: None,
             interval: 0,
             rules_edit: vec![],
-            pin_count: 0,
             file: FileDialog::default(),
             popup: Popup::None,
             last_step_time: 0.0,
             settings: Settings {
                 toggle_after_action: true,
-                turing_machine_mode: Mode::StopFirstReject
+                turing_machine_mode: Mode::StopAfter(500)
             }
         };
 
@@ -166,6 +165,8 @@ impl Default for Event {
             are_settings_visible: false,
             is_code_closed: false,
             is_small_window: false,
+            close_popup: false,
+            listen_to_keybind: true,
         }
     }
 }
@@ -420,6 +421,61 @@ impl eframe::App for App {
                 self.next();
                 self.last_step_time = ctx.input(|r| r.time);
             }
+        }
+
+        if self.event.listen_to_keybind {
+            ctx.input(|r| {
+            if r.key_pressed(Key::Escape) {
+                if self.popup != Popup::None {
+                    // Request graceful exit of popup
+                    self.event.close_popup = true;
+                } else {
+                    // Unselect what is selected
+                    self.selected_state = None;
+                    self.selected_transition = None;
+                }
+            }
+
+            // Press A to create a state
+            if r.key_pressed(Key::A) {
+                self.event.is_adding_state ^= true;
+            }
+
+            // Press T to create a transition
+            if self.selected_state.is_some() && r.key_pressed(Key::T) {
+                self.event.is_adding_transition ^= true;
+            }
+
+            // Press U to unpin all state
+            if r.key_pressed(Key::U) {
+                self.unpin();
+            }
+
+            // Press C to open and close code section
+            if r.key_pressed(Key::C) {
+                self.event.is_code_closed ^= true;
+            }
+
+            // Press R to recenter
+            if r.key_pressed(Key::R) {
+                self.event.need_recenter = true;
+            }
+
+            // Press Space to make 1 iteration
+            if self.event.is_accepted.is_none() && r.key_pressed(Key::Space) {
+                self.next();
+            }
+
+            // Press P to autoplay the machine
+            if r.key_pressed(Key::P) {
+                self.event.is_running ^= true;
+            }
+
+            // Press Backspace to reset the machine
+            if r.key_pressed(Key::Backspace) {
+                self.reset();
+            }
+        });
         }
 
         ctx.request_repaint_after(Duration::from_secs(2.0_f32.powi(self.interval) as u64));

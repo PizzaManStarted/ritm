@@ -5,8 +5,7 @@ use egui::{
 use ritm_core::turing_machine::Mode;
 
 use crate::{
-    App,
-    ui::{component::combobox::ComboBox, font::Font, theme::Theme},
+    ui::{component::combobox::ComboBox, font::Font, popup::Popup, theme::Theme}, App
 };
 
 pub fn show(app: &mut App, ctx: &Context) {
@@ -82,5 +81,10 @@ pub fn show(app: &mut App, ctx: &Context) {
                         ui.end_row();
                     });
             });
+
+            if app.event.close_popup {
+                app.event.close_popup = false;
+                app.popup = Popup::None;
+            }
         });
 }

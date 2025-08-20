@@ -162,6 +162,11 @@ pub fn show(app: &mut App, ctx: &Context) {
                     };
                 });
             });
+
+            if app.event.close_popup {
+                app.event.close_popup = false;
+                app.cancel_transition_change();
+            }
         });
 }
 

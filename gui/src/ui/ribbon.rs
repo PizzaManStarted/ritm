@@ -145,10 +145,10 @@ fn square(app: &mut App, ui: &mut Ui, character: char, is_current: bool) {
         // Draw the square, with a border if center one
         ui.painter().rect(
             rect,
-            Constant::SQUARE_CORNER,
+            Constant::scale(ui, Constant::SQUARE_CORNER),
             app.theme.white,
             if is_current {
-                Stroke::new(3.0, app.theme.gray)
+                Stroke::new(Constant::scale(ui, 3.0), app.theme.gray)
             } else {
                 Stroke::NONE
             },

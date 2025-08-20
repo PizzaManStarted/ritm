@@ -1,16 +1,19 @@
 use egui::{
-    include_image, vec2, Align, Button, Color32, ComboBox, Frame, Id, Image, ImageButton, LayerId, Layout, Margin, Rect, Sense, Shadow, Stroke, Ui, UiBuilder
+    include_image, vec2, Align, Color32, Frame, Id, Image, ImageButton, LayerId, Layout, Margin, Rect, Sense, Shadow, Stroke, Ui, UiBuilder, Vec2
 };
 
-use crate::{turing::State, ui::{popup::Popup, theme::Theme}, App};
+use crate::{ui::{constant::Constant, popup::Popup, theme::Theme}, App};
 
 /// Control of the graph
 pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
+
+    let icon_size = Constant::scale(ui, Constant::ICON_SIZE);
+
     // Floating control absolute position
     ui.scope_builder(
         UiBuilder::new()
             .max_rect(Rect::from_center_size(
-                rect.center_bottom() + vec2(0.0, -100.0),
+                rect.center_bottom() + vec2(0.0, -icon_size * 3.0),
                 (rect.width(), 1.0).into(),
             ))
             .sense(Sense::empty())
@@ -22,8 +25,8 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                 // Used for background
                 Frame::new()
                     .fill(app.theme.white)
-                    .inner_margin(Margin::symmetric(20, 10))
-                    .corner_radius(15)
+                    .inner_margin(Margin::symmetric(Constant::scale(ui, 20.0) as i8, Constant::scale(ui, 10.0) as i8))
+                    .corner_radius(Constant::scale(ui, 15.0) as u8)
                     .stroke(Stroke::new(1.0, app.theme.gray))
                     .shadow(Shadow {
                         offset: [0, 4],
@@ -35,12 +38,11 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
 
                         let state_selected = app.selected_state.is_some();
                         let transition_selected = app.selected_transition.is_some();
+                                                
                         // Need to compute the width of the menu to center it
-
                         // Recenter/Unpin/Pin
-                        let mut count = 3;
-                        if state_selected && transition_selected {
-                            // Adding a state condition
+                        let mut count = 2;
+                        if !state_selected && !transition_selected {
                             count += 1;
                         }
                         if state_selected {
@@ -51,10 +53,10 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                             // Delete/Edit state/transition
                             count += 2;
                         }
-                        let width = 35.0 * count as f32 + 20.0 * (count - 1) as f32;
+                        let width = icon_size * count as f32 + 20.0 * (count - 1) as f32;
 
                         ui.allocate_ui_with_layout(
-                            vec2(width, 35.0),
+                            vec2(width, icon_size),
                             Layout::left_to_right(Align::Min).with_cross_align(Align::Center),
                             |ui| {
                                 ui.spacing_mut().item_spacing = vec2(20.0, 0.0);
@@ -70,7 +72,7 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                                 Image::new(include_image!(
                                                     "../../assets/icon/stateplus.svg"
                                                 ))
-                                                .fit_to_exact_size(vec2(35.0, 35.0))
+                                                .fit_to_exact_size(Vec2::splat(icon_size))
                                                 .tint(if app.event.is_adding_state {
                                                     app.theme.selected
                                                 } else {
@@ -94,7 +96,7 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                                 Image::new(include_image!(
                                                     "../../assets/icon/transition.svg"
                                                 ))
-                                                .fit_to_exact_size(vec2(35.0, 35.0))
+                                                .fit_to_exact_size(Vec2::splat(icon_size))
                                                 .tint(if app.event.is_adding_transition {
                                                     app.theme.selected
                                                 } else {
@@ -119,7 +121,7 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                                 Image::new(include_image!(
                                                     "../../assets/icon/delete.svg"
                                                 ))
-                                                .fit_to_exact_size(vec2(35.0, 35.0))
+                                                .fit_to_exact_size(Vec2::splat(icon_size))
                                                 .tint(Theme::constrast_color(app.theme.white)),
                                             )
                                             .frame(false),
@@ -143,7 +145,7 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                                 Image::new(include_image!(
                                                     "../../assets/icon/edit.svg"
                                                 ))
-                                                .fit_to_exact_size(vec2(35.0, 35.0))
+                                                .fit_to_exact_size(Vec2::splat(icon_size))
                                                 .tint(Theme::constrast_color(app.theme.white)),
                                             )
                                             .frame(false),
@@ -165,7 +167,7 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                                 Image::new(include_image!(
                                                     "../../assets/icon/recenter.svg"
                                                 ))
-                                                .fit_to_exact_size(vec2(35.0, 35.0))
+                                                .fit_to_exact_size(Vec2::splat(icon_size))
                                                 .tint(Theme::constrast_color(app.theme.white)),
                                             )
                                             .frame(false),
@@ -181,7 +183,7 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                                 Image::new(include_image!(
                                                     "../../assets/icon/unpin.svg"
                                                 ))
-                                                .fit_to_exact_size(vec2(35.0, 35.0))
+                                                .fit_to_exact_size(Vec2::splat(icon_size))
                                                 .tint(Theme::constrast_color(app.theme.white)),
                                             )
                                             .frame(false),
@@ -189,26 +191,6 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                         .clicked()
                                 {
                                     app.unpin();
-                                }
-
-                                if ui
-                                        .add(
-                                            ImageButton::new(
-                                                Image::new(include_image!(
-                                                    "../../assets/icon/pin.svg"
-                                                ))
-                                                .fit_to_exact_size(vec2(35.0, 35.0))
-                                                .tint(Theme::constrast_color(app.theme.white)),
-                                            )
-                                            .frame(false),
-                                        )
-                                        .clicked()
-                                {
-                                    if state_selected {
-                                        State::get_mut(app, app.selected_state.unwrap()).is_pinned = true;
-                                    } else {
-                                        app.pin();
-                                    }
                                 }
                             },
                         );

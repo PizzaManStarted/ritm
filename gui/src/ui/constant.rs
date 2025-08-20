@@ -5,7 +5,7 @@ pub struct Constant {}
 
 impl Constant {
 
-    pub const DEFAULT_SIZE: Vec2 = vec2(1000.0, 600.0);
+    pub const DEFAULT_SIZE: Vec2 = vec2(800.0, 600.0);
 
     // Graph
     pub const CREP: f32 = 30000.0;

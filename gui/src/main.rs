@@ -6,7 +6,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
     use eframe::icon_data;
-    use egui::IconData;
+    
     use gui::App;
 
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).

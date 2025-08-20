@@ -6,6 +6,7 @@ pub mod state_edit;
 pub mod setting;
 
 
+#[derive(PartialEq)]
 pub enum Popup {
     None,
     TransitionEdit,

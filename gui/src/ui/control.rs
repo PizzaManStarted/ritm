@@ -1,6 +1,5 @@
-
 use egui::{
-    include_image, vec2, Align, Align2, Button, Frame, Image, ImageButton, Label, Layout, RichText, Sense, TextEdit, Ui, Vec2
+    include_image, vec2, Align, Align2, Button, Color32, Frame, Image, ImageButton, Label, Layout, RichText, Sense, TextEdit, Ui, Vec2, WidgetText
 };
 use egui_flex::{Flex, FlexAlign, FlexAlignContent, item};
 
@@ -11,7 +10,7 @@ use crate::{
 
 pub fn show(app: &mut App, ui: &mut Ui) {
     Frame::new().show(ui, |ui| {
-        ui.set_height(70.0);
+        ui.set_height(Constant::scale(ui,70.0));
         let grid = Grid::new(ui, 2, 3);
 
         grid.place(ui, 1, 1, |ui| input(app, ui));
@@ -21,7 +20,6 @@ pub fn show(app: &mut App, ui: &mut Ui) {
 
         grid.place(ui, 1, 3, |ui| step(app, ui));
         grid.place(ui, 2, 3, |ui| state(app, ui));
-
     });
 }
 
@@ -46,13 +44,12 @@ pub fn show(app: &mut App, ui: &mut Ui) {
 //     });
 // }
 
-
 fn input(app: &mut App, ui: &mut Ui) {
     ui.allocate_ui_with_layout(
         ui.available_size(),
         Layout::right_to_left(Align::Center),
         |ui| {
-            if ui.add(Button::new("Submit")).clicked() {
+            if ui.add(Button::new(RichText::new("Submit").font(Font::default(Constant::scale(ui, Font::MEDIUM_SIZE))))).clicked() {
                 let res = app.turing.reset_word(&app.input);
                 match res {
                     Ok(_) => app.next(),
@@ -60,19 +57,25 @@ fn input(app: &mut App, ui: &mut Ui) {
                 }
             }
 
-            ui.add_sized(
-                vec2(ui.available_width(), 4.0 + Font::get_heigth(ui, &Font::default_medium())), // 4.0 is 2 times the hardcoded default vertical margin of textedit
+            app.event.listen_to_keybind = !ui.add_sized(
+                vec2(
+                    ui.available_width(),
+                    4.0 + Font::get_heigth(ui, &Font::default(Constant::scale(ui, Font::MEDIUM_SIZE))),
+                ), // 4.0 is 2 times the hardcoded default vertical margin of textedit
                 TextEdit::singleline(&mut app.input)
-                    .font(Font::default_medium())
-                    .hint_text("Input..."),
-            );
+                    .font(Font::default(Constant::scale(ui, Font::MEDIUM_SIZE)))
+                    .hint_text(RichText::new("Input...")
+                        .font(Font::default(Constant::scale(ui, Font::MEDIUM_SIZE)))
+                        .color(Color32::from_black_alpha(100))
+                    ),
+            ).has_focus();
         },
     );
 }
 
 /// Control the iteration of the application, automatic or manual
 fn control(app: &mut App, ui: &mut Ui) {
-    let icon_size = Vec2::splat(Constant::CONTROL_ICON_SIZE);
+    let icon_size = Vec2::splat(Constant::scale(ui, Constant::CONTROL_ICON_SIZE));
     let finished = app.event.is_accepted.is_some();
     let started = finished || app.step.get_nb_iterations() != 0;
 
@@ -80,6 +83,7 @@ fn control(app: &mut App, ui: &mut Ui) {
         .align_items(FlexAlign::Center)
         .align_content(FlexAlignContent::Center)
         .align_items_content(Align2::CENTER_CENTER)
+        .gap(vec2(Constant::scale(ui, 10.0), 0.0))
         .h_full()
         .w_full()
         .show(ui, |flex| {
@@ -110,7 +114,6 @@ fn control(app: &mut App, ui: &mut Ui) {
                 {
                     app.event.is_running = false;
                 }
-
             } else {
                 // Else display play button
                 if flex
@@ -205,7 +208,7 @@ fn speed_control(app: &mut App, ui: &mut Ui) {
                     item(),
                     ImageButton::new(
                         Image::new(include_image!("../../assets/icon/less.svg"))
-                            .fit_to_exact_size(vec2(25.0, 25.0))
+                            .fit_to_exact_size(Vec2::splat(Constant::scale(flex.ui(), 25.0)))
                             .tint(if min { app.theme.gray } else { app.theme.white }),
                     )
                     .frame(false),
@@ -221,7 +224,7 @@ fn speed_control(app: &mut App, ui: &mut Ui) {
                 item(),
                 Label::new(
                     RichText::new(format!("{}X", 2.0_f32.powi(app.interval as i32 * -1)))
-                        .font(Font::default_medium())
+                        .font(Font::default(Constant::scale(flex.ui(), Font::MEDIUM_SIZE)))
                         .color(app.theme.gray),
                 ),
             );
@@ -231,7 +234,7 @@ fn speed_control(app: &mut App, ui: &mut Ui) {
                     item(),
                     ImageButton::new(
                         Image::new(include_image!("../../assets/icon/add.svg"))
-                            .fit_to_exact_size(vec2(25.0, 25.0))
+                            .fit_to_exact_size(Vec2::splat(Constant::scale(flex.ui(), 25.0)))
                             .tint(if max { app.theme.gray } else { app.theme.white }),
                     )
                     .frame(false),
@@ -258,7 +261,10 @@ fn step(app: &mut App, ui: &mut Ui) {
             flex.grow();
             flex.add(
                 item(),
-                Label::new(format!("Steps : {}", app.step.get_nb_iterations())),
+                Label::new(
+                    RichText::new(format!("Steps : {}", app.step.get_nb_iterations()))
+                        .font(Font::default(Constant::scale(flex.ui(), Font::MEDIUM_SIZE))),
+                ),
             );
             flex.grow();
         });
@@ -287,7 +293,7 @@ fn state(app: &mut App, ui: &mut Ui) {
                 }
             };
 
-            flex.add(item(), Label::new(RichText::new(text).color(color)));
+            flex.add(item(), Label::new(RichText::new(text).color(color).font(Font::default(Constant::scale(flex.ui(), Font::MEDIUM_SIZE)))));
             flex.grow();
         });
 }
