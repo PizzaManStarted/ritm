@@ -1,5 +1,6 @@
 # $\texttt{RITM}$ : *R*ibbon *I*nteractive *T*uring *M*achine
 
+[![Rust](https://github.com/PizzaManStarted/ritm/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/PizzaManStarted/ritm/actions/workflows/rust.yml)
 
 The goal of these crates is to allow users to experiment with **Turing Machines**. More particularly with non-deterministic machines with working ribbons. 
 
