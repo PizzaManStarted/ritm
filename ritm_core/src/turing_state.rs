@@ -394,7 +394,7 @@ impl Clone for TuringTransitionMultRibbons {
             chars_read: self.chars_read.clone(),
             move_read: self.move_read.clone(),
             chars_write: self.chars_write.clone(),
-            index_to_state: self.index_to_state.clone(),
+            index_to_state: self.index_to_state,
         }
     }
 }
