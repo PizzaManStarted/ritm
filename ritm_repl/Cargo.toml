@@ -4,6 +4,9 @@ description = "A package used to experiment with turing machine with k ribbons."
 authors = ["Foucart Axel"]
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+repository = "https://github.com/PizzaManStarted/ritm"
+homepage = "https://github.com/PizzaManStarted/ritm"
 
 [dependencies]
 colored = "3.0.0"

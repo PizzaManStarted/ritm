@@ -97,7 +97,7 @@ impl Display for TuringParserError {
                 TuringParserError::ParsingError { line_col_pos, value, missing_value } 
                     => format!("Impossible to parse the given input.\n{}{}", get_arrow_under(value, line_col_pos), {
                         if let Some(token) = missing_value {
-                            format!("\nThis token might be missing : \"{}\"", token.to_string())
+                            format!("\nThis token might be missing : \"{}\"", token)
                         }
                         else {
                             String::from("")

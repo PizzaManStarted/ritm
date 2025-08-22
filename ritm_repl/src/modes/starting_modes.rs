@@ -1,50 +1,62 @@
-use std::{fmt::Display, path::{Path, PathBuf}};
+use std::{
+    fmt::Display,
+    path::{Path, PathBuf},
+};
 
-use crate::{modes::choice_modes::{ModeEvent, Modes}, query_string, query_usize, ripl_error::{print_error_help, RiplError}, DataStorage};
+use crate::{
+    DataStorage,
+    modes::choice_modes::{ModeEvent, Modes},
+    query_string, query_usize,
+    ripl_error::{RiplError, print_error_help},
+};
 use colored::Colorize;
 use ritm_core::{turing_graph::TuringMachineGraph, turing_parser::parse_turing_graph_file_path};
-use rustyline::{history::FileHistory, Editor};
+use rustyline::{Editor, history::FileHistory};
 use strum_macros::EnumIter;
-
 
 #[derive(EnumIter)]
 pub enum StartingMode {
     CreateTM,
-    LoadTM
+    LoadTM,
 }
 
 impl Display for StartingMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            StartingMode::CreateTM => "Create new Turing Machine",
-            StartingMode::LoadTM => "Load an existing Turing Machine",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                StartingMode::CreateTM => "Create new Turing Machine",
+                StartingMode::LoadTM => "Load an existing Turing Machine",
+            }
+        )
     }
 }
-
-
-
 
 impl ModeEvent for StartingMode {
     fn print_help(&self) {
         let tm_it = "Turing Machine".italic().bold();
         print!("-> ");
-        println!("{}", match self {
-            StartingMode::CreateTM => format!("Creates a new {tm_it} by specifying the {}", 
-                                                "number of writting ribbons".purple()),
-            StartingMode::LoadTM => format!("Loads a new {tm_it} by specifying a {} to it from",
-                                                "file path".purple()),
-        }.green());
+        println!(
+            "{}",
+            match self {
+                StartingMode::CreateTM => format!(
+                    "Creates a new {tm_it} by specifying the {}",
+                    "number of writting ribbons".purple()
+                ),
+                StartingMode::LoadTM => format!(
+                    "Loads a new {tm_it} by specifying a {} to it from",
+                    "file path".purple()
+                ),
+            }
+            .green()
+        );
     }
-    
+
     fn choose_option(&self, rl: &mut Editor<(), FileHistory>, storage: &mut DataStorage) -> Modes {
         let res = match self {
-            StartingMode::CreateTM => {
-                create_tm(rl)
-            },
-            StartingMode::LoadTM => {
-                load_tm(rl, &storage.curr_path)
-            },
+            StartingMode::CreateTM => create_tm(rl),
+            StartingMode::LoadTM => query_load_tm(rl, &storage.curr_path),
         };
         if let Err(e) = res {
             print_error_help(e);
@@ -55,45 +67,52 @@ impl ModeEvent for StartingMode {
         // Change the mode to allow modifying this tm graph
         Modes::Modify
     }
-    
-    fn get_help_color(str : colored::ColoredString) -> colored::ColoredString {
+
+    fn get_help_color(str: colored::ColoredString) -> colored::ColoredString {
         str.blue()
     }
-
 }
 
+fn create_tm(rl: &mut Editor<(), FileHistory>) -> Result<TuringMachineGraph, RiplError> {
+    let res = query_usize(
+        rl,
+        format!(
+            "Enter the numbers of {} of the Turing machine ({}) :",
+            "writting ribbons".blue(),
+            "k".blue().italic()
+        ),
+    )?;
 
-
-fn create_tm(rl: &mut Editor<(), FileHistory>) -> Result<TuringMachineGraph, RiplError>
-{
-    let res = query_usize(rl, format!("Enter the numbers of {} of the Turing machine ({}) :", "writting ribbons".blue(), "k".blue().italic()));
-
-    if let Err(e) = res {
-        return Err(e);
-    }
-    
-    let tm = TuringMachineGraph::new(res.unwrap());
+    let tm = TuringMachineGraph::new(res);
     if let Err(e) = tm {
         return Err(RiplError::EncounteredTuringError { error: e });
     }
-    
+
     Ok(tm.unwrap())
+}
+
+fn query_load_tm(
+    rl: &mut Editor<(), FileHistory>,
+    current_path: &Option<PathBuf>,
+) -> Result<TuringMachineGraph, RiplError> {
+    let path_str = query_string(
+        rl,
+        format!("Enter the {} the Turing machine to read:", "path".blue()),
+    )?;
+
+    load_tm(current_path, &path_str)
 }
 
 
 
-fn load_tm(rl: &mut Editor<(), FileHistory>, current_path: &Option<PathBuf>) -> Result<TuringMachineGraph, RiplError>
-{
-    let path = query_string(rl, format!("Enter the {} the Turing machine to read:", "path".blue()));
+pub fn load_tm(
+    current_path: &Option<PathBuf>,
+    given_input: &String
+) -> Result<TuringMachineGraph, RiplError> {
 
-    if let Err(e) = path {
-        return Err(e);
-    }
-    
-    // Check if the path is absolute or not 
-    let path_str = path.unwrap();
-    let path = Path::new(&path_str);
-    
+    // Check if the path is absolute or not
+    let path = Path::new(&given_input);
+
     let abs_path = {
         if !path.is_absolute() {
             // Create the absolute path
@@ -101,27 +120,24 @@ fn load_tm(rl: &mut Editor<(), FileHistory>, current_path: &Option<PathBuf>) -> 
                 Some(curr_path) => {
                     let abs_path = curr_path.join(path);
                     abs_path.to_str()
-                },
-                None => {
-                    path.to_str()
-                },
+                }
+                None => path.to_str(),
             };
         }
         path.to_str()
     };
-    if let None = abs_path {
-       return Err(RiplError::FileError { file_path: None }); 
+    if abs_path.is_none() {
+        return Err(RiplError::FileError { file_path: None });
     }
     if !Path::new(abs_path.unwrap()).exists() {
-       return Err(RiplError::FileNotExistError { file_path: abs_path.unwrap().to_string() }); 
+        return Err(RiplError::FileNotExistError {
+            file_path: abs_path.unwrap().to_string(),
+        });
     }
-    
+
     let tm = parse_turing_graph_file_path(abs_path.unwrap().to_string());
     if let Err(e) = tm {
         return Err(RiplError::EncounteredParsingError { error: e });
     }
     Ok(tm.unwrap())
-    
-    
-
 }

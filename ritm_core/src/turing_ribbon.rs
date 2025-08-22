@@ -44,6 +44,8 @@ pub trait TuringRibbon : Display + Clone
 }
 
 
+
+#[derive(Debug, Clone)]
 /// Represents a ribbon made to write and read characters.
 pub struct TuringWriteRibbon
 {
@@ -51,6 +53,8 @@ pub struct TuringWriteRibbon
     pointer: usize
 }
 
+
+#[derive(Debug, Clone)]
 /// Represents a ribbon made to store and only read a word.
 pub struct TuringReadRibbon
 {
@@ -87,9 +91,8 @@ impl TuringRibbon for TuringWriteRibbon
                 
             }
 
-            if let Err(e) = check_replacement_validity(self.chars_vec[self.pointer], replace_by) {
-                return Err(e);
-            }
+            check_replacement_validity(self.chars_vec[self.pointer], replace_by)?;
+
             // Replace the current char read
             self.chars_vec[self.pointer] = replace_by;
             
@@ -97,11 +100,11 @@ impl TuringRibbon for TuringWriteRibbon
             self.pointer = new_pointer as usize;
             return Ok(true);
         }
-        return Ok(false);
+        Ok(false)
     }
     
     fn read_curr_char(&self) -> char {
-        return self.chars_vec[self.pointer];
+        self.chars_vec[self.pointer]
     }
     
     fn get_contents(&self) -> &Vec<char> {
@@ -142,11 +145,11 @@ impl TuringRibbon for TuringReadRibbon
             self.pointer = new_pointer as usize;
             return Ok(true);
         }
-        return Ok(false);
+        Ok(false)
     }
     
     fn read_curr_char(&self) -> char {
-        return self.chars_vec[self.pointer];
+        self.chars_vec[self.pointer]
     }
 
     fn get_contents(&self) -> &Vec<char> {
@@ -164,9 +167,8 @@ impl TuringReadRibbon
     /// Feed a word into the read ribbon, and also adds [INIT_CHAR] and [END_CHAR] to the extremities of it
     pub fn feed_word(&mut self, word: String) -> Result<(), TuringError>
     {
-        if let Err(e) = check_word_validity(&word) {
-            return Err(e);
-        }
+        check_word_validity(&word)?;
+        
         self.chars_vec.clear();
         self.chars_vec.push(INIT_CHAR);
         for ch in word.chars() {
@@ -211,8 +213,8 @@ fn ribbon_to_string(chars_vec: &Vec<char>, pointer: usize, is_inf: bool) -> Stri
 {
     let mut res: String = String::from("[");
     let mut pointing: String = String::from(" ");
-    let mut count = 0;
-    for c in chars_vec 
+
+    for (count, c) in chars_vec.iter().enumerate() 
     {
         res.push_str(&format!("{c},"));
         if count == pointer
@@ -222,7 +224,6 @@ fn ribbon_to_string(chars_vec: &Vec<char>, pointer: usize, is_inf: bool) -> Stri
         else {
             pointing.push_str("  ");
         }
-        count += 1;
     }
     
     res.pop();
@@ -233,17 +234,10 @@ fn ribbon_to_string(chars_vec: &Vec<char>, pointer: usize, is_inf: bool) -> Stri
     res +=  "]\n";
     
     res.push_str(&pointing);
-    return res;
+    res
 }
 
 
-
-impl Debug for TuringWriteRibbon 
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuringRibbon").field("chars_vec", &self.chars_vec).finish()
-    }
-}
 
 impl Display for TuringWriteRibbon 
 {
@@ -253,19 +247,6 @@ impl Display for TuringWriteRibbon
     }
 }
 
-
-impl Clone for TuringReadRibbon {
-    fn clone(&self) -> Self {
-        Self { chars_vec: self.chars_vec.clone(), pointer: self.pointer.clone() }
-    }
-}
-
-
-impl Clone for TuringWriteRibbon {
-    fn clone(&self) -> Self {
-        Self { chars_vec: self.chars_vec.clone(), pointer: self.pointer.clone() }
-    }
-}
 
 
 fn check_word_validity(word: &String) -> Result<(), TuringError>
@@ -382,7 +363,7 @@ mod tests{
         ribbon.try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::Right).unwrap();
         assert_eq!(ribbon.pointer, 1);
 
-        if let Ok(_) = ribbon.try_apply_transition(BLANK_CHAR, INIT_CHAR, &TuringDirection::Right) {
+        if ribbon.try_apply_transition(BLANK_CHAR, INIT_CHAR, &TuringDirection::Right).is_ok() {
             panic!("An error should have been returned");
         }
 

@@ -4,7 +4,7 @@ use std::{collections::VecDeque, fmt::{Debug, Display}};
 use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringStateType, TuringTransitionMultRibbons}};
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 /// Represents the different mode a turing machine can have during it's execution
 pub enum Mode {
     /// Explores all possible paths (and possibilities using backtracking) until an accepting state is found or no path is left is to take. 
@@ -19,14 +19,15 @@ pub enum Mode {
 impl Display for Mode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", match self {
-            Mode::SaveAll => format!("Saves All and does a full exploration"),
+            Mode::SaveAll => "Saves All and does a full exploration".to_string(),
             Mode::StopAfter(val) => format!("Stops After {} iterations", val),
-            Mode::StopFirstReject => format!("Stops after the First Reject"),
+            Mode::StopFirstReject => "Stops after the First Reject".to_string(),
         })
     }
 }
 
 
+#[derive(Debug, Clone)]
 pub struct SavedState {
     /// The index of the saved state
     pub saved_state_index : usize,
@@ -40,25 +41,8 @@ pub struct SavedState {
     pub iteration: usize,
 }
 
-impl Debug for SavedState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SavedState").field("saved_state", &self.saved_state_index).field("next_transitions", &self.next_transitions).field("saved_read_ribbon", &self.saved_read_ribbon.to_string()).field("saved_write_ribbons", &self.saved_write_ribbons).finish()
-    }
-}
 
-impl Clone for SavedState {
-    fn clone(&self) -> Self {
-        Self { 
-            saved_state_index: self.saved_state_index.clone(), 
-            next_transitions: self.next_transitions.clone(), 
-            saved_read_ribbon: self.saved_read_ribbon.clone(), 
-            saved_write_ribbons: self.saved_write_ribbons.clone(),
-            iteration: self.iteration 
-        }
-    }
-}
-
-
+#[derive(Debug)]
 pub enum TuringMachines
 {
     TuringMachine {
@@ -74,6 +58,7 @@ pub enum TuringMachines
     }
 }
 
+#[derive(Debug)]
 pub struct IterationData {
     /// The reading rubbon containing the word
     reading_ribbon:  TuringReadRibbon,
@@ -157,9 +142,7 @@ impl TuringMachines
             return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
         }
         // Reset reading ribbon
-        if let Err(e) = self.get_reading_ribbon_mut().feed_word(word.clone()) {
-            return Err(e);
-        }
+        self.get_reading_ribbon_mut().feed_word(word.clone())?;
         
         self.set_word(word);
 
@@ -239,11 +222,10 @@ impl TuringMachines
         }
         // If the last step did not result in an accepting state, 
         // then we know that no path results in an accepting state.
-        if let Some(t) = last_step_type {
-            if TuringStateType::Accepting != t {
+        if let Some(t) = last_step_type
+            && TuringStateType::Accepting != t {
                 return None;
             }
-        }
 
         Some(path)
     }
@@ -254,7 +236,7 @@ impl TuringMachines {
     /// Gets *reference* of the stored turing machine graph.
     pub fn get_graph_ref(&self) -> &TuringMachineGraph {
         match self {
-            TuringMachines::TuringMachine { graph, data:_, iteration:_, last_iteration:_, is_over:_ } => &graph,
+            TuringMachines::TuringMachine { graph, data:_, iteration:_, last_iteration:_, is_over:_ } => graph,
         }
     }
 
@@ -430,7 +412,7 @@ impl TuringMachines {
     pub fn is_over(&self) -> bool
     {
         match self {
-            TuringMachines::TuringMachine { graph:_, data:_, iteration:_, last_iteration:_ , is_over} => { return *is_over;},
+            TuringMachines::TuringMachine { graph:_, data:_, iteration:_, last_iteration:_ , is_over} => { *is_over},
         }
     }
 
@@ -444,7 +426,7 @@ impl TuringMachines {
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum TuringExecutionSteps
 {
     FirstIteration {
@@ -496,7 +478,7 @@ pub enum TuringExecutionSteps
 
 
 
-impl<'a> Iterator for &mut TuringMachines
+impl Iterator for &mut TuringMachines
 {
     type Item = TuringExecutionSteps;
 
@@ -521,11 +503,10 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
 {
     let prev_iter = tm.get_iteration();
     
-    if let Mode::StopAfter(nb) = tm.get_mode() {
-        if *nb == prev_iter {
+    if let Mode::StopAfter(nb) = tm.get_mode()
+        && *nb == prev_iter {
             return None;
         }
-    }
 
     // Increment nb of iterations already treated
     tm.set_iteration(prev_iter + 1);
@@ -561,7 +542,7 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
 
         // If one of the transition condition is true,
         // Get all current char read by **all** ribbons
-        let mut char_vec = vec!(tm.get_reading_ribbon_mut().read_curr_char().clone());
+        let mut char_vec = vec!(tm.get_reading_ribbon_mut().read_curr_char());
         for ribbon in tm.get_writting_ribbons_mut() {
             char_vec.push(ribbon.read_curr_char());
         }
@@ -631,7 +612,7 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
             transition_index_taken = Some(next_transitions.pop_front().unwrap());
 
             let to_save = SavedState { saved_state_index:tm.get_state_pointer(), 
-                                                    next_transitions: next_transitions, 
+                                                    next_transitions, 
                                                     saved_read_ribbon: tm.get_reading_ribbon_mut().clone(), 
                                                     saved_write_ribbons: tm.get_writting_ribbons_mut().clone(),
                                                     iteration: prev_iter - 1 };
@@ -644,7 +625,7 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
     }
     // if a viable transition was found
     if let Some(ind) = transition_index_taken {
-        let transition = tm.get_graph_ref().get_state(tm.get_state_pointer()).unwrap().transitions[ind as usize].clone();
+        let transition = tm.get_graph_ref().get_state(tm.get_state_pointer()).unwrap().transitions[ind].clone();
         // Apply the transition
         // to the read ribbons
         tm.get_reading_ribbon_mut().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
@@ -652,8 +633,8 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
         // to the write ribbons
         for i in 0..tm.get_graph_ref().get_k()
         {
-            tm.get_writting_ribbons_mut()[i as usize].try_apply_transition(transition.chars_read[(i+1) as usize],
-                                                                                    transition.chars_write[i as usize].0, &transition.chars_write[i as usize].1).unwrap();
+            tm.get_writting_ribbons_mut()[i].try_apply_transition(transition.chars_read[i+1],
+                                                                                    transition.chars_write[i].0, &transition.chars_write[i].1).unwrap();
         }
 
         // Move to the next state
@@ -663,7 +644,7 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
         {
             previous_state: curr_state.clone(),
             reached_state: tm.get_graph_ref().get_state(tm.get_state_pointer()).unwrap().clone(),
-            transition_index_taken : ind as usize,
+            transition_index_taken : ind,
             transition_taken: transition.clone(),
             read_ribbon: tm.get_reading_ribbon_mut().clone(),
             write_ribbons: tm.get_writting_ribbons_mut().clone(),
@@ -679,33 +660,29 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
 }
 
 
-impl<'a> Display for TuringExecutionSteps{
+impl Display for TuringExecutionSteps{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
     {
         match self {
             TuringExecutionSteps::FirstIteration { init_state, init_read_ribbon, init_write_ribbons } => {
-                let mut write_str_rib = String::from(format!("{}", init_write_ribbons[0]));
-                for i in 1..init_write_ribbons.len() 
-                {
-                    write_str_rib.push_str(format!("\n{}", init_write_ribbons[i]).as_str());
+                let mut write_str_rib = init_write_ribbons[0].to_string();
+                for write_ribbon in init_write_ribbons.iter().skip(1) {
+                    write_str_rib.push_str(format!("\n{}", write_ribbon).as_str());
                 }
 
                 write!(f, "* Initial state : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", init_state, init_read_ribbon, write_str_rib)
             },
             TuringExecutionSteps::TransitionTaken { previous_state, reached_state, transition_index_taken:_, transition_taken, read_ribbon, write_ribbons, iteration:_, state_pointer:_ } => {
-                    let mut write_str_rib = String::from(format!("{}", write_ribbons[0]));
-                    for i in 1..write_ribbons.len() 
-                    {
-                        write_str_rib.push_str(format!("\n{}", write_ribbons[i]).as_str());
+                    let mut write_str_rib = write_ribbons[0].to_string();
+                    for write_ribbon in write_ribbons.iter().skip(1) {
+                        write_str_rib.push_str(format!("\n{}", write_ribbon).as_str());
                     }
-
                     write!(f, "* Left state : {}\n* Current state : {}\n* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", previous_state, reached_state, transition_taken, read_ribbon, write_str_rib)
             },
             TuringExecutionSteps::Backtracked { previous_state, reached_state, read_ribbon, write_ribbons, iteration:_ , state_pointer:_, backtracked_iteration} => {
-                let mut write_str_rib = String::from(format!("{}", write_ribbons[0]));
-                for i in 1..write_ribbons.len() 
-                {
-                    write_str_rib.push_str(format!("\n{}", write_ribbons[i]).as_str());
+                let mut write_str_rib = write_ribbons[0].to_string();
+                for write_ribbon in write_ribbons.iter().skip(1) {
+                    write_str_rib.push_str(format!("\n{}", write_ribbon).as_str());
                 }
 
                 write!(f, "* Backtracked from : {}\n* To  : {}(back to iteration: {})\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", previous_state, reached_state, backtracked_iteration, read_ribbon, write_str_rib)

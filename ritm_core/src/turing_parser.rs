@@ -56,19 +56,15 @@ pub fn parse_turing_graph_string(turing_mach: String) -> Result<TuringMachineGra
             // For every rule matched :
             Rule::transition => 
             {
-                let res = parse_transition(turing_machine_rule);
-                if let Err(e) = res {
-                    return Err(e);
-                }
-                let (from_var, transitions, to_var) = res.unwrap();
-
+                let (from_var, transitions, to_var) = parse_transition(turing_machine_rule)?;
+                
                 /* Add the colected transitions to the MT */
 
                 // If the MT doesn't already exists, create it
-                if let None = turing_machine 
+                if turing_machine.is_none() 
                 {
                     // With the collected number of ribbons
-                    let tm = TuringMachineGraph::new(transitions.get(0).expect("At least one rule should be given in a transition").get_number_of_affected_ribbons() - 1);
+                    let tm = TuringMachineGraph::new(transitions.first().expect("At least one rule should be given in a transition").get_number_of_affected_ribbons() - 1);
 
                     if let Err(e) = tm {
                         return Err(
@@ -108,9 +104,9 @@ pub fn parse_turing_graph_string(turing_mach: String) -> Result<TuringMachineGra
         }
     }
     match turing_machine {
-        Some(t) => return Ok(t),
+        Some(t) => Ok(t),
         // If no parse value was given, simply return a read only one
-        None => return Ok(TuringMachineGraph::new(1).unwrap()),
+        None => Ok(TuringMachineGraph::new(1).unwrap()),
     }
 }
 
@@ -166,7 +162,7 @@ fn parse_transition(rule: Pair<Rule>) -> Result<(String, Vec<TuringTransitionMul
             // Get var1 & var2
             Rule::state_name =>
             {
-                if from_var.eq("")
+                if from_var.is_empty()
                 {
                     from_var = parse_str_token(rule);
                 }
