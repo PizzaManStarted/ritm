@@ -1,6 +1,3 @@
-[package]
-name = "ritm"
-
 [workspace]
 resolver = "3"
 members = [ "ritm_core" , "ritm_repl"]
