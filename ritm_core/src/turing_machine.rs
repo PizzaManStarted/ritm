@@ -236,7 +236,7 @@ impl TuringMachines {
     /// Gets *reference* of the stored turing machine graph.
     pub fn get_graph_ref(&self) -> &TuringMachineGraph {
         match self {
-            TuringMachines::TuringMachine { graph, data:_, iteration:_, last_iteration:_, is_over:_ } => &graph,
+            TuringMachines::TuringMachine { graph, data:_, iteration:_, last_iteration:_, is_over:_ } => graph,
         }
     }
 
