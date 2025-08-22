@@ -1,4 +1,4 @@
-name: ritm_check
+name: Rust
 
 on:
   push:
