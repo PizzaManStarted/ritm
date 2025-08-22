@@ -37,7 +37,7 @@ pub fn query_usize(rl: &mut Editor<(), FileHistory>, query: String) -> Result<us
 
                 // Read requested nb
                 let index_res = l.parse();
-                if let Err(_) = &index_res {
+                if index_res.is_err() {
                     return Err(RiplError::CouldNotParseStringIntError { value: l });
                 }
                 return Ok(index_res.unwrap());
@@ -49,7 +49,6 @@ pub fn query_usize(rl: &mut Editor<(), FileHistory>, query: String) -> Result<us
 
 pub fn query_prim<E: FromStr>(rl: &mut Editor<(), FileHistory>, query: String) -> Result<E, RiplError> where <E as FromStr>::Err: Debug
 {
-    // FIXME: fix the error returned !!!
     println!("{}", query);
     loop {
         let readline = rl.readline("==> ");
@@ -64,7 +63,7 @@ pub fn query_prim<E: FromStr>(rl: &mut Editor<(), FileHistory>, query: String) -
 
                 // Read requested nb
                 let index_res = l.parse();
-                if let Err(_) = &index_res {
+                if index_res.is_err() {
                     return Err(RiplError::CouldNotParseStringIntError { value: l });
                 }
                 return Ok(index_res.unwrap());
@@ -90,7 +89,7 @@ pub fn query_float(rl: &mut Editor<(), FileHistory>, query: String) -> Result<f3
 
                 // Read requested nb
                 let index_res = l.parse();
-                if let Err(_) = &index_res {
+                if index_res.is_err() {
                     return Err(RiplError::CouldNotParseStringIntError { value: l });
                 }
                 return Ok(index_res.unwrap());

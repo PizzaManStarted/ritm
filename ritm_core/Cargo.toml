@@ -4,6 +4,9 @@ authors = ["Axel Foucart", "Adrien Zianne"]
 description = "An implementation of turing machines with k ribbons"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+repository = "https://github.com/PizzaManStarted/ritm"
+homepage = "https://github.com/PizzaManStarted/ritm"
 
 [dependencies]
 pest = "2.7.15"
