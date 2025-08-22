@@ -81,13 +81,9 @@ fn create_tm(rl: &mut Editor<(), FileHistory>) -> Result<TuringMachineGraph, Rip
             "writting ribbons".blue(),
             "k".blue().italic()
         ),
-    );
+    )?;
 
-    if let Err(e) = res {
-        return Err(e);
-    }
-
-    let tm = TuringMachineGraph::new(res.unwrap());
+    let tm = TuringMachineGraph::new(res);
     if let Err(e) = tm {
         return Err(RiplError::EncounteredTuringError { error: e });
     }
