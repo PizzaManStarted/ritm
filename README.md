@@ -4,7 +4,10 @@
 
 The goal of these crates is to allow users to experiment with **Turing Machines**. More particularly with non-deterministic machines with working ribbons. 
 
+## Table of Contents :
+
 - [$\\texttt{RITM}$ : *R*ibbon *I*nteractive *T*uring *M*achine](#textttritm--ribbon-interactive-turing-machine)
+  - [Table of Contents :](#table-of-contents-)
   - [Installation](#installation)
   - [Usage](#usage)
     - [Using the code directly](#using-the-code-directly)
