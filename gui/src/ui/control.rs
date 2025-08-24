@@ -1,16 +1,16 @@
 use egui::{
-    include_image, vec2, Align, Align2, Button, Color32, Frame, Image, ImageButton, Label, Layout, RichText, Sense, TextEdit, Ui, Vec2, WidgetText
+    Align, Align2, Button, Color32, Frame, Image, ImageButton, Label, Layout, RichText, Sense,
+    TextEdit, Ui, Vec2, include_image, vec2,
 };
 use egui_flex::{Flex, FlexAlign, FlexAlignContent, item};
 
 use crate::{
-    App,
-    ui::{component::grid::Grid, constant::Constant, font::Font},
+    ui::{component::grid::Grid, constant::Constant, font::Font}, App
 };
 
 pub fn show(app: &mut App, ui: &mut Ui) {
     Frame::new().show(ui, |ui| {
-        ui.set_height(Constant::scale(ui,70.0));
+        ui.set_height(Constant::scale(ui, 70.0));
         let grid = Grid::new(ui, 2, 3);
 
         grid.place(ui, 1, 1, |ui| input(app, ui));
@@ -49,7 +49,13 @@ fn input(app: &mut App, ui: &mut Ui) {
         ui.available_size(),
         Layout::right_to_left(Align::Center),
         |ui| {
-            if ui.add(Button::new(RichText::new("Submit").font(Font::default(Constant::scale(ui, Font::MEDIUM_SIZE))))).clicked() {
+            if ui
+                .add(Button::new(
+                    RichText::new("Submit")
+                        .font(Font::default(Constant::scale(ui, Font::MEDIUM_SIZE))),
+                ))
+                .clicked()
+            {
                 let res = app.turing.reset_word(&app.input);
                 match res {
                     Ok(_) => app.next(),
@@ -57,18 +63,27 @@ fn input(app: &mut App, ui: &mut Ui) {
                 }
             }
 
-            app.event.listen_to_keybind = !ui.add_sized(
-                vec2(
-                    ui.available_width(),
-                    4.0 + Font::get_heigth(ui, &Font::default(Constant::scale(ui, Font::MEDIUM_SIZE))),
-                ), // 4.0 is 2 times the hardcoded default vertical margin of textedit
-                TextEdit::singleline(&mut app.input)
-                    .font(Font::default(Constant::scale(ui, Font::MEDIUM_SIZE)))
-                    .hint_text(RichText::new("Input...")
+            if ui
+                .add_sized(
+                    vec2(
+                        ui.available_width(),
+                        4.0 + Font::get_heigth(
+                            ui,
+                            &Font::default(Constant::scale(ui, Font::MEDIUM_SIZE)),
+                        ),
+                    ), // 4.0 is 2 times the hardcoded default vertical margin of textedit
+                    TextEdit::singleline(&mut app.input)
                         .font(Font::default(Constant::scale(ui, Font::MEDIUM_SIZE)))
-                        .color(Color32::from_black_alpha(100))
-                    ),
-            ).has_focus();
+                        .hint_text(
+                            RichText::new("Input...")
+                                .font(Font::default(Constant::scale(ui, Font::MEDIUM_SIZE)))
+                                .color(Color32::from_black_alpha(100)),
+                        ),
+                )
+                .has_focus()
+            {
+                app.event.listen_to_keybind = false;
+            }
         },
     );
 }
@@ -293,7 +308,14 @@ fn state(app: &mut App, ui: &mut Ui) {
                 }
             };
 
-            flex.add(item(), Label::new(RichText::new(text).color(color).font(Font::default(Constant::scale(flex.ui(), Font::MEDIUM_SIZE)))));
+            flex.add(
+                item(),
+                Label::new(
+                    RichText::new(text)
+                        .color(color)
+                        .font(Font::default(Constant::scale(flex.ui(), Font::MEDIUM_SIZE))),
+                ),
+            );
             flex.grow();
         });
 }

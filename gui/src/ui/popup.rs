@@ -1,16 +1,14 @@
-use egui::{Align2, Area, Frame, Id, Modal, Rect, Ui};
 
-pub mod transition_edit;
 pub mod help;
-pub mod state_edit;
 pub mod setting;
-
+pub mod state_edit;
+pub mod transition_edit;
 
 #[derive(PartialEq)]
-pub enum Popup {
+pub enum RitmPopup {
     None,
     TransitionEdit,
     StateEdit,
     Setting,
-    Help
+    Help,
 }

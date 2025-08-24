@@ -1,11 +1,12 @@
 use egui::{
-    Checkbox, Context, Frame, Grid, Id, Label, Margin, Modal, RichText,
-    Separator, Stroke, Ui, style::WidgetVisuals, vec2,
+    Checkbox, Context, Frame, Grid, Id, Label, Margin, Modal, RichText, Separator, Stroke, Ui,
+    style::WidgetVisuals, vec2,
 };
 use ritm_core::turing_machine::Mode;
 
 use crate::{
-    ui::{component::combobox::ComboBox, font::Font, popup::Popup, theme::Theme}, App
+    App,
+    ui::{component::combobox::ComboBox, font::Font, popup::RitmPopup, theme::Theme},
 };
 
 pub fn show(app: &mut App, ctx: &Context) {
@@ -62,7 +63,8 @@ pub fn show(app: &mut App, ctx: &Context) {
                                         "Unsafe",
                                     );
                                 }
-                                if let Mode::StopAfter(_) = app.settings.turing_machine_mode {} else {
+                                if let Mode::StopAfter(_) = app.settings.turing_machine_mode {
+                                } else {
                                     ui.selectable_value(
                                         &mut app.settings.turing_machine_mode,
                                         Mode::StopAfter(500),
@@ -84,7 +86,7 @@ pub fn show(app: &mut App, ctx: &Context) {
 
             if app.event.close_popup {
                 app.event.close_popup = false;
-                app.popup = Popup::None;
+                app.popup = RitmPopup::None;
             }
         });
 }

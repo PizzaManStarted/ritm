@@ -1,4 +1,4 @@
-use egui::{accesskit::Invalid, Color32, Pos2};
+use egui::{Color32, Pos2, accesskit::Invalid};
 use rand::random_range;
 use ritm_core::turing_state::{TuringDirection, TuringTransitionMultRibbons};
 
@@ -25,7 +25,7 @@ pub struct Transition {
     pub id: usize,
     pub parent_id: usize,
     pub target_id: usize,
-    pub identifier: (usize, usize)
+    pub identifier: (usize, usize),
 }
 
 /// Copy of the [`TuringTransitionMultRibbons`] but with string to allow empty char
@@ -44,34 +44,54 @@ pub struct TransitionEdit {
 }
 
 impl TransitionEdit {
-    
     pub fn from(ttmr: &TuringTransitionMultRibbons) -> Self {
-
         let tts = TuringTransitionString {
-            chars_read: ttmr.chars_read.iter().map(|f| f.to_string()).collect::<Vec<String>>(),
+            chars_read: ttmr
+                .chars_read
+                .iter()
+                .map(|f| f.to_string())
+                .collect::<Vec<String>>(),
             move_read: ttmr.move_read.clone(),
-            chars_write: ttmr.chars_write.iter().map(|(char, dir)| (char.to_string(), dir.clone())).collect::<Vec<(String, TuringDirection)>>(),
-            index_to_state: ttmr.index_to_state
+            chars_write: ttmr
+                .chars_write
+                .iter()
+                .map(|(char, dir)| (char.to_string(), dir.clone()))
+                .collect::<Vec<(String, TuringDirection)>>(),
+            index_to_state: ttmr.index_to_state,
         };
 
         Self {
             edit: tts.clone(),
             base: tts,
-            has_changed: false
+            has_changed: false,
         }
     }
 
     pub fn to(&self) -> Result<TuringTransitionMultRibbons, Invalid> {
-
         if self.edit.chars_read.iter().any(|string| string.is_empty())
-        || self.edit.chars_write.iter().any(|(string, _)| string.is_empty()) {
+            || self
+                .edit
+                .chars_write
+                .iter()
+                .any(|(string, _)| string.is_empty())
+        {
             return Err(Invalid::True);
         }
 
         Ok(TuringTransitionMultRibbons {
-            chars_read: self.edit.chars_read.iter().map(|string| string.chars().next().unwrap()).collect::<Vec<char>>(),
+            chars_read: self
+                .edit
+                .chars_read
+                .iter()
+                .map(|string| string.chars().next().unwrap())
+                .collect::<Vec<char>>(),
             move_read: self.edit.move_read.clone(),
-            chars_write: self.edit.chars_write.iter().map(|(string, dir)| (string.chars().next().unwrap(), dir.clone())).collect::<Vec<(char, TuringDirection)>>(),
+            chars_write: self
+                .edit
+                .chars_write
+                .iter()
+                .map(|(string, dir)| (string.chars().next().unwrap(), dir.clone()))
+                .collect::<Vec<(char, TuringDirection)>>(),
             index_to_state: self.edit.index_to_state,
         })
     }
@@ -99,7 +119,6 @@ impl TransitionEdit {
 }
 
 impl State {
-
     pub fn new_at_pos(id: usize, name: String, position: Pos2) -> Self {
         State {
             id: id,
@@ -107,7 +126,7 @@ impl State {
             position: position,
             is_pinned: true,
             color: Color32::WHITE,
-            transitions: vec![]
+            transitions: vec![],
         }
     }
 
@@ -118,7 +137,7 @@ impl State {
             position: Pos2::new(random_range(0.0..1.0), random_range(0.0..1.0)),
             is_pinned: true,
             color: Color32::WHITE,
-            transitions: vec![]
+            transitions: vec![],
         }
     }
 
@@ -132,7 +151,6 @@ impl State {
 }
 
 impl Transition {
-
     pub fn new(text: String, id: usize, parent_id: usize, target_id: usize) -> Self {
         Transition {
             text: text,
@@ -144,11 +162,17 @@ impl Transition {
     }
 
     pub fn get(app: &App, identifier: (usize, usize)) -> &Self {
-        State::get(app, identifier.0).transitions.get(identifier.1).unwrap()
+        State::get(app, identifier.0)
+            .transitions
+            .get(identifier.1)
+            .unwrap()
     }
 
     pub fn get_mut(app: &mut App, identifier: (usize, usize)) -> &mut Self {
-        State::get_mut(app, identifier.0).transitions.get_mut(identifier.1).unwrap()
+        State::get_mut(app, identifier.0)
+            .transitions
+            .get_mut(identifier.1)
+            .unwrap()
     }
 }
 

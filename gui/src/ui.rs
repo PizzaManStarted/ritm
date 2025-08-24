@@ -1,5 +1,5 @@
 use egui::{
-    vec2, Align, CentralPanel, CornerRadius, Frame, Layout, Margin, SidePanel, TopBottomPanel
+    Align, CentralPanel, CornerRadius, Frame, Layout, Margin, SidePanel, TopBottomPanel, vec2,
 };
 
 pub mod code;
@@ -9,23 +9,27 @@ pub mod control;
 pub mod edit;
 pub mod font;
 pub mod graph;
+pub mod popup;
 pub mod ribbon;
 pub mod settings;
 pub mod theme;
 pub mod utils;
-pub mod popup;
 
-use crate::{ui::{font::Font, popup::{help, setting, state_edit, transition_edit}}, App};
+use crate::{
+    ui::{
+        font::Font,
+        popup::{help, setting, state_edit, transition_edit},
+    }, App
+};
 
 pub fn show(app: &mut App, ctx: &egui::Context) {
-
     // Display the popup
     match app.popup {
-        popup::Popup::None => {},
-        popup::Popup::TransitionEdit => transition_edit::show(app, ctx),
-        popup::Popup::StateEdit => state_edit::show(app, ctx),
-        popup::Popup::Setting => setting::show(app, ctx),
-        popup::Popup::Help => help::show(app, ctx),
+        popup::RitmPopup::None => {}
+        popup::RitmPopup::TransitionEdit => transition_edit::show(app, ctx),
+        popup::RitmPopup::StateEdit => state_edit::show(app, ctx),
+        popup::RitmPopup::Setting => setting::show(app, ctx),
+        popup::RitmPopup::Help => help::show(app, ctx),
     }
 
     CentralPanel::default()
@@ -40,7 +44,6 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             ui.style_mut().override_font_id = Some(Font::default_medium()); // TODO check if there is not a better way to do that
 
             if app.event.is_code_closed {
-
                 SidePanel::left("settings")
                     .frame(Frame {
                         inner_margin: 5.into(),
@@ -97,7 +100,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                             right: 10,
                             ..Default::default()
                         },
-                        fill: app.theme.code,
+                        fill: app.theme.background,
                         ..Default::default()
                     })
                     .resizable(false)
@@ -108,6 +111,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         TopBottomPanel::top("settings")
                             .frame(Frame {
                                 fill: app.theme.background,
+                                inner_margin: 5.into(),
                                 ..Default::default()
                             })
                             .resizable(false)
@@ -158,10 +162,14 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                             .resizable(false)
                             .show_separator_line(false)
                             .show_inside(ui, |ui| {
-                                ui.allocate_ui_with_layout(vec2(ui.available_width(), 0.0), Layout::top_down(Align::Min), |ui| {
-                                    ribbon::show(app, ui);
-                                    control::show(app, ui);
-                                });
+                                ui.allocate_ui_with_layout(
+                                    vec2(ui.available_width(), 0.0),
+                                    Layout::top_down(Align::Min),
+                                    |ui| {
+                                        ribbon::show(app, ui);
+                                        control::show(app, ui);
+                                    },
+                                );
                             });
 
                         // Graph visual and edition

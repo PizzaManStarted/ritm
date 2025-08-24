@@ -1,4 +1,4 @@
-use egui::{text::LayoutJob, vec2, Color32, FontFamily, FontId, Ui, Vec2};
+use egui::{Color32, FontFamily, FontId, Ui, Vec2, text::LayoutJob, vec2};
 
 /// Access to the different font used in the application
 pub struct Font;
@@ -47,7 +47,7 @@ impl Font {
     pub fn bold() -> FontId {
         FontId {
             family: FontFamily::Name("RobotoMono-Bold".into()),
-            size: Self::MEDIUM_SIZE
+            size: Self::MEDIUM_SIZE,
         }
     }
 

@@ -1,17 +1,26 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap}, sync::{atomic::AtomicBool, Arc}, time::Duration
+    collections::{BTreeMap, BTreeSet, HashMap},
+    path::Path,
+    sync::{Arc, atomic::AtomicBool},
+    time::Duration,
 };
 
-use egui::{vec2, FontData, FontDefinitions, FontFamily, Key, Pos2, Rect};
+use egui::{
+    vec2, FontData, FontDefinitions, FontFamily, Key, Pos2, Rect, Ui, UserData, ViewportCommand
+};
 use egui_extras::install_image_loaders;
+use image::{ExtendedColorType, save_buffer};
 use rand::random;
 use ritm_core::{
-    turing_graph::TuringMachineGraph, turing_machine::{Mode, TuringExecutionSteps, TuringMachines}, turing_parser::graph_to_string, turing_state::{TuringDirection, TuringStateType, TuringTransitionMultRibbons}
+    turing_graph::TuringMachineGraph,
+    turing_machine::{Mode, TuringExecutionSteps, TuringMachines},
+    turing_parser::{graph_to_string, parse_turing_graph_string},
+    turing_state::{TuringDirection, TuringStateType, TuringTransitionMultRibbons},
 };
 
 use crate::{
     turing::{State, Transition, TransitionEdit},
-    ui::{self, popup::Popup, theme::Theme, utils::FileDialog},
+    ui::{self, popup::RitmPopup, theme::Theme, utils::FileDialog},
 };
 
 /// The only structure that is persistent each redraw of the application
@@ -56,11 +65,13 @@ pub struct App {
     pub file: FileDialog,
 
     /// Which popup to display
-    pub popup: Popup,
+    pub popup: RitmPopup,
 
     pub last_step_time: f64,
 
     pub settings: Settings,
+
+    pub help_slide_index: usize,
 }
 
 /// Keep the state of the application
@@ -105,10 +116,11 @@ pub struct Event {
     pub close_popup: bool,
 
     pub listen_to_keybind: bool,
+
+    pub take_screenshot: bool,
 }
 
 pub struct Settings {
-
     pub turing_machine_mode: Mode,
 
     pub toggle_after_action: bool,
@@ -135,12 +147,13 @@ impl Default for App {
             interval: 0,
             rules_edit: vec![],
             file: FileDialog::default(),
-            popup: Popup::None,
+            popup: RitmPopup::None,
             last_step_time: 0.0,
             settings: Settings {
                 toggle_after_action: true,
-                turing_machine_mode: Mode::StopAfter(500)
-            }
+                turing_machine_mode: Mode::StopAfter(500),
+            },
+            help_slide_index: 0
         };
 
         // Update the graph data with the turing data at initialization
@@ -167,6 +180,7 @@ impl Default for Event {
             is_small_window: false,
             close_popup: false,
             listen_to_keybind: true,
+            take_screenshot: false,
         }
     }
 }
@@ -290,42 +304,74 @@ impl App {
     /// Apply the changes made to the transition
     pub fn apply_transition_change(&mut self) {
         // Need to have a transition selected
-        
-        if let Some(selected_transition) = self.selected_transition && !self.rules_edit.iter().any(|transition| transition.to().is_err()) {
+
+        if let Some(selected_transition) = self.selected_transition
+            && !self
+                .rules_edit
+                .iter()
+                .any(|transition| transition.to().is_err())
+        {
             // Reset the machine to avoid problem when removing transition, especially transition_taken
             // MEMO : maybe block the removing of the last transition taken ?
             let _ = self.turing.reset();
 
-            let transitions = &mut self.turing
+            let transitions = &mut self
+                .turing
                 .graph_mut()
                 .get_state_mut(selected_transition.0)
                 .unwrap()
                 .transitions;
 
-
-
             transitions.clear();
-            transitions.append(self.rules_edit.iter().map(|transition| transition.to().unwrap()).collect::<Vec<TuringTransitionMultRibbons>>().as_mut());
-            
+            transitions.append(
+                self.rules_edit
+                    .iter()
+                    .map(|transition| transition.to().unwrap())
+                    .collect::<Vec<TuringTransitionMultRibbons>>()
+                    .as_mut(),
+            );
+
             let transitions_gui: Vec<Transition> = transitions
                 .iter()
                 .enumerate()
-                .map(|(i, f)| Transition::new(f.to_string(), i, selected_transition.0, f.index_to_state.unwrap()))
+                .map(|(i, f)| {
+                    Transition::new(
+                        f.to_string(),
+                        i,
+                        selected_transition.0,
+                        f.index_to_state.unwrap(),
+                    )
+                })
                 .collect();
 
             State::get_mut(self, selected_transition.0).transitions = transitions_gui;
         };
-        self.popup = Popup::None;
+        self.popup = RitmPopup::None;
     }
 
     /// Cancel the changes made to the transition
     pub fn cancel_transition_change(&mut self) {
         self.rules_edit.clear();
-        self.popup = Popup::None;
+        self.popup = RitmPopup::None;
     }
 
     pub fn graph_to_code(&mut self) {
         self.code = graph_to_string(self.turing.graph_ref());
+    }
+
+    pub fn code_to_graph(&mut self) {
+        match parse_turing_graph_string(self.code.to_string()) {
+            Ok(graph) => {
+                self.turing =
+                    TuringMachines::new(graph, self.input.to_string(), Mode::StopFirstReject)
+                        .unwrap();
+                self.turing_to_graph();
+            }
+            Err(e) => {
+                println!("{:?}", e);
+            }
+        }
+        self.event.need_recenter = true;
     }
 
     /// Create a graphical representation of a turing machine by copying each states and transitions information into GUI-oriented struct
@@ -416,7 +462,6 @@ impl eframe::App for App {
         ui::show(self, ctx);
 
         if self.event.is_running {
-
             if ctx.input(|r| r.time) - self.last_step_time >= 2.0_f32.powi(self.interval) as f64 {
                 self.next();
                 self.last_step_time = ctx.input(|r| r.time);
@@ -425,57 +470,63 @@ impl eframe::App for App {
 
         if self.event.listen_to_keybind {
             ctx.input(|r| {
-            if r.key_pressed(Key::Escape) {
-                if self.popup != Popup::None {
-                    // Request graceful exit of popup
-                    self.event.close_popup = true;
-                } else {
-                    // Unselect what is selected
-                    self.selected_state = None;
-                    self.selected_transition = None;
+                if r.key_pressed(Key::Escape) {
+                    if self.popup != RitmPopup::None {
+                        // Request graceful exit of popup
+                        self.event.close_popup = true;
+                    } else {
+                        // Unselect what is selected
+                        self.selected_state = None;
+                        self.selected_transition = None;
+                    }
                 }
-            }
 
-            // Press A to create a state
-            if r.key_pressed(Key::A) {
-                self.event.is_adding_state ^= true;
-            }
+                // Press A to create a state
+                if r.key_pressed(Key::A) {
+                    self.event.is_adding_state ^= true;
+                }
 
-            // Press T to create a transition
-            if self.selected_state.is_some() && r.key_pressed(Key::T) {
-                self.event.is_adding_transition ^= true;
-            }
+                // Press T to create a transition
+                if self.selected_state.is_some() && r.key_pressed(Key::T) {
+                    self.event.is_adding_transition ^= true;
+                }
 
-            // Press U to unpin all state
-            if r.key_pressed(Key::U) {
-                self.unpin();
-            }
+                // Press U to unpin all state
+                if r.key_pressed(Key::U) {
+                    self.unpin();
+                }
 
-            // Press C to open and close code section
-            if r.key_pressed(Key::C) {
-                self.event.is_code_closed ^= true;
-            }
+                // Press C to open and close code section
+                if r.key_pressed(Key::C) {
+                    self.event.is_code_closed ^= true;
+                }
 
-            // Press R to recenter
-            if r.key_pressed(Key::R) {
-                self.event.need_recenter = true;
-            }
+                // Press R to recenter
+                if r.key_pressed(Key::R) {
+                    self.event.need_recenter = true;
+                }
 
-            // Press Space to make 1 iteration
-            if self.event.is_accepted.is_none() && r.key_pressed(Key::Space) {
-                self.next();
-            }
+                // Press Space to make 1 iteration
+                if self.event.is_accepted.is_none() && r.key_pressed(Key::Space) {
+                    self.next();
+                }
 
-            // Press P to autoplay the machine
-            if r.key_pressed(Key::P) {
-                self.event.is_running ^= true;
-            }
+                // Press P to autoplay the machine
+                if r.key_pressed(Key::P) {
+                    self.event.is_running ^= true;
+                }
 
-            // Press Backspace to reset the machine
-            if r.key_pressed(Key::Backspace) {
-                self.reset();
-            }
-        });
+                // Press Backspace to reset the machine
+                if r.key_pressed(Key::Backspace) {
+                    self.reset();
+                }
+
+                if r.key_pressed(Key::S) {
+                    self.event.take_screenshot = true;
+                }
+            });
+        } else {
+            self.event.listen_to_keybind = true;
         }
 
         ctx.request_repaint_after(Duration::from_secs(2.0_f32.powi(self.interval) as u64));
@@ -508,4 +559,31 @@ fn load_font(cc: &eframe::CreationContext<'_>) {
     fonts.families.append(&mut newfam);
 
     cc.egui_ctx.set_fonts(fonts);
+}
+
+pub fn take_screenshot(app: &mut App, ui: &mut Ui) {
+    let ctx = ui.ctx();
+    let rect = ui.min_rect();
+    if app.event.take_screenshot {
+        app.event.take_screenshot = false;
+
+        ctx.send_viewport_cmd(ViewportCommand::Screenshot(UserData::default()));
+
+        ctx.input(|i| {
+            i.events
+                .iter()
+                .for_each(|e| {
+                    if let egui::Event::Screenshot { image, .. } = e {
+                        let image = image.region(&rect, Some(i.pixels_per_point));
+                        save_buffer(
+                            Path::new("assets/help/screenshot.png"),
+                            image.as_raw(),
+                            image.source_size.x as u32,
+                            image.source_size.y as u32,
+                            ExtendedColorType::Rgba8,
+                        ).unwrap();
+                    }
+                })
+        });
+    }
 }

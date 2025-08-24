@@ -1,7 +1,9 @@
 use epaint::Shape;
 
 use egui::{
-    epaint, style::WidgetVisuals, vec2, Align, Align2, Context, Id, InnerResponse, Layout, NumExt as _, Painter, Popup, PopupCloseBehavior, Rect, Response, ScrollArea, Sense, Stroke, TextStyle, TextWrapMode, Ui, UiBuilder, Vec2, WidgetInfo, WidgetText, WidgetType
+    Align, Align2, Context, Id, InnerResponse, Layout, NumExt as _, Painter, Popup,
+    PopupCloseBehavior, Rect, Response, ScrollArea, Sense, Stroke, TextStyle, TextWrapMode, Ui,
+    UiBuilder, Vec2, WidgetInfo, WidgetText, WidgetType, epaint, style::WidgetVisuals, vec2,
 };
 
 #[expect(unused_imports)] // Documentation
@@ -41,7 +43,7 @@ pub struct ComboBox {
     height: Option<f32>,
     icon: Option<IconPainter>,
     wrap_mode: Option<TextWrapMode>,
-    close_behavior: Option<PopupCloseBehavior>
+    close_behavior: Option<PopupCloseBehavior>,
 }
 
 impl ComboBox {
@@ -219,28 +221,33 @@ impl ComboBox {
         let button_id = ui.make_persistent_id(id_salt);
 
         // replace ui.horizontal(|ui|{ by allocate with the size of ui fix the alignement
-        ui.allocate_ui_with_layout(ui.available_size_before_wrap(), Layout::left_to_right(Align::Center), |ui| {
-            let mut ir = combo_box_dyn(
-                ui,
-                button_id,
-                selected_text,
-                menu_contents,
-                icon,
-                wrap_mode,
-                close_behavior,
-                (width, height),
-            );
-            if let Some(label) = label {
-                ir.response.widget_info(|| {
-                    WidgetInfo::labeled(WidgetType::ComboBox, ui.is_enabled(), label.text())
-                });
-                ir.response |= ui.label(label);
-            } else {
-                ir.response
-                    .widget_info(|| WidgetInfo::labeled(WidgetType::ComboBox, ui.is_enabled(), ""));
-            }
-            ir
-        })
+        ui.allocate_ui_with_layout(
+            ui.available_size_before_wrap(),
+            Layout::left_to_right(Align::Center),
+            |ui| {
+                let mut ir = combo_box_dyn(
+                    ui,
+                    button_id,
+                    selected_text,
+                    menu_contents,
+                    icon,
+                    wrap_mode,
+                    close_behavior,
+                    (width, height),
+                );
+                if let Some(label) = label {
+                    ir.response.widget_info(|| {
+                        WidgetInfo::labeled(WidgetType::ComboBox, ui.is_enabled(), label.text())
+                    });
+                    ir.response |= ui.label(label);
+                } else {
+                    ir.response.widget_info(|| {
+                        WidgetInfo::labeled(WidgetType::ComboBox, ui.is_enabled(), "")
+                    });
+                }
+                ir
+            },
+        )
         .inner
     }
 
@@ -426,7 +433,6 @@ fn button_frame(
 
     let mut outer_rect = content_ui.min_rect().expand2(margin);
     outer_rect.set_height(outer_rect.height().at_least(interact_size.y));
-
 
     let response = ui.interact(outer_rect, id, sense);
 

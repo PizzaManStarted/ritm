@@ -1,9 +1,12 @@
 use egui::{
-    include_image, vec2, Align, AtomExt, Button, Color32, Context, Frame, Id, Image, Layout, Margin, Modal, RichText, Stroke, TextEdit, Ui, Vec2
+    Align, AtomExt, Button, Color32, Context, Frame, Id, Image, Layout, Margin, Modal, RichText,
+    Stroke, TextEdit, Ui, Vec2, include_image, vec2,
 };
 
 use crate::{
-    turing::State, ui::{font::Font, popup::Popup, theme::Theme}, App
+    App,
+    turing::State,
+    ui::{font::Font, popup::RitmPopup, theme::Theme},
 };
 
 pub fn show(app: &mut App, ctx: &Context) {
@@ -16,61 +19,72 @@ pub fn show(app: &mut App, ctx: &Context) {
             ..Default::default()
         })
         .show(ctx, |ui: &mut Ui| {
+            ui.allocate_ui_with_layout(
+                vec2(200.0, 0.0),
+                Layout::top_down(Align::Center).with_cross_justify(true),
+                |ui| {
+                    ui.style_mut().spacing.item_spacing = vec2(0.0, 10.0);
 
-            ui.allocate_ui_with_layout(vec2(200.0, 0.0), Layout::top_down(Align::Center).with_cross_justify(true) ,|ui| {
-                ui.style_mut().spacing.item_spacing = vec2(0.0, 10.0);
+                    ui.allocate_ui_with_layout(
+                        vec2(200.0, 0.0),
+                        Layout::right_to_left(Align::Center),
+                        |ui| {
+                            // ui.set_width(200.0);
+                            ui.add(
+                                Image::new(include_image!("../../../assets/icon/edit.svg"))
+                                    .fit_to_exact_size(Vec2::splat(
+                                        Font::get_heigth(ui, &Font::default_big()) + 4.0,
+                                    ))
+                                    .tint(app.theme.gray),
+                            );
 
+                            let state = State::get_mut(app, app.selected_state.unwrap());
 
-                ui.allocate_ui_with_layout(
-                    vec2(200.0, 0.0),
-                    Layout::right_to_left(Align::Center),
-                    |ui| {
-                        // ui.set_width(200.0);
-                        ui.add(
-                            Image::new(include_image!("../../../assets/icon/edit.svg"))
-                                .fit_to_exact_size(Vec2::splat(
-                                    Font::get_heigth(ui, &Font::default_big()) + 4.0,
-                                ))
-                                .tint(app.theme.gray),
-                        );
+                            let edit = TextEdit::singleline(&mut state.name)
+                                .font(Font::default_big())
+                                .background_color(Color32::from_black_alpha(20))
+                                .char_limit(5);
 
-                        let state = State::get_mut(app, app.selected_state.unwrap());
+                            ui.add(edit)
+                        },
+                    );
 
-                        let edit = TextEdit::singleline(&mut state.name)
-                            .font(Font::default_big())
-                            .background_color(Color32::from_black_alpha(20))
-                            .char_limit(5);
+                    let state = State::get(app, app.selected_state.unwrap());
 
-                        ui.add(edit)
-                    },
-                );
-
-                let state = State::get(app, app.selected_state.unwrap());
-
-                let text = RichText::new("Save")
+                    let text = RichText::new("Save")
                         .color(Theme::constrast_color(app.theme.valid))
                         .font(Font::default_medium())
                         .atom_grow(true);
 
-                if ui
+                    if ui
                         .add(
                             Button::new(text)
                                 .stroke(Stroke::new(2.0, app.theme.gray))
-                                .fill(if state.name.is_empty() {app.theme.gray} else {app.theme.valid})
+                                .fill(if state.name.is_empty() {
+                                    app.theme.gray
+                                } else {
+                                    app.theme.valid
+                                })
                                 .corner_radius(10.0),
                         )
                         .clicked()
                     {
-                        if !state.name.is_empty() {app.popup = Popup::None}
+                        if !state.name.is_empty() {
+                            app.popup = RitmPopup::None
+                        }
                         let state = State::get(app, app.selected_state.unwrap());
-                        app.turing.graph_mut().get_state_mut(app.selected_state.unwrap()).unwrap().name = state.name.clone();
+                        app.turing
+                            .graph_mut()
+                            .get_state_mut(app.selected_state.unwrap())
+                            .unwrap()
+                            .name = state.name.clone();
                     };
-
-            });
+                },
+            );
 
             if app.event.close_popup {
                 app.event.close_popup = false;
-                app.popup = Popup::None;
+                app.popup = RitmPopup::None;
             }
         });
 }

@@ -1,12 +1,13 @@
-use egui::{vec2, Align, Label, Rect, RichText, Sense, Stroke, Ui};
+use egui::{Align, Label, Rect, RichText, Sense, Stroke, Ui, vec2};
 
 use crate::{
-    turing::State, ui::{constant::Constant, font::Font, theme::Theme}, App
+    App,
+    turing::State,
+    ui::{constant::Constant, font::Font, theme::Theme},
 };
 
 /// Display every state of the turing machine
 pub fn show(app: &mut App, ui: &mut Ui) {
-
     // This line copy every keys of the hasmap to avoid borrowing the struct App that we need in each call.
     let keys: Vec<usize> = app.states.keys().map(|u| *u).collect::<Vec<usize>>();
     for i in keys {
@@ -30,10 +31,16 @@ fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) {
         state.position,
         Constant::STATE_RADIUS,
         state.color,
-        if app.selected_state.is_some_and(|id| id == state_id ) {
+        if app.selected_state.is_some_and(|id| id == state_id) {
             Stroke::new(4.0, app.theme.selected)
         } else {
-            if let Some(current_state_id) = app.turing.graph_ref().get_name_index_hashmap().get(&app.step.get_current_state().name) && *current_state_id == state_id {
+            if let Some(current_state_id) = app
+                .turing
+                .graph_ref()
+                .get_name_index_hashmap()
+                .get(&app.step.get_current_state().name)
+                && *current_state_id == state_id
+            {
                 Stroke::new(4.0, app.theme.highlight)
             } else {
                 Stroke::new(2.0, app.theme.gray)
@@ -54,7 +61,6 @@ fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) {
     let response = ui.allocate_rect(rect, Sense::click_and_drag());
 
     if response.clicked() {
-
         if app.event.is_adding_transition {
             app.add_transition(state_id);
         } else {
@@ -63,15 +69,16 @@ fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) {
         }
     }
 
-    
-
     // If dragged, make the node follow the pointer
     if response.dragged() {
         app.states.get_mut(&state_id).unwrap().position = response.interact_pointer_pos().unwrap();
         State::get_mut(app, state_id).is_pinned = true;
     }
 
-    if response.drag_started() { app.event.is_dragging = true }
-    if response.drag_stopped() { app.event.is_dragging = false }
-
+    if response.drag_started() {
+        app.event.is_dragging = true
+    }
+    if response.drag_stopped() {
+        app.event.is_dragging = false
+    }
 }

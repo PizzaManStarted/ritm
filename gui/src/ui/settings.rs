@@ -1,11 +1,15 @@
-use egui::{Image, ImageButton, Ui, Vec2, include_image, vec2};
+use egui::{
+    AtomExt, Button, Image, ImageButton, Popup, PopupCloseBehavior, RectAlign, RichText, Separator,
+    Stroke, Ui, Vec2, include_image, vec2,
+};
 use egui_flex::{Flex, FlexAlign, FlexAlignContent, FlexDirection, item};
-use ritm_core::{
-    turing_machine::{Mode, TuringMachines},
-    turing_parser::parse_turing_graph_string,
+use include_directory::{Dir, include_directory};
+
+use crate::{
+    ui::{constant::Constant, font::Font, popup::RitmPopup}, App
 };
 
-use crate::{ui::{constant::Constant, popup::Popup}, App};
+static EXAMPLES: Dir = include_directory!("ritm_core/resources");
 
 /// Global application control, like settings, compile or load file
 pub fn show(app: &mut App, ui: &mut Ui) {
@@ -21,25 +25,26 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     };
 
     flex.show(ui, |ui| {
-
-        app.event.is_small_window = ui.ui().ctx().screen_rect().width() < ((Constant::ICON_SIZE + 10.0) * 6.0) * 3.0;
+        app.event.is_small_window =
+            ui.ui().ctx().screen_rect().width() < ((Constant::ICON_SIZE + 10.0) * 6.0) * 3.0;
 
         if app.event.is_small_window {
             app.event.is_code_closed = true;
         }
 
         if app.event.is_code_closed {
-            if !app.event.is_small_window && ui
-                .add(
-                    item(),
-                    ImageButton::new(
-                        Image::new(include_image!("../../assets/icon/panel_open.svg"))
-                            .fit_to_exact_size(Vec2::splat(Constant::ICON_SIZE))
-                            .tint(app.theme.white),
+            if !app.event.is_small_window
+                && ui
+                    .add(
+                        item(),
+                        ImageButton::new(
+                            Image::new(include_image!("../../assets/icon/panel_open.svg"))
+                                .fit_to_exact_size(Vec2::splat(Constant::ICON_SIZE))
+                                .tint(app.theme.white),
+                        )
+                        .frame(false),
                     )
-                    .frame(false),
-                )
-                .clicked()
+                    .clicked()
             {
                 app.event.is_code_closed = false;
             }
@@ -57,7 +62,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             )
             .clicked()
         {
-            app.popup = Popup::Setting;
+            app.popup = RitmPopup::Setting;
         }
 
         if ui
@@ -75,20 +80,58 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             app.event.are_settings_visible = true;
         }
 
-        if ui
-            .add(
-                item(),
-                ImageButton::new(
-                    Image::new(include_image!("../../assets/icon/upload.svg"))
-                        .fit_to_exact_size(Vec2::splat(Constant::ICON_SIZE))
-                        .tint(app.theme.white),
-                )
-                .frame(false),
+        let res = ui.add(
+            item(),
+            ImageButton::new(
+                Image::new(include_image!("../../assets/icon/machine_folder.svg"))
+                    .fit_to_exact_size(Vec2::splat(Constant::ICON_SIZE))
+                    .tint(app.theme.white),
             )
-            .clicked()
-        {
-            app.file.open();
-        }
+            .frame(false),
+        );
+
+        Popup::menu(&res)
+            .gap(if app.event.is_code_closed { 10.0 } else { 5.0 })
+            .align(if app.event.is_code_closed {
+                RectAlign::RIGHT_START
+            } else {
+                RectAlign::BOTTOM_START
+            })
+            .close_behavior(PopupCloseBehavior::CloseOnClick)
+            .show(|ui| {
+                for example in EXAMPLES.files() {
+                    let button = Button::new(
+                        RichText::new(example.path().file_stem().unwrap().to_str().unwrap())
+                            .font(Font::default_small())
+                            .color(app.theme.gray),
+                    )
+                    .frame(false)
+                    .min_size(vec2(0.0, 25.0));
+                    if ui.add(button).clicked() {
+                        app.code = example.contents_utf8().unwrap().to_string();
+                        app.code_to_graph();
+                    }
+                }
+
+                ui.visuals_mut().widgets.noninteractive.bg_stroke =
+                    Stroke::new(1.0, app.theme.gray);
+                ui.add(Separator::default().grow(6.0));
+
+                let img = Image::new(include_image!("../../assets/icon/upload.svg"))
+                    .fit_to_exact_size(Vec2::splat(25.0))
+                    .tint(app.theme.gray)
+                    .atom_size(Vec2::splat(25.0));
+
+                if ui
+                    .add(
+                        Button::new((RichText::new("Upload").font(Font::default_small()), img))
+                            .frame(false),
+                    )
+                    .clicked()
+                {
+                    app.file.open();
+                }
+            });
 
         if let Some(file) = app.file.get() {
             app.code = std::str::from_utf8(&file).unwrap().to_string()
@@ -106,7 +149,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             )
             .clicked()
         {
-            app.event.are_settings_visible = true;
+            app.popup = RitmPopup::Help;
         }
 
         if !app.event.is_code_closed {
@@ -122,20 +165,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                 )
                 .clicked()
             {
-                match parse_turing_graph_string(app.code.to_string()) {
-                    Ok(graph) => {
-                        app.turing = TuringMachines::new(
-                            graph,
-                            app.input.to_string(),
-                            Mode::StopFirstReject,
-                        )
-                        .unwrap();
-                        app.turing_to_graph();
-                    }
-                    Err(e) => {
-                        println!("{:?}", e);
-                    }
-                }
+                app.code_to_graph();
             }
 
             if ui
@@ -154,4 +184,5 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             }
         }
     });
+
 }

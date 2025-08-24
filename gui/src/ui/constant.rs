@@ -1,10 +1,9 @@
-use egui::{vec2, Ui, Vec2};
+use egui::{Ui, Vec2, vec2};
 
 /// Constant used in the application
 pub struct Constant {}
 
 impl Constant {
-
     pub const DEFAULT_SIZE: Vec2 = vec2(800.0, 600.0);
 
     // Graph
@@ -25,12 +24,10 @@ impl Constant {
     pub const HORIZONTAL_SPACE: f32 = 5.0;
     pub const SQUARE_CORNER: f32 = 8.0;
 
-
     // Control
     pub const CONTROL_ICON_SIZE: f32 = 40.0;
 
     pub const ICON_SIZE: f32 = 35.0;
-
 
     /// Scale down the value passed when the application is smaller than default
     pub fn scale<T: From<f32> + Into<f32>>(ui: &Ui, value: T) -> T {
@@ -38,7 +35,9 @@ impl Constant {
         if Self::DEFAULT_SIZE.x <= size.x && Self::DEFAULT_SIZE.y <= size.y {
             value
         } else {
-            T::from((size.x / Self::DEFAULT_SIZE.x).min(size.y / Self::DEFAULT_SIZE.y) * value.into())
+            T::from(
+                (size.x / Self::DEFAULT_SIZE.x).min(size.y / Self::DEFAULT_SIZE.y) * value.into(),
+            )
         }
     }
 }

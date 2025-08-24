@@ -1,12 +1,11 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
     use eframe::icon_data;
-    
+
     use gui::App;
 
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
@@ -15,17 +14,19 @@ fn main() {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1400.0, 800.0])
             .with_min_inner_size([100.0, 100.0])
-            .with_icon(icon_data::from_png_bytes(include_bytes!("../assets/icon/logo.png")).unwrap_or_default()),
+            .with_icon(
+                icon_data::from_png_bytes(include_bytes!("../assets/icon/logo.png"))
+                    .unwrap_or_default(),
+            ),
         ..Default::default()
     };
     eframe::run_native(
         "RITM",
         native_options,
         Box::new(|cc| Ok(Box::new(App::new(cc)))),
-    ).ok();
+    )
+    .ok();
 }
-
-
 
 // When compiling to web using trunk:
 #[cfg(target_arch = "wasm32")]
@@ -57,7 +58,6 @@ fn main() {
                 Box::new(|cc| Ok(Box::new(App::new(cc)))),
             )
             .await;
-
 
         // Remove the loading text and spinner:
         if let Some(loading_text) = document.get_element_by_id("loading_text") {

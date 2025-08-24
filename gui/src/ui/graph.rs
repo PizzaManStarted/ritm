@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
 use egui::{
-    include_image, vec2, Id, Image, ImageButton, LayerId, Rect, Scene, Ui, UiBuilder, Vec2
+    Id, Image, ImageButton, LayerId, Rect, Scene, Ui, UiBuilder, Vec2, include_image, vec2,
 };
 
 use crate::{
-    ui::{constant::Constant, edit, utils}, App
+    App,
+    ui::{constant::Constant, edit, utils},
 };
 
 pub mod state;
@@ -43,21 +44,28 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     // TODO maybe enable the button when samll windows but change the behavior to save code as text file directly
     if !app.event.is_small_window {
         let layer = LayerId::new(egui::Order::Middle, Id::new("to-code"));
-        ui.scope_builder(UiBuilder::new().layer_id(layer).max_rect(Rect::from_min_size(ui.min_rect().min, vec2(35.0, 35.0))), |ui| {
-            if ui.put(
-                Rect::from_min_size(ui.min_rect().min, vec2(35.0, 35.0)),
-                ImageButton::new(
-                    Image::new(include_image!("../../assets/icon/code.svg"))
-                        .fit_to_exact_size(vec2(35.0, 35.0))
-                        .tint(app.theme.gray),
-                )
-                .frame(false),
-            ).clicked() {
-                app.graph_to_code();
-            }
-        });
+        ui.scope_builder(
+            UiBuilder::new()
+                .layer_id(layer)
+                .max_rect(Rect::from_min_size(ui.min_rect().min, vec2(35.0, 35.0))),
+            |ui| {
+                if ui
+                    .put(
+                        Rect::from_min_size(ui.min_rect().min, vec2(35.0, 35.0)),
+                        ImageButton::new(
+                            Image::new(include_image!("../../assets/icon/code.svg"))
+                                .fit_to_exact_size(vec2(35.0, 35.0))
+                                .tint(app.theme.gray),
+                        )
+                        .frame(false),
+                    )
+                    .clicked()
+                {
+                    app.graph_to_code();
+                }
+            },
+        );
     }
-    
 
     // Save scene border and recenter if asked
     app.graph_rect = if app.event.need_recenter {

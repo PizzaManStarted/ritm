@@ -1,5 +1,7 @@
 use egui::{
-    include_image, scroll_area::ScrollBarVisibility, style::WidgetVisuals, vec2, Align, AtomExt, Button, Color32, Context, Frame, Id, Image, ImageButton, Label, Layout, Margin, Modal, RichText, ScrollArea, Shadow, Stroke, TextEdit, Ui, Vec2b
+    Align, AtomExt, Button, Color32, Context, Frame, Id, Image, ImageButton, Label, Layout, Margin,
+    Modal, RichText, ScrollArea, Shadow, Stroke, TextEdit, Ui, Vec2b, include_image,
+    scroll_area::ScrollBarVisibility, style::WidgetVisuals, vec2,
 };
 use ritm_core::turing_state::{TuringDirection, TuringTransitionMultRibbons};
 
@@ -237,7 +239,9 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                     // Layout single character TextEdit
                     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
                         ui.spacing_mut().item_spacing = vec2(5.0, 0.0);
-                        ui.set_height(Font::get_heigth(ui, &Font::default_medium()) + margin.y * 2.0);
+                        ui.set_height(
+                            Font::get_heigth(ui, &Font::default_medium()) + margin.y * 2.0,
+                        );
 
                         // Textedit for each reading character
                         for i in 0..transition.chars_read.len() {

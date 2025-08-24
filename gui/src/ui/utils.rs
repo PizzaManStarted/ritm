@@ -1,5 +1,5 @@
-use eframe::egui::{Pos2, Vec2};
 use crate::ui::constant::Constant;
+use eframe::egui::{Pos2, Vec2};
 
 /// Compute the distance between 2 points
 pub fn distance(p1: Pos2, p2: Pos2) -> f32 {
@@ -31,21 +31,17 @@ pub fn direction(p1: Pos2, p2: Pos2) -> Vec2 {
     Vec2::new(p2.x - p1.x, p2.y - p1.y).normalized()
 }
 
-
-
-
 type FileData = Vec<u8>;
 
 // wasm
 #[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
+use js_sys::{Array, ArrayBuffer, Uint8Array};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::JsCast;
 #[cfg(target_arch = "wasm32")]
-use web_sys::{window, Url, File, HtmlInputElement, FileReader};
+use wasm_bindgen::prelude::*;
 #[cfg(target_arch = "wasm32")]
-use js_sys::{Uint8Array, Array, ArrayBuffer};
-
+use web_sys::{File, FileReader, HtmlInputElement, Url, window};
 
 #[cfg(target_arch = "wasm32")]
 pub struct FileDialog {
@@ -62,7 +58,11 @@ impl Default for FileDialog {
 
         let document = window().unwrap().document().unwrap();
         let body = document.body().unwrap();
-        let input = document.create_element("input").unwrap().dyn_into::<HtmlInputElement>().unwrap();
+        let input = document
+            .create_element("input")
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .unwrap();
         input.set_attribute("type", "file").unwrap();
         input.style().set_property("display", "none").unwrap();
         body.append_child(&input).unwrap();
@@ -90,7 +90,9 @@ impl Drop for FileDialog {
 impl FileDialog {
     pub fn open(&mut self) {
         if let Some(closure) = &self.closure {
-            self.input.remove_event_listener_with_callback("change", closure.as_ref().unchecked_ref()).unwrap();
+            self.input
+                .remove_event_listener_with_callback("change", closure.as_ref().unchecked_ref())
+                .unwrap();
             std::mem::replace(&mut self.closure, None).unwrap().forget();
         }
 
@@ -102,7 +104,11 @@ impl FileDialog {
                 let reader = FileReader::new().unwrap();
                 let reader_clone = reader.clone();
                 let onload_closure = Closure::once(Box::new(move || {
-                    let array_buffer = reader_clone.result().unwrap().dyn_into::<ArrayBuffer>().unwrap();
+                    let array_buffer = reader_clone
+                        .result()
+                        .unwrap()
+                        .dyn_into::<ArrayBuffer>()
+                        .unwrap();
                     let buffer = Uint8Array::new(&array_buffer).to_vec();
                     tx.send(buffer).ok();
                 }));
@@ -113,7 +119,9 @@ impl FileDialog {
             }
         });
 
-        self.input.add_event_listener_with_callback("change", closure.as_ref().unchecked_ref()).unwrap();
+        self.input
+            .add_event_listener_with_callback("change", closure.as_ref().unchecked_ref())
+            .unwrap();
         self.closure = Some(closure);
         self.input.click();
     }
@@ -134,8 +142,9 @@ impl FileDialog {
         let file = File::new_with_blob_sequence_and_options(
             &blob_parts.into(),
             filename,
-            web_sys::FilePropertyBag::new().type_("application/octet-stream")
-        ).unwrap();
+            web_sys::FilePropertyBag::new().type_("application/octet-stream"),
+        )
+        .unwrap();
         let url = Url::create_object_url_with_blob(&file);
         if let Some(window) = web_sys::window() {
             window.location().set_href(&url.unwrap()).ok();
@@ -156,9 +165,7 @@ pub struct FileDialog {
 #[cfg(not(target_arch = "wasm32"))]
 impl Default for FileDialog {
     fn default() -> Self {
-        Self {
-            file: None,
-        }
+        Self { file: None }
     }
 }
 
@@ -176,9 +183,7 @@ impl FileDialog {
     }
 
     pub fn save(&self, filename: &str, file: FileData) {
-        let path = rfd::FileDialog::new()
-            .set_file_name(filename)
-            .save_file();
+        let path = rfd::FileDialog::new().set_file_name(filename).save_file();
 
         if let Some(path) = path {
             std::fs::write(path, file).ok();

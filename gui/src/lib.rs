@@ -1,5 +1,5 @@
 mod app;
-mod ui;
 mod turing;
+mod ui;
 
 pub use app::App;

@@ -1,7 +1,9 @@
-use egui::{style::TextCursorStyle, Ui};
 #[allow(dead_code)]
-
-use egui::{style::{Selection, WidgetVisuals, Widgets}, Color32, Context, Shadow, Stroke, Visuals};
+use egui::{
+    Color32, Context, Shadow, Stroke, Visuals,
+    style::{Selection, WidgetVisuals, Widgets},
+};
+use egui::{Ui, style::TextCursorStyle};
 /// Theme of the application, holding different color for each part
 pub struct Theme {
     pub background: Color32,
@@ -17,7 +19,6 @@ pub struct Theme {
 }
 
 impl Theme {
-
     /// Default theme of the application
     pub const DEFAULT: Theme = Theme {
         background: Color32::from_rgb(255, 163, 132),
@@ -32,7 +33,6 @@ impl Theme {
         invalid: Color32::RED,
     };
 
-
     pub fn default_widget(&self) -> WidgetVisuals {
         WidgetVisuals {
             bg_fill: self.white,
@@ -46,10 +46,14 @@ impl Theme {
 
     /// Set the global theme used in egui widget
     pub fn set_global_theme(theme: &Self, ctx: &Context) {
-
         let default_widget = theme.default_widget();
 
-        let default_shadow = Shadow { offset: [2,4], blur: 4, spread: 0, color: Color32::from_black_alpha(25) };
+        let default_shadow = Shadow {
+            offset: [2, 4],
+            blur: 4,
+            spread: 0,
+            color: Color32::from_black_alpha(25),
+        };
 
         ctx.set_visuals(Visuals {
             text_cursor: TextCursorStyle {
@@ -64,23 +68,13 @@ impl Theme {
             override_text_color: Some(theme.gray),
             text_edit_bg_color: Some(theme.white),
             widgets: Widgets {
-                active: WidgetVisuals {
-                    ..default_widget
-                },
-                hovered: WidgetVisuals {
-                    ..default_widget
-                },
-                inactive: WidgetVisuals {
-                    ..default_widget
-                },
-                noninteractive: WidgetVisuals {
-                    ..default_widget
-                },
-                open: WidgetVisuals {
-                    ..default_widget
-                },
+                active: WidgetVisuals { ..default_widget },
+                hovered: WidgetVisuals { ..default_widget },
+                inactive: WidgetVisuals { ..default_widget },
+                noninteractive: WidgetVisuals { ..default_widget },
+                open: WidgetVisuals { ..default_widget },
                 ..Default::default()
-            },  
+            },
             selection: Selection {
                 bg_fill: theme.white,
                 stroke: Stroke::new(1.0, theme.highlight),
@@ -98,11 +92,11 @@ impl Theme {
         ui.visuals_mut().widgets.open = widget;
     }
 
-
     /// Compute the best contrast color between white and black for any RGB color
     pub fn constrast_color(color: Color32) -> Color32 {
         let luminance =
-            (0.299 * color.r() as f32 + 0.587 * color.g() as f32 + 0.114 * color.b() as f32) / 255.0;
+            (0.299 * color.r() as f32 + 0.587 * color.g() as f32 + 0.114 * color.b() as f32)
+                / 255.0;
 
         if luminance > 0.5 {
             Color32::BLACK

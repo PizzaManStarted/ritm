@@ -8,11 +8,7 @@ pub struct Grid {
 }
 
 impl Grid {
-    pub fn new(
-        ui: &mut egui::Ui,
-        split_row_num: usize,
-        split_col_num: usize,
-    ) -> Self {
+    pub fn new(ui: &mut egui::Ui, split_row_num: usize, split_col_num: usize) -> Self {
         // Get item spacing
         let item_spacing = ui.spacing().item_spacing.x;
 
@@ -23,10 +19,10 @@ impl Grid {
         // max_rect.set_width(max_rect.width() - 2.*item_spacing);
 
         // Get width for the widgets
-        let width = max_rect.width()/(split_col_num as f32);
+        let width = max_rect.width() / (split_col_num as f32);
 
         // Get height for the widgets
-        let height = max_rect.height()/(split_row_num as f32);
+        let height = max_rect.height() / (split_row_num as f32);
 
         // Compute the offset for subsequent rects
         let offset = egui::vec2(width + item_spacing, 0.);
@@ -46,7 +42,7 @@ impl Grid {
     }
 
     pub fn place<R>(
-        &self, 
+        &self,
         ui: &mut egui::Ui,
         row: usize,
         col: usize,
@@ -58,8 +54,9 @@ impl Grid {
         let width = self.cell.width();
         let colf32: f32 = (col - 1) as f32;
         let rowf32: f32 = (row - 1) as f32;
-        let hold_rect = self.cell.translate(
-            egui::vec2(colf32*width, rowf32*height));
+        let hold_rect = self
+            .cell
+            .translate(egui::vec2(colf32 * width, rowf32 * height));
         // Return
         ui.scope_builder(UiBuilder::new().max_rect(hold_rect), add_ctx)
     }
