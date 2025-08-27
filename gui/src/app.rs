@@ -133,7 +133,8 @@ impl Default for App {
         let graph = TuringMachineGraph::new(1).ok().unwrap();
 
         let mut turing = TuringMachines::new(graph, "".to_string(), Mode::StopAfter(500)).unwrap();
-        let step = turing.next().unwrap();
+        
+        let step = turing.into_iter().next().unwrap();
 
         let mut sf = Self {
             turing: turing,
@@ -269,7 +270,7 @@ impl App {
 
     /// Continue the execution of the turing machine by one iteration
     pub fn next(&mut self) {
-        match self.turing.next() {
+        match self.turing.into_iter().next() {
             Some(step) => self.step = step,
             None => {
                 // Store the result of the computation
@@ -290,15 +291,15 @@ impl App {
 
     /// Reset the machine execution
     pub fn reset(&mut self) {
-        self.turing.reset().ok();
-        self.step = self.turing.next().unwrap();
+        self.turing.reset();
+        self.step = self.turing.into_iter().next().unwrap();
         self.event.is_accepted = None;
     }
 
     /// Reset the machine execution with the new input
     pub fn set_input(&mut self) {
         let _ = self.turing.reset_word(&self.input);
-        self.step = self.turing.next().unwrap();
+        self.step = self.turing.into_iter().next().unwrap();
         self.event.is_accepted = None;
     }
 

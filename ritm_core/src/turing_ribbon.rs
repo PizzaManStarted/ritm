@@ -45,6 +45,7 @@ pub trait TuringRibbon : Display + Clone
 
 
 
+#[derive(Debug, Clone)]
 /// Represents a ribbon made to write and read characters.
 pub struct TuringWriteRibbon
 {
@@ -52,6 +53,8 @@ pub struct TuringWriteRibbon
     pointer: usize
 }
 
+
+#[derive(Debug, Clone)]
 /// Represents a ribbon made to store and only read a word.
 pub struct TuringReadRibbon
 {
@@ -88,9 +91,8 @@ impl TuringRibbon for TuringWriteRibbon
                 
             }
 
-            if let Err(e) = check_replacement_validity(self.chars_vec[self.pointer], replace_by) {
-                return Err(e);
-            }
+            check_replacement_validity(self.chars_vec[self.pointer], replace_by)?;
+
             // Replace the current char read
             self.chars_vec[self.pointer] = replace_by;
             
@@ -98,11 +100,11 @@ impl TuringRibbon for TuringWriteRibbon
             self.pointer = new_pointer as usize;
             return Ok(true);
         }
-        return Ok(false);
+        Ok(false)
     }
     
     fn read_curr_char(&self) -> char {
-        return self.chars_vec[self.pointer];
+        self.chars_vec[self.pointer]
     }
     
     fn get_contents(&self) -> &Vec<char> {
@@ -143,11 +145,11 @@ impl TuringRibbon for TuringReadRibbon
             self.pointer = new_pointer as usize;
             return Ok(true);
         }
-        return Ok(false);
+        Ok(false)
     }
     
     fn read_curr_char(&self) -> char {
-        return self.chars_vec[self.pointer];
+        self.chars_vec[self.pointer]
     }
 
     fn get_contents(&self) -> &Vec<char> {
@@ -163,8 +165,10 @@ impl TuringRibbon for TuringReadRibbon
 impl TuringReadRibbon 
 {
     /// Feed a word into the read ribbon, and also adds [INIT_CHAR] and [END_CHAR] to the extremities of it
-    pub fn feed_word(&mut self, word: String)
+    pub fn feed_word(&mut self, word: String) -> Result<(), TuringError>
     {
+        check_word_validity(&word)?;
+        
         self.chars_vec.clear();
         self.chars_vec.push(INIT_CHAR);
         for ch in word.chars() {
@@ -172,15 +176,24 @@ impl TuringReadRibbon
         }
         self.chars_vec.push(END_CHAR);
         self.pointer = 0;
+        Ok(())
     }
 }
 
 
 fn check_replacement_validity(og_char: char, new_char: char) -> Result<(), TuringError>
 {
-    if og_char != new_char && (new_char == INIT_CHAR || new_char == END_CHAR) {
-        return Err(TuringError::IllegalActionError { cause: format!("Tried to replace a char with a special char : {}", new_char) });
+    if og_char == new_char { return Ok(()) ;}
+
+
+    if new_char == INIT_CHAR || new_char == END_CHAR {
+        return Err(TuringError::IllegalActionError { cause: format!("Tried to replace a char (`{}`) with a special char (`{}`)", og_char, new_char) });
     }
+
+    if og_char == INIT_CHAR || new_char == END_CHAR {
+        return Err(TuringError::IllegalActionError { cause: format!("Tried to replace a special char (`{}`) with another char (`{}`)", og_char, new_char) });
+    }
+    
     Ok(())
 }
 
@@ -200,8 +213,8 @@ fn ribbon_to_string(chars_vec: &Vec<char>, pointer: usize, is_inf: bool) -> Stri
 {
     let mut res: String = String::from("[");
     let mut pointing: String = String::from(" ");
-    let mut count = 0;
-    for c in chars_vec 
+
+    for (count, c) in chars_vec.iter().enumerate() 
     {
         res.push_str(&format!("{c},"));
         if count == pointer
@@ -211,7 +224,6 @@ fn ribbon_to_string(chars_vec: &Vec<char>, pointer: usize, is_inf: bool) -> Stri
         else {
             pointing.push_str("  ");
         }
-        count += 1;
     }
     
     res.pop();
@@ -222,17 +234,10 @@ fn ribbon_to_string(chars_vec: &Vec<char>, pointer: usize, is_inf: bool) -> Stri
     res +=  "]\n";
     
     res.push_str(&pointing);
-    return res;
+    res
 }
 
 
-
-impl Debug for TuringWriteRibbon 
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuringRibbon").field("chars_vec", &self.chars_vec).finish()
-    }
-}
 
 impl Display for TuringWriteRibbon 
 {
@@ -243,18 +248,18 @@ impl Display for TuringWriteRibbon
 }
 
 
-impl Clone for TuringReadRibbon {
-    fn clone(&self) -> Self {
-        Self { chars_vec: self.chars_vec.clone(), pointer: self.pointer.clone() }
+
+fn check_word_validity(word: &String) -> Result<(), TuringError>
+{
+    let forbidden_chars = vec!(INIT_CHAR, BLANK_CHAR, END_CHAR);
+    for char in forbidden_chars {
+        if word.contains(char) {
+            return Err(TuringError::IllegalActionError { cause: format!("The given input \"{}\" contains the following forbidden character : \'{}\'", word, char) });
+        }   
     }
+    Ok(())
 }
 
-
-impl Clone for TuringWriteRibbon {
-    fn clone(&self) -> Self {
-        Self { chars_vec: self.chars_vec.clone(), pointer: self.pointer.clone() }
-    }
-}
 
 
 // Keeping the unit test here because we need to access private fields
@@ -280,9 +285,37 @@ mod tests{
     {
         let mut ribbon = TuringReadRibbon::new();
         
-        ribbon.feed_word("test".to_string());
+        ribbon.feed_word("test".to_string()).unwrap();
 
         assert_eq!(ribbon.chars_vec, vec!(INIT_CHAR, 't', 'e', 's', 't', END_CHAR));
+    }
+
+    #[test]
+    fn test_feed_word_ribbon_illegal_char()
+    {
+        let mut ribbon = TuringReadRibbon::new();
+        
+        match ribbon.feed_word("dsdçaaz".to_string()) {
+            Ok(_) => panic!("Exepected an error"),
+            Err(te) => expect_ill_action_error(te),
+        }
+        match ribbon.feed_word("dsdaaz$".to_string()) {
+            Ok(_) => panic!("Exepected an error"),
+            Err(te) => expect_ill_action_error(te),
+        }
+        match ribbon.feed_word("_dsdaaz".to_string()) {
+            Ok(_) => panic!("Exepected an error"),
+            Err(te) => expect_ill_action_error(te),
+        }
+
+    }
+
+    fn expect_ill_action_error(te: TuringError) 
+    {
+        match te {
+            TuringError::IllegalActionError { cause:_ } => {}
+            _ => panic!("Exepected an IllegalActionError, but received the following error : {:?}", te),
+        }
     }
 
 
@@ -291,7 +324,7 @@ mod tests{
     {
         let mut ribbon = TuringReadRibbon::new();
         
-        ribbon.feed_word("test".to_string());
+        ribbon.feed_word("test".to_string()).unwrap();
 
         ribbon.try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::Right).unwrap();
         assert_eq!(ribbon.pointer, 1);
@@ -322,7 +355,7 @@ mod tests{
     }
 
     #[test]
-    fn test_illagal_replacement()
+    fn test_illegal_replacement()
     {
         let mut ribbon = TuringWriteRibbon::new();
         
@@ -330,9 +363,32 @@ mod tests{
         ribbon.try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::Right).unwrap();
         assert_eq!(ribbon.pointer, 1);
 
-        if let Ok(_) = ribbon.try_apply_transition(BLANK_CHAR, 'ç', &TuringDirection::Right) {
+        if ribbon.try_apply_transition(BLANK_CHAR, INIT_CHAR, &TuringDirection::Right).is_ok() {
             panic!("An error should have been returned");
         }
+
+        ribbon.try_apply_transition(BLANK_CHAR, BLANK_CHAR, &TuringDirection::Left).unwrap();
+        ribbon.try_apply_transition(BLANK_CHAR, BLANK_CHAR, &TuringDirection::Left).unwrap();
+
+
+        match ribbon.try_apply_transition(INIT_CHAR, 'p', &TuringDirection::Right)
+        {
+            Ok(_) => panic!("Exected an error"),
+            Err(te) => expect_ill_action_error(te),
+        }
+
+        match ribbon.try_apply_transition(INIT_CHAR, END_CHAR, &TuringDirection::Right)
+        {
+            Ok(_) => panic!("Exected an error"),
+            Err(te) => expect_ill_action_error(te),
+        }
+
+        match ribbon.try_apply_transition(INIT_CHAR, BLANK_CHAR, &TuringDirection::Right)
+        {
+            Ok(_) => panic!("Exected an error"),
+            Err(te) => expect_ill_action_error(te),
+        }
+        
     }
 
     

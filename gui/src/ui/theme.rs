@@ -76,7 +76,7 @@ impl Theme {
                 ..Default::default()
             },
             selection: Selection {
-                bg_fill: theme.white,
+                bg_fill: Color32::from_black_alpha(50),
                 stroke: Stroke::new(1.0, theme.highlight),
                 ..Default::default()
             },

@@ -1,7 +1,8 @@
-use std::{collections::HashMap, fmt::{Debug, Display}, usize};
+use std::{collections::HashMap, fmt::{Debug, Display}};
 use crate::{turing_errors::TuringError, turing_state::{TuringStateType, TuringState, TuringTransitionMultRibbons}};
 
 
+#[derive(Debug, Clone)]
 /// A struct representing a Turing Machine graph with `k` **writting** ribbons (`k >= 1`).
 pub struct TuringMachineGraph
 {
@@ -56,19 +57,19 @@ impl TuringMachineGraph {
     pub fn append_rule_state_by_name(&mut self, from: &String, transition: TuringTransitionMultRibbons, to: &String) -> Result<(), TuringError>
     {
         // Checks if the given number of ribbons is correct
-        if transition.get_number_of_affected_ribbons() != (self.k + 1) as usize
+        if transition.get_number_of_affected_ribbons() != (self.k + 1)
         {
             return Err(TuringError::IncompatibleTransitionError {expected: self.get_k(), received: transition.get_number_of_affected_ribbons() - 1 });
         }
         let from_index = self.name_index_hashmap.get(from);
-        if let None = from_index {
+        if from_index.is_none() {
             return Err(TuringError::UnknownStateError { state_name: from.clone() });
         }
         let from_index = *from_index.unwrap();
 
 
         let to_index = self.name_index_hashmap.get(to);
-        if let None = to_index {
+        if to_index.is_none() {
             return Err(TuringError::UnknownStateError { state_name: to.clone() });
         }
         let to_index = *to_index.unwrap();
@@ -76,12 +77,12 @@ impl TuringMachineGraph {
         
         match self.add_rule_state_ind(from_index, transition, to_index) {
             Ok(()) => {
-                return Ok(());
+                Ok(())
             },
             Err(e) => {
-                return Err(e);
+                Err(e)
             },
-        };
+        }
     }
 
     /// Adds a new rule/transition to a state of the machine of the form : `from {transition} to`.
@@ -93,18 +94,18 @@ impl TuringMachineGraph {
     pub fn append_rule_state(&mut self, from_index: usize, transition: TuringTransitionMultRibbons, to_index: usize) -> Result<(), TuringError>
     {
         // Checks if the given correct of number transitions was given
-        if transition.chars_write.len() != self.k as usize
+        if transition.chars_write.len() != self.k
         {
             return Err(TuringError::IncompatibleTransitionError {expected: self.k, received: transition.chars_write.len()});
         }
         match self.add_rule_state_ind(from_index, transition, to_index) {
             Ok(()) => {
-                return Ok(());
+                Ok(())
             },
             Err(e) => {
-                return Err(e);
+                Err(e)
             },
-        };
+        }
 
     }
 
@@ -114,9 +115,9 @@ impl TuringMachineGraph {
     pub fn append_rule_state_self(mut self, from: &String, transition: TuringTransitionMultRibbons, to: &String) -> Result<Self, TuringError>
     {
         match self.append_rule_state_by_name(from, transition, to) {
-            Ok(()) => return Ok(self),
-            Err(e) => return Err(e),
-        };
+            Ok(()) => Ok(self),
+            Err(e) => Err(e),
+        }
     }
 
     /// Adds a new state to the turing machine graph and returns its index. Meaning a new node is added to the graph.
@@ -129,7 +130,7 @@ impl TuringMachineGraph {
         {
             // If the index was found, return it
             Some(e) => {
-                return *e;
+                *e
             },
             // If not
             None => 
@@ -137,9 +138,9 @@ impl TuringMachineGraph {
                 // Pushes in the vector of states a new state with the given name 
                 self.states.push(TuringState::new(TuringStateType::Normal, name));
                 // Adds the index of this state to the hashmap 
-                self.name_index_hashmap.insert(name.to_string(), (self.states.len()-1) as usize);
+                self.name_index_hashmap.insert(name.to_string(), self.states.len()-1);
                 // Returns the index of the newly created state
-                return (self.states.len()-1) as usize;
+                self.states.len()-1
             },
         }
     }
@@ -147,35 +148,35 @@ impl TuringMachineGraph {
     /// Adds a new state to the turing machine graph using variables indexes
     fn add_rule_state_ind(&mut self, from: usize, mut transition: TuringTransitionMultRibbons, to: usize) -> Result<(), TuringError>
     {
-        if self.states.len() <= from as usize {
-            return Err(TuringError::OutOfRangeStateError { accessed_index: from as usize, states_len: self.states.len() });
+        if self.states.len() <= from {
+            return Err(TuringError::OutOfRangeStateError { accessed_index: from, states_len: self.states.len() });
         }
-        if self.states.len() <= to as usize {
-            return Err(TuringError::OutOfRangeStateError { accessed_index: to as usize, states_len: self.states.len() });
+        if self.states.len() <= to {
+            return Err(TuringError::OutOfRangeStateError { accessed_index: to, states_len: self.states.len() });
         }
         // Change transition index
         transition.index_to_state = Some(to);
 
-        let state  = self.states.get_mut(from as usize).unwrap();
-        return state.add_transition(transition);
+        let state  = self.states.get_mut(from).unwrap();
+        state.add_transition(transition)
     }
 
     /// Returns the state (*node*) at the given index.
     pub fn get_state(&self, pointer: usize) -> Result<&TuringState, TuringError>
     {
-        if self.states.len() <= pointer as usize {
-            return Err(TuringError::OutOfRangeStateError { accessed_index: pointer as usize, states_len: self.states.len() });
+        if self.states.len() <= pointer {
+            return Err(TuringError::OutOfRangeStateError { accessed_index: pointer, states_len: self.states.len() });
         }
-        Ok(&self.states[pointer as usize])
+        Ok(&self.states[pointer])
     }
 
     /// Returns the **mutable** state (*node*) at the given index.
     pub fn get_state_mut(&mut self, pointer: usize) -> Result<&mut TuringState, TuringError>
     {
-        if self.states.len() <= pointer as usize {
-            return Err(TuringError::OutOfRangeStateError { accessed_index: pointer as usize, states_len: self.states.len() });
+        if self.states.len() <= pointer {
+            return Err(TuringError::OutOfRangeStateError { accessed_index: pointer, states_len: self.states.len() });
         }
-        Ok(&mut self.states[pointer as usize])
+        Ok(&mut self.states[pointer])
     }
 
     /// Returns the state (*node*) that has the given name.
@@ -203,7 +204,7 @@ impl TuringMachineGraph {
         // Get n1 and n2 indexes if they exists
         let n1_state = match self.name_index_hashmap.get(n1) 
         {
-            Some(i) => &self.states[*i as usize],
+            Some(i) => &self.states[*i],
             None => return Err(TuringError::UnknownStateError { state_name: n1.clone() }),
         };
         let n2_index = match self.name_index_hashmap.get(n2) 
@@ -218,7 +219,7 @@ impl TuringMachineGraph {
             }
         }
         
-        return Ok(res);
+        Ok(res)
     }
 
     /// Get all the transitions between two nodes.
@@ -226,11 +227,7 @@ impl TuringMachineGraph {
     {
         let mut vec = vec!();
         // Get n1 index
-        let n1_state = self.get_state(n1);
-        if let Err(e) = n1_state {
-            return Err(e);
-        }
-        let n1_state = n1_state.unwrap();
+        let n1_state = self.get_state(n1)?;
 
         // Fetch all transition that go toward n2
         for t in n1_state.transitions.iter() {
@@ -239,17 +236,13 @@ impl TuringMachineGraph {
             }
         }
         
-        return Ok(vec);
+        Ok(vec)
     }
 
     /// Removes **all** the transitions from this state to the given node
     pub fn remove_transitions(&mut self, from: &String, to: &String) -> Result<(), TuringError>
     {
-        let val = self.fetch_n1_state_n2_index(from, to);
-        if let Err(e) = val {
-            return Err(e);
-        }
-        let (n1_state, n2_index) = val.unwrap();
+        let (n1_state, n2_index) = self.fetch_n1_state_n2_index(from, to)?;
 
         // Remove all transitions from n1 to n2
         n1_state.remove_transitions(n2_index);
@@ -260,12 +253,7 @@ impl TuringMachineGraph {
     pub fn remove_transitions_with_index(&mut self, from: &String, to: usize) -> Result<(), TuringError>
     {
         // check that `from` state exists
-        let val = self.get_state_from_name_mut(from);
-        
-        if let Err(e) = val {
-            return Err(e);
-        }
-        let n1_state = val.unwrap();
+        let n1_state = self.get_state_from_name_mut(from)?;
 
         // Remove all transitions from n1 to n2
         n1_state.remove_transitions(to);
@@ -282,11 +270,7 @@ impl TuringMachineGraph {
     /// Only `from`'s existance will be verified (and will return an error if it does not exists). But `to`'s index can be outside the bounds.
     pub fn remove_transition(&mut self, from: &String, transition: &TuringTransitionMultRibbons, to: &String) -> Result<(), TuringError>
     {
-        let val = self.fetch_n1_state_n2_index(from, to);
-        if let Err(e) = val {
-            return Err(e);
-        }
-        let (n1_state, n2_index) = val.unwrap();
+        let (n1_state, n2_index) = self.fetch_n1_state_n2_index(from, to)?;
 
         let mut trans = transition.clone();
         // In order to make sure it is removed, we change the index to the correct one 
@@ -302,20 +286,20 @@ impl TuringMachineGraph {
 
         // Fetch n1 as a state
         let n1_state = self.name_index_hashmap.get(from);
-        if let None = n1_state {
+        if n1_state.is_none() {
             return Err(TuringError::UnknownStateError { state_name: from.to_string() });
         }
 
-        let n1_state = &mut self.states[*n1_state.unwrap() as usize];
+        let n1_state = &mut self.states[*n1_state.unwrap()];
 
         // Fetch n2 as an index
         let n2_state = self.name_index_hashmap.get(to);
-        if let None = n2_state {
+        if n2_state.is_none() {
             return Err(TuringError::UnknownStateError { state_name: to.to_string() });
         }
         let n2_index = n2_state.unwrap();
 
-        return Ok((n1_state, *n2_index));
+        Ok((n1_state, *n2_index))
     }
 
     /// Removes a state and **all** mentions of it in **all** transitions of **all** the other states of the TuringMachine using its name.
@@ -323,7 +307,7 @@ impl TuringMachineGraph {
     {
         // First keep the index for later
         let index = self.name_index_hashmap.get(state_name);
-        if let None = index {
+        if index.is_none() {
             return Err(TuringError::UnknownStateError { state_name: state_name.to_string() });
         }
         let index = *index.unwrap();
@@ -341,17 +325,13 @@ impl TuringMachineGraph {
         }
 
         // get state name
-        let state_name = self.get_state(state_index).cloned();
-        if let Err(e) = state_name {
-            return Err(e);
-        }
-        let state_name = &state_name.unwrap().name;
+        let state_name = self.get_state(state_index).cloned()?.name;
         
         /* Remove references to this state from *all* other nodes transitions */
         let mut states = vec!();
         // Fetch all names that aren't the state we are trying to remove
         for name in self.name_index_hashmap.keys() {
-            if name.eq(state_name) {
+            if name.eq(&state_name) {
                 continue;
             }
             states.push(name.clone());
@@ -360,7 +340,7 @@ impl TuringMachineGraph {
         let mut to_notify_neigh = vec!();
 
         // Remove the node
-        self.states.remove(state_index.into()); // this means that other indexes might have shifted too
+        self.states.remove(state_index); // this means that other indexes might have shifted too
         // Collect all values that are gonna change
 
         let mut prev_val;
@@ -374,9 +354,7 @@ impl TuringMachineGraph {
             }
 
             // Remove all transitions to the removed node
-            if let Err(e) = self.remove_transitions_with_index(&name, state_index) {
-                return Err(e);
-            }
+            self.remove_transitions_with_index(name, state_index)?
         }
         for state in &mut self.states {
             for changed_index in &to_notify_neigh {
@@ -384,37 +362,24 @@ impl TuringMachineGraph {
             }
         }
         
-        self.name_index_hashmap.remove(state_name);
+        self.name_index_hashmap.remove(&state_name);
         Ok(())
     }
     
     
     pub fn get_k(&self) -> usize 
     {
-        return self.k;
+        self.k
     }
 
     pub fn get_name_index_hashmap(&self) -> &HashMap<String, usize>
     {
-        return &self.name_index_hashmap;
+        &self.name_index_hashmap
     }
 
     pub fn get_states(&self) -> &Vec<TuringState>
     {
-        return &self.states;
-    }
-}
-
-impl Debug for TuringMachineGraph {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuringMachine").field("k", &self.k).field("states", &self.states).field("hashmap", &self.name_index_hashmap).finish()
-    }
-}
-
-
-impl Clone for TuringMachineGraph {
-    fn clone(&self) -> Self {
-        Self { name_index_hashmap: self.name_index_hashmap.clone(), states: self.states.clone(), k: self.k.clone() }
+        &self.states
     }
 }
 

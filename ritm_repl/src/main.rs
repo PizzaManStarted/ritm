@@ -1,78 +1,133 @@
-
-
+use std::env;
 use std::fmt::Display;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
-use ritm_repl::modes::choice_modes::{collect_enum_values, print_help, ModeEvent, Modes};
+use colored::Colorize;
+use ritm_repl::DataStorage;
+use ritm_repl::modes::choice_modes::{ModeEvent, Modes, collect_enum_values, print_help};
 use ritm_repl::modes::execute_mode::ExecuteTuringMode;
 use ritm_repl::modes::modify_mode::ModifyTuringMode;
-use ritm_repl::modes::starting_modes::StartingMode;
-use ritm_repl::ripl_error::{print_error_help, RiplError};
-use ritm_repl::DataStorage;
+use ritm_repl::modes::starting_modes::{self, StartingMode};
+use ritm_repl::ripl_error::{RiplError, print_error_help};
 use rustyline::error::ReadlineError;
 use rustyline::history::FileHistory;
 use rustyline::{DefaultEditor, Editor};
 use strum::IntoEnumIterator;
 
-
-
-
-
-
-fn main() -> Result<(), Box<dyn std::error::Error>>
-{
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rl = DefaultEditor::new()?;
+
+    let args: Vec<String> = env::args().collect();
+
+    // Adding a CTRL C handler
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+
+    ctrlc::set_handler(move || {
+        // Sets the value to false, to signal to any running execution to stop
+        r.store(false, Ordering::SeqCst);
+    })
+    .expect("Error setting Ctrl-C handler");
+
+    // Creates the data storage
+    let mut storage = DataStorage {
+        graph: None,
+        iterator: None,
+        is_running: running,
+        curr_path: {
+            match env::current_dir() {
+                Ok(dir) => Some(dir),
+                Err(e) => {
+                    println!("{} {}", "Could not open the current directory: ".red(), e);
+                    None
+                }
+            }
+        },
+        clear_after_step: false,
+        exec_mode: ritm_core::turing_machine::Mode::SaveAll,
+    };
+
+    // Choose the first mode
+    let mut curr_mode = {
+        if args.len() == 2 {
+            match starting_modes::load_tm(
+                &storage.curr_path,
+                args.get(1).expect("Gave more than one arg"),
+            ) {
+                Ok(tm) => storage.graph = Some(tm),
+                Err(e) => {
+                    print_error_help(e);
+                    return Ok(());
+                }
+            }
+
+            Modes::Modify
+        } else if args.len() > 2 {
+            print_error_help(RiplError::ArgsNumberError {
+                received: args.len() - 1,
+                expected: 1,
+            });
+            return Ok(());
+        } else {
+            Modes::Start
+        }
+    };
     // Clear screen
     rl.clear_screen().unwrap();
 
-    // Creates the data storage
-    let mut storage = DataStorage {graph: None, iterator: None};
-    
-    // Choose the first mode
-    let mut curr_mode = Modes::Start;
-
-    // Clear terminal
-    rl.clear_screen().unwrap();
+    let mut prev_mode = Modes::Execute;
 
     loop {
         let status = match curr_mode {
             Modes::Start => {
-                eval_loop::<StartingMode>(&mut rl, &mut curr_mode, &mut storage).unwrap()
-            },
+                eval_loop::<StartingMode>(&mut rl, &mut curr_mode, &mut prev_mode, &mut storage)
+                    .unwrap()
+            }
             Modes::Modify => {
-                eval_loop::<ModifyTuringMode>(&mut rl, &mut curr_mode, &mut storage).unwrap()
-                
-            },
-            Modes::Execute => {
-                eval_loop::<ExecuteTuringMode>(&mut rl, &mut curr_mode, &mut storage).unwrap()
-            },
+                eval_loop::<ModifyTuringMode>(&mut rl, &mut curr_mode, &mut prev_mode, &mut storage)
+                    .unwrap()
+            }
+            Modes::Execute => eval_loop::<ExecuteTuringMode>(
+                &mut rl,
+                &mut curr_mode,
+                &mut prev_mode,
+                &mut storage,
+            )
+            .unwrap(),
         };
 
         if !status {
             break;
         }
-
     }
     Ok(())
 }
 
-
-fn eval_loop<E>(rl: &mut Editor<(), FileHistory>, 
-                current_mode: &mut Modes, 
-                storage: &mut DataStorage) 
--> rustyline::Result<bool> where E : ModeEvent + IntoEnumIterator + Display
+fn eval_loop<E>(
+    rl: &mut Editor<(), FileHistory>,
+    current_mode: &mut Modes,
+    previous_mode: &mut Modes,
+    storage: &mut DataStorage,
+) -> rustyline::Result<bool>
+where
+    E: ModeEvent + IntoEnumIterator + Display,
 {
-    let argument ;
+    let argument;
     let mut need_help = false;
 
-    // Print possible commands
-    print_help::<E>();
-
-    
     // get possible commands
-    let commands= collect_enum_values::<E>();
-    
+    let commands = collect_enum_values::<E>();
+
+    if *previous_mode != *current_mode {
+        print_help::<E>();
+        *previous_mode = current_mode.clone();
+    }
+
     let readline = rl.readline(">> ");
+
     // rl.clear_screen().unwrap();
+
     match readline {
         Ok(line) => {
             let line = line.trim();
@@ -85,36 +140,40 @@ fn eval_loop<E>(rl: &mut Editor<(), FileHistory>,
             rl.add_history_entry(line.to_string())?;
 
             // Split line
-            let line_vec : Vec<&str> = line.split(" ").collect();
-            
+            let line_vec: Vec<&str> = line.split(" ").collect();
 
             // if the line starts with : "h " or "help " then the user is requesting help first
-            if line.starts_with("h ") || line.starts_with("help ") {
-                if line_vec.len() > 2 {
-                    print_error_help(RiplError::ArgsNumberError { received: line_vec.len() - 1, expected: 1 });
+            if line.starts_with("h") || line.starts_with("help") {
+                if line_vec.len() == 1 {
+                    print_help::<E>();
+                    return Ok(true);
+                } else if line_vec.len() > 2 {
+                    print_error_help(RiplError::ArgsNumberError {
+                        received: line_vec.len() - 1,
+                        expected: 1,
+                    });
                     return Ok(true);
                 }
                 argument = line_vec.get(1).unwrap().to_string();
                 need_help = true;
-            }
-            else if line.eq("q") || line.eq("quit") || line.eq("exit") || line.eq("leave") {
+            } else if line.eq("q") || line.eq("quit") || line.eq("exit") || line.eq("leave") {
                 return Ok(false);
-            }
-            else if line.eq("cl") || line.eq("clear") {
+            } else if line.eq("cl") || line.eq("clear") {
                 rl.clear_screen().unwrap();
                 return Ok(true);
-            }
-            else {
+            } else {
                 if line_vec.len() > 1 {
-                    print_error_help(RiplError::UnknownCommandError { command: line_vec.get(0).unwrap().to_string() });
+                    print_error_help(RiplError::UnknownCommandError {
+                        command: line_vec.first().unwrap().to_string(),
+                    });
                     return Ok(true);
                 }
-                argument = line_vec.get(0).unwrap().to_string();
+                argument = line_vec.first().unwrap().to_string();
             }
 
             // Read requested nb
             let index_res = argument.parse();
-            if let Err(_) = &index_res {
+            if index_res.is_err() {
                 print_error_help(RiplError::CouldNotParseStringIntError { value: argument });
                 return Ok(true);
             }
@@ -129,24 +188,23 @@ fn eval_loop<E>(rl: &mut Editor<(), FileHistory>,
             if need_help {
                 // rl.clear_screen().unwrap();
                 commands.get(index).unwrap().print_help();
-            }
-            else {
+            } else {
                 *current_mode = commands.get(index).unwrap().choose_option(rl, storage);
                 // println!("{:?}", current_mode);
             }
-            return Ok(true);
-        },
+            Ok(true)
+        }
         Err(ReadlineError::Interrupted) => {
             println!("CTRL-C");
-            return Ok(false);
-        },
+            Ok(false)
+        }
         Err(ReadlineError::Eof) => {
             println!("CTRL-D");
-            return Ok(false);
-        },
+            Ok(false)
+        }
         Err(err) => {
             println!("Error: {:?}", err);
-            return Ok(false);
+            Ok(false)
         }
     }
 }
