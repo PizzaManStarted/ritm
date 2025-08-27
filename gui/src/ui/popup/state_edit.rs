@@ -1,6 +1,5 @@
 use egui::{
-    Align, AtomExt, Button, Color32, Context, Frame, Id, Image, Layout, Margin, Modal, RichText,
-    Stroke, TextEdit, Ui, Vec2, include_image, vec2,
+    include_image, vec2, Align, AtomExt, Button, Color32, Context, Frame, Id, Image, Layout, Margin, Modal, Pos2, RichText, Stroke, TextEdit, Ui, Vec2
 };
 
 use crate::{
@@ -38,7 +37,7 @@ pub fn show(app: &mut App, ctx: &Context) {
                                     .tint(app.theme.gray),
                             );
 
-                            let state = State::get_mut(app, app.selected_state.unwrap());
+                            let state = app.temp_state.as_mut().unwrap();
 
                             let edit = TextEdit::singleline(&mut state.name)
                                 .font(Font::default_big())
@@ -49,7 +48,7 @@ pub fn show(app: &mut App, ctx: &Context) {
                         },
                     );
 
-                    let state = State::get(app, app.selected_state.unwrap());
+                    let state = app.temp_state.as_mut().unwrap();
 
                     let text = RichText::new("Save")
                         .color(Theme::constrast_color(app.theme.valid))
@@ -69,15 +68,11 @@ pub fn show(app: &mut App, ctx: &Context) {
                         )
                         .clicked()
                     {
-                        if !state.name.is_empty() {
-                            app.popup = RitmPopup::None
-                        }
-                        let state = State::get(app, app.selected_state.unwrap());
-                        app.turing
-                            .graph_mut()
-                            .get_state_mut(app.selected_state.unwrap())
-                            .unwrap()
-                            .name = state.name.clone();
+
+                        // no mut borrow
+                        let state = app.temp_state.as_ref().unwrap();
+                        app.add_state(state.position, state.name.clone());
+                        app.event.close_popup = true;
                     };
                 },
             );
@@ -85,6 +80,7 @@ pub fn show(app: &mut App, ctx: &Context) {
             if app.event.close_popup {
                 app.event.close_popup = false;
                 app.popup = RitmPopup::None;
+                app.temp_state = None;
             }
         });
 }

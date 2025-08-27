@@ -71,13 +71,19 @@ pub fn show(app: &mut App, ui: &mut Ui) {
                 ImageButton::new(
                     Image::new(include_image!("../../assets/icon/save.svg"))
                         .fit_to_exact_size(Vec2::splat(Constant::ICON_SIZE))
-                        .tint(app.theme.white),
+                        .tint(if app.code.is_empty() {
+                            app.theme.gray
+                        } else {
+                            app.theme.white
+                        }),
                 )
                 .frame(false),
             )
             .clicked()
         {
-            app.event.are_settings_visible = true;
+            if !app.code.is_empty() {
+                app.file.save("new.tm", app.code.as_bytes().to_vec())
+            };
         }
 
         let res = ui.add(

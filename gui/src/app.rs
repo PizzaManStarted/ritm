@@ -72,6 +72,8 @@ pub struct App {
     pub settings: Settings,
 
     pub help_slide_index: usize,
+
+    pub temp_state: Option<State>,
 }
 
 /// Keep the state of the application
@@ -153,7 +155,8 @@ impl Default for App {
                 toggle_after_action: true,
                 turing_machine_mode: Mode::StopAfter(500),
             },
-            help_slide_index: 0
+            help_slide_index: 0,
+            temp_state: None,
         };
 
         // Update the graph data with the turing data at initialization
@@ -200,18 +203,16 @@ impl App {
     }
 
     /// Add a state to the turing machine at a certain position
-    pub fn add_state(&mut self, position: Pos2) {
-        let state_count = self.turing.graph_ref().get_states().len();
-        let default_name = format!("state{}", state_count + 1);
+    pub fn add_state(&mut self, position: Pos2, name: String) {
 
         // Create the state in the core of the application to miror the id into
         // the gui structure
-        let id = self.turing.graph_mut().add_state(&default_name);
+        let id = self.turing.graph_mut().add_state(&name);
         self.states.insert(
             id,
             State {
                 id: id,
-                name: default_name,
+                name: name,
                 position,
                 ..Default::default()
             },
