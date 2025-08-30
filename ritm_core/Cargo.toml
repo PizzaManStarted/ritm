@@ -1,7 +1,7 @@
 [package]
 name = "ritm_core"
 authors = ["Axel Foucart", "Adrien Zianne"]
-description = "An implementation of turing machines with k ribbons"
+description = "An implementation of turing machines with k tapes"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"

@@ -2,7 +2,7 @@ use pest::{error::Error, iterators::Pair, Parser};
 use std::fs;
 use pest_derive::Parser;
 
-use crate::{turing_errors::{TuringError, TuringParserError}, turing_graph::TuringMachineGraph, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
+use crate::{turing_errors::{TuringError, TuringParserError}, turing_graph::TuringMachineGraph, turing_state::{TuringDirection, TuringTransition}};
 
 #[derive(Parser)]
 #[grammar = "turing_machine.pest"]
@@ -63,8 +63,8 @@ pub fn parse_turing_graph_string(turing_mach: String) -> Result<TuringMachineGra
                 // If the MT doesn't already exists, create it
                 if turing_machine.is_none() 
                 {
-                    // With the collected number of ribbons
-                    let tm = TuringMachineGraph::new(transitions.first().expect("At least one rule should be given in a transition").get_number_of_affected_ribbons() - 1);
+                    // With the collected number of tapes
+                    let tm = TuringMachineGraph::new(transitions.first().expect("At least one rule should be given in a transition").get_number_of_affected_tapes() - 1);
 
                     if let Err(e) = tm {
                         return Err(
@@ -119,10 +119,10 @@ pub fn parse_turing_graph_string(turing_mach: String) -> Result<TuringMachineGra
 /// * Or even :  `q_i { transition_0 | ... | transition_n } q_j`
 /// 
 /// Where each `transition` follows the form :  `a_0, a_1, ..., a_{n-1} -> D_0, b_1, D_1, b_2, D_2, ..., b_{n-1}, D_{n-1}`.
-/// For more information look at the documentation of the structure [TuringTransitionMultRibbons].
+/// For more information look at the documentation of the structure [`TuringTransition`].
 /// 
-/// When giving multiple transitions, each one must affect the same number of ribbons or an error will be returned.
-pub fn parse_transition_string(to_parse: String) -> Result<(String, Vec<TuringTransitionMultRibbons>, String), TuringParserError>
+/// When giving multiple transitions, each one must affect the same number of tapes or an error will be returned.
+pub fn parse_transition_string(to_parse: String) -> Result<(String, Vec<TuringTransition>, String), TuringParserError>
 {
     let parsed = TuringGrammar::parse(Rule::transition_only, &to_parse);
     if let Err(e) = parsed {
@@ -134,21 +134,22 @@ pub fn parse_transition_string(to_parse: String) -> Result<(String, Vec<TuringTr
 
 
 /// Parses a string containing the content of a transition of the form : `a_0, a_1, ..., a_{n-1} -> D_0, b_1, D_1, b_2, D_2, ..., b_{n-1}, D_{n-1}`
-/// For more information look at the documentation of the structure [TuringTransitionMultRibbons]
-pub fn parse_transition_content_string(transition: String) -> Result<TuringTransitionMultRibbons, TuringParserError>
+/// For more information look at the documentation of the structure [TuringTransition]
+pub fn parse_transition_content_string(transition: String) -> Result<TuringTransition, TuringParserError>
 {
     let parsed = TuringGrammar::parse(Rule::turing_machine, &transition);
     if let Err(e) = parsed {
         return Err(TuringParserError::ParsingError { line_col_pos: get_line_col(&e), missing_value: get_expected_value(&e), value: e.line().to_string() });
     }
     todo!("test");
+    // FIXME: test this
 }
 
 
 
 
 
-fn parse_transition(rule: Pair<Rule>) -> Result<(String, Vec<TuringTransitionMultRibbons>, String), TuringParserError>
+fn parse_transition(rule: Pair<Rule>) -> Result<(String, Vec<TuringTransition>, String), TuringParserError>
 {
     let mut transitions = vec!();
     let mut to_var = String::new();
@@ -210,7 +211,7 @@ fn parse_str_token(rule: Pair<Rule>) -> String
 
 
 
-fn parse_transition_content(rule: Pair<Rule>) -> Result<TuringTransitionMultRibbons, TuringError>
+fn parse_transition_content(rule: Pair<Rule>) -> Result<TuringTransition, TuringError>
 {
     let mut chars_read: Vec<char> = vec!();
     let mut directions: Vec<TuringDirection> = vec!();
@@ -258,7 +259,7 @@ fn parse_transition_content(rule: Pair<Rule>) -> Result<TuringTransitionMultRibb
         }
     }
 
-    TuringTransitionMultRibbons::create(chars_read, chars_written, directions)
+    TuringTransition::create(chars_read, chars_written, directions)
 }
 
 

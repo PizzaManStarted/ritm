@@ -2,25 +2,25 @@ use std::fmt::{Debug, Display};
 
 #[derive(Debug)]
 pub enum TuringError {
-    /// Error thrown when an action not supported by the turing machines is performed (ex: creating a turing machine with 0 ribbon or trying to remove the initial state)
+    /// Error thrown when an action not supported by the turing machines is performed (ex: creating a turing machine with 0 tape or trying to remove the initial state)
     IllegalActionError {
         cause : String
     },
-    /// Error returned when a transition tried to move a pointer out of the ribbons
-    OutofRangeRibbonError {
+    /// Error returned when a transition tried to move a pointer out of the tape
+    OutofRangeTapeError {
         accessed_index: usize,
-        ribbon_size: usize,
+        tape_size: usize,
     },
     /// Error returned when trying to access an out of range transition
     OutOfRangeTransitionError {
         accessed_index : usize,
         states_len : usize,
     },
-    /// Error when a transition cannot be added due to the number of ribbons it affects 
+    /// Error when a transition cannot be added due to the number of tapes it affects 
     IncompatibleTransitionError{
-        /// Number of writting ribbons expected
+        /// Number of writting tapes expected
         expected: usize,
-        /// Numbers of writting ribbons got
+        /// Numbers of writting tapes got
         received: usize,
     },
     /// Error when trying to construct a transition with an incorrect number of arguments
@@ -44,14 +44,14 @@ impl Display for TuringError {
             TuringError::IllegalActionError { cause } => {
                 format!("The following action could cause an error or is simply not authorised : \n{}", cause)
             },
-            TuringError::OutofRangeRibbonError { accessed_index, ribbon_size } => {
-                format!("A transition caused the ribbon pointer to point ouside the bounds of the ribbon. Tried to access {} but the length of the ribbon was {}", accessed_index, ribbon_size)
+            TuringError::OutofRangeTapeError { accessed_index, tape_size } => {
+                format!("A transition caused the tape pointer to point ouside the bounds of the tape. Tried to access {} but the length of the tape was {}", accessed_index, tape_size)
             },
             TuringError::OutOfRangeTransitionError { accessed_index, states_len } => {
                 format!("Tried to access a transition from the vector of transition in a state, but it was out of range. Tried to access the index {} but there are only {} transitions", accessed_index, states_len)
             },
             TuringError::IncompatibleTransitionError { expected, received } => {
-                format!("Tried to append a transition affecting \"{received}\" ribbons while all others only affect \"{expected}\" ribbons")
+                format!("Tried to append a transition affecting \"{received}\" tapes while all others only affect \"{expected}\" tapes")
             },
             TuringError::TransitionArgsError { reason } => {
                 format!("There was a problem during the creation of a transition : \n{}", reason)

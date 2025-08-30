@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, fmt::{Debug, Display}};
 
 
-use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_ribbon::{TuringReadRibbon, TuringRibbon, TuringWriteRibbon}, turing_state::{TuringState, TuringStateType, TuringTransitionMultRibbons}};
+use crate::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_tape::{TuringReadingTape, TuringTape, TuringWritingTape}, turing_state::{TuringState, TuringStateType, TuringTransition}};
 
 
 #[derive(Clone, Debug)]
@@ -33,10 +33,10 @@ pub struct SavedState {
     pub saved_state_index : usize,
     /// A stack containing all the indexes of the transitions left to take 
     pub next_transitions : VecDeque<usize>,
-    /// The value of the [TuringReadRibbon] when it was saved
-    pub saved_read_ribbon : TuringReadRibbon,
-    /// The value of the [TuringWriteRibbon] when they were saved
-    pub saved_write_ribbons : Vec<TuringWriteRibbon>,
+    /// The value of the [TuringReadingTape] when it was saved
+    pub saved_reading_tape : TuringReadingTape,
+    /// The value of the [TuringWritingTape] when they were saved
+    pub saved_writing_tapes : Vec<TuringWritingTape>,
     /// The value of the iteration that was saved.
     pub iteration: usize,
 }
@@ -61,9 +61,9 @@ pub enum TuringMachines
 #[derive(Debug)]
 pub struct IterationData {
     /// The reading rubbon containing the word
-    reading_ribbon:  TuringReadRibbon,
+    reading_tape:  TuringReadingTape,
     /// A vector containing all writting rubbons
-    write_ribbons: Vec<TuringWriteRibbon>,
+    writing_tapes: Vec<TuringWritingTape>,
     /// The current word to read
     word: String,
     /// The index of the current state of the turing machine
@@ -91,13 +91,13 @@ impl TuringMachines
         {
             data : IterationData {
                 state_pointer: 0,
-                reading_ribbon: TuringReadRibbon::new(),
-                write_ribbons: {
-                    // Creates k ribbons
+                reading_tape: TuringReadingTape::new(),
+                writing_tapes: {
+                    // Creates k tapes
                     let mut v = vec!();
                     for _ in 0..mt.get_k()
                     {
-                        v.push(TuringWriteRibbon::new());
+                        v.push(TuringWritingTape::new());
                     }
                     v
                 },
@@ -112,8 +112,8 @@ impl TuringMachines
             last_iteration: None,
             is_over: false
         };
-        // Add the word to the reading ribbon
-        if let Err(e) = s.get_reading_ribbon_mut().feed_word(word) {
+        // Add the word to the reading tape
+        if let Err(e) = s.get_reading_tape_mut().feed_word(word) {
             Err(e)
         }
         else {
@@ -141,15 +141,15 @@ impl TuringMachines
         if word.is_empty() {
             return Err(TuringError::IllegalActionError { cause: String::from("Tried to feed an empty word to the turing machine") });
         }
-        // Reset reading ribbon
-        self.get_reading_ribbon_mut().feed_word(word.clone())?;
+        // Reset reading tape
+        self.get_reading_tape_mut().feed_word(word.clone())?;
         
         self.set_word(word);
 
 
-        // Reset write ribbons
-        for i in 0..self.get_writting_ribbons_mut().len() {
-            self.get_writting_ribbons_mut()[i] = TuringWriteRibbon::new();
+        // Reset writing tapes
+        for i in 0..self.get_writting_tapes_mut().len() {
+            self.get_writting_tapes_mut()[i] = TuringWritingTape::new();
         }
 
         // Reset state pointers
@@ -206,13 +206,13 @@ impl TuringMachines
             }
             last_step_type = Some(step.get_current_state().state_type.clone());
             match &step {
-                TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => {
+                TuringExecutionSteps::FirstIteration { init_state:_, init_reading_tape:_, init_write_tapes:_ } => {
                     path.push(step);
                 },
-                TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_, iteration:_ } => {
+                TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, reading_tape:_, writing_tapes:_, iteration:_ } => {
                     path.push(step);
                 },
-                TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration:_, backtracked_iteration } => {
+                TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, reading_tape:_, writing_tapes:_, iteration:_, backtracked_iteration } => {
                     // Pop stack until we find the iteration we backtracked to
                     while path.last().unwrap().get_nb_iterations() != *backtracked_iteration {
                         path.pop();
@@ -274,47 +274,47 @@ impl TuringMachines {
         }
     }
     
-    /// Gets mutable ref to the reading ribbon stored inside this struct.
-    fn get_reading_ribbon_mut(&mut self) -> &mut TuringReadRibbon {
+    /// Gets mutable ref to the reading tape stored inside this struct.
+    fn get_reading_tape_mut(&mut self) -> &mut TuringReadingTape {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &mut data.reading_ribbon,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &mut data.reading_tape,
         }
     }
 
-    /// Gets ref to the reading ribbon stored inside this struct.
-    pub fn get_reading_ribbon(&self) -> &TuringReadRibbon {
+    /// Gets ref to the reading tape stored inside this struct.
+    pub fn get_reading_tape(&self) -> &TuringReadingTape {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &data.reading_ribbon,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &data.reading_tape,
         }
     }
 
-    /// Sets the reading ribbon stored inside this struct.
-    fn set_reading_ribbon(&mut self, ribbon: TuringReadRibbon) {
+    /// Sets the reading tapes stored inside this struct.
+    fn set_reading_tape(&mut self, tape: TuringReadingTape) {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ , is_over:_} => data.reading_ribbon = ribbon,
-        }
-    }
-    
-
-    /// Gets the mut ref writtings ribbons stored inside this struct.
-    fn get_writting_ribbons_mut(&mut self) -> &mut Vec<TuringWriteRibbon> {
-        match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &mut data.write_ribbons,
-        }
-    }
-
-    /// Gets the reference to the writtings ribbons stored inside this struct.
-    pub fn get_writting_ribbons(&self) -> &Vec<TuringWriteRibbon> {
-        match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &data.write_ribbons,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_ , is_over:_} => data.reading_tape = tape,
         }
     }
     
 
-    /// Sets the writting ribbons stored inside this struct.
-    fn set_writting_ribbons(&mut self, ribbons: Vec<TuringWriteRibbon>) {
+    /// Gets the mut ref writtings tapes stored inside this struct.
+    fn get_writting_tapes_mut(&mut self) -> &mut Vec<TuringWritingTape> {
         match self {
-            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => data.write_ribbons = ribbons,
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &mut data.writing_tapes,
+        }
+    }
+
+    /// Gets the reference to the writtings tapes stored inside this struct.
+    pub fn get_writting_tapes(&self) -> &Vec<TuringWritingTape> {
+        match self {
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => &data.writing_tapes,
+        }
+    }
+    
+
+    /// Sets the writting tapes stored inside this struct.
+    fn set_writting_tapes(&mut self, tapes: Vec<TuringWritingTape>) {
+        match self {
+            TuringMachines::TuringMachine { graph:_, data, iteration:_, last_iteration:_, is_over:_ } => data.writing_tapes = tapes,
         }
     }
     
@@ -432,10 +432,10 @@ pub enum TuringExecutionSteps
     FirstIteration {
         /// A clone of the initial state
         init_state: TuringState,
-        /// A clone representing the initial state of the reading ribbon.
-        init_read_ribbon: TuringReadRibbon,
-        /// A clone representing the initial state of the writting ribbons.
-        init_write_ribbons: Vec<TuringWriteRibbon>,
+        /// A clone representing the initial state of the reading tape.
+        init_reading_tape: TuringReadingTape,
+        /// A clone representing the initial state of the writting tapes.
+        init_write_tapes: Vec<TuringWritingTape>,
 
     },
     TransitionTaken
@@ -449,11 +449,11 @@ pub enum TuringExecutionSteps
         /// The index of the transition taken from the current state to the next one.
         transition_index_taken : usize,
         /// A clone of the transition that was just taken
-        transition_taken : TuringTransitionMultRibbons,
-        /// A clone representing the current state of the reading ribbon after taking that transition.
-        read_ribbon: TuringReadRibbon,
-        /// A clone representing the current state of the writting ribbons after taking that transition.
-        write_ribbons: Vec<TuringWriteRibbon>,
+        transition_taken : TuringTransition,
+        /// A clone representing the current state of the reading tape after taking that transition.
+        reading_tape: TuringReadingTape,
+        /// A clone representing the current state of the writting tapes after taking that transition.
+        writing_tapes: Vec<TuringWritingTape>,
         /// The current number of iterations already done
         iteration : usize,
     },
@@ -465,10 +465,10 @@ pub enum TuringExecutionSteps
         reached_state : TuringState,
         /// The index of the currently reached state
         state_pointer: usize,
-        /// A clone representing the current state of the reading ribbon after backtracking.
-        read_ribbon: TuringReadRibbon,
-        /// A clone representing the current state of the writting ribbons after backtracking.
-        write_ribbons: Vec<TuringWriteRibbon>,
+        /// A clone representing the current state of the reading tape after backtracking.
+        reading_tape: TuringReadingTape,
+        /// A clone representing the current state of the writting tapes after backtracking.
+        writing_tapes: Vec<TuringWritingTape>,
         /// The current number of iterations already done
         iteration : usize,
         /// The number of the iteration that was bactracked to
@@ -527,8 +527,8 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
             tm.set_first_iteration(false);
 
             return Some(TuringExecutionSteps::FirstIteration { init_state: curr_state, 
-                init_read_ribbon: tm.get_reading_ribbon_mut().clone(), 
-                init_write_ribbons: tm.get_writting_ribbons_mut().clone() });
+                init_reading_tape: tm.get_reading_tape_mut().clone(), 
+                init_write_tapes: tm.get_writting_tapes_mut().clone() });
         }
 
         /* Checks if the state is accepting */
@@ -541,10 +541,10 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
         // if it's normal or rejecting
 
         // If one of the transition condition is true,
-        // Get all current char read by **all** ribbons
-        let mut char_vec = vec!(tm.get_reading_ribbon_mut().read_curr_char());
-        for ribbon in tm.get_writting_ribbons_mut() {
-            char_vec.push(ribbon.read_curr_char());
+        // Get all current char read by **all** tapes
+        let mut char_vec = vec!(tm.get_reading_tape_mut().read_curr_char());
+        for tape in tm.get_writting_tapes_mut() {
+            char_vec.push(tape.read_curr_char());
         }
         
         let mut next_transitions = VecDeque::from(curr_state.get_valid_transitions_indexes(&char_vec));
@@ -582,9 +582,9 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
                 // Go back to the state
                 tm.set_state_pointer(saved_state.saved_state_index);
                 
-                // Change the context for the reading and writing ribbons
-                tm.set_reading_ribbon(saved_state.saved_read_ribbon);
-                tm.set_writting_ribbons(saved_state.saved_write_ribbons);
+                // Change the context for the reading and writing tapes
+                tm.set_reading_tape(saved_state.saved_reading_tape);
+                tm.set_writting_tapes(saved_state.saved_writing_tapes);
                 // Save the index of the transition found for the next call to `.next()`
                 tm.set_backtracking_info(transition_index_taken);
 
@@ -597,8 +597,8 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
                 return Some(TuringExecutionSteps::Backtracked { 
                     previous_state: curr_state, 
                     reached_state: tm.get_graph_ref().get_state(saved_state.saved_state_index).unwrap().clone(),
-                    read_ribbon: tm.get_reading_ribbon_mut().clone(),
-                    write_ribbons: tm.get_writting_ribbons_mut().clone(),
+                    reading_tape: tm.get_reading_tape_mut().clone(),
+                    writing_tapes: tm.get_writting_tapes_mut().clone(),
                     iteration : prev_iter,
                     state_pointer: tm.get_state_pointer(),
                     backtracked_iteration: saved_state.iteration });
@@ -613,8 +613,8 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
 
             let to_save = SavedState { saved_state_index:tm.get_state_pointer(), 
                                                     next_transitions, 
-                                                    saved_read_ribbon: tm.get_reading_ribbon_mut().clone(), 
-                                                    saved_write_ribbons: tm.get_writting_ribbons_mut().clone(),
+                                                    saved_reading_tape: tm.get_reading_tape_mut().clone(), 
+                                                    saved_writing_tapes: tm.get_writting_tapes_mut().clone(),
                                                     iteration: prev_iter - 1 };
 
             tm.push_to_memory_stack(to_save);
@@ -627,13 +627,13 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
     if let Some(ind) = transition_index_taken {
         let transition = tm.get_graph_ref().get_state(tm.get_state_pointer()).unwrap().transitions[ind].clone();
         // Apply the transition
-        // to the read ribbons
-        tm.get_reading_ribbon_mut().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
+        // to the reading tape
+        tm.get_reading_tape_mut().try_apply_transition(transition.chars_read[0], ' ', &transition.move_read).unwrap();
         
-        // to the write ribbons
+        // to the writing tapes
         for i in 0..tm.get_graph_ref().get_k()
         {
-            tm.get_writting_ribbons_mut()[i].try_apply_transition(transition.chars_read[i+1],
+            tm.get_writting_tapes_mut()[i].try_apply_transition(transition.chars_read[i+1],
                                                                                     transition.chars_write[i].0, &transition.chars_write[i].1).unwrap();
         }
 
@@ -646,8 +646,8 @@ fn next_iteration(tm: &mut TuringMachines) -> Option<TuringExecutionSteps>
             reached_state: tm.get_graph_ref().get_state(tm.get_state_pointer()).unwrap().clone(),
             transition_index_taken : ind,
             transition_taken: transition.clone(),
-            read_ribbon: tm.get_reading_ribbon_mut().clone(),
-            write_ribbons: tm.get_writting_ribbons_mut().clone(),
+            reading_tape: tm.get_reading_tape_mut().clone(),
+            writing_tapes: tm.get_writting_tapes_mut().clone(),
             iteration: prev_iter,
             state_pointer: tm.get_state_pointer()
         })
@@ -664,28 +664,28 @@ impl Display for TuringExecutionSteps{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
     {
         match self {
-            TuringExecutionSteps::FirstIteration { init_state, init_read_ribbon, init_write_ribbons } => {
-                let mut write_str_rib = init_write_ribbons[0].to_string();
-                for write_ribbon in init_write_ribbons.iter().skip(1) {
-                    write_str_rib.push_str(format!("\n{}", write_ribbon).as_str());
+            TuringExecutionSteps::FirstIteration { init_state, init_reading_tape, init_write_tapes: init_writing_tapes } => {
+                let mut write_str_rib = init_writing_tapes[0].to_string();
+                for writing_tape in init_writing_tapes.iter().skip(1) {
+                    write_str_rib.push_str(format!("\n{}", writing_tape).as_str());
                 }
 
-                write!(f, "* Initial state : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", init_state, init_read_ribbon, write_str_rib)
+                write!(f, "* Initial state : {}\n* Tapes:\nREAD:\n{}\nWRITE:\n{}", init_state, init_reading_tape, write_str_rib)
             },
-            TuringExecutionSteps::TransitionTaken { previous_state, reached_state, transition_index_taken:_, transition_taken, read_ribbon, write_ribbons, iteration:_, state_pointer:_ } => {
-                    let mut write_str_rib = write_ribbons[0].to_string();
-                    for write_ribbon in write_ribbons.iter().skip(1) {
-                        write_str_rib.push_str(format!("\n{}", write_ribbon).as_str());
+            TuringExecutionSteps::TransitionTaken { previous_state, reached_state, transition_index_taken:_, transition_taken, reading_tape, writing_tapes: writing_tape, iteration:_, state_pointer:_ } => {
+                    let mut write_str_rib = writing_tape[0].to_string();
+                    for writing_tape in writing_tape.iter().skip(1) {
+                        write_str_rib.push_str(format!("\n{}", writing_tape).as_str());
                     }
-                    write!(f, "* Left state : {}\n* Current state : {}\n* Took the following transition : {}\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", previous_state, reached_state, transition_taken, read_ribbon, write_str_rib)
+                    write!(f, "* Left state : {}\n* Current state : {}\n* Took the following transition : {}\n* Tapes:\nREAD:\n{}\nWRITE:\n{}", previous_state, reached_state, transition_taken, reading_tape, write_str_rib)
             },
-            TuringExecutionSteps::Backtracked { previous_state, reached_state, read_ribbon, write_ribbons, iteration:_ , state_pointer:_, backtracked_iteration} => {
-                let mut write_str_rib = write_ribbons[0].to_string();
-                for write_ribbon in write_ribbons.iter().skip(1) {
-                    write_str_rib.push_str(format!("\n{}", write_ribbon).as_str());
+            TuringExecutionSteps::Backtracked { previous_state, reached_state, reading_tape, writing_tapes, iteration:_ , state_pointer:_, backtracked_iteration} => {
+                let mut write_str_rib = writing_tapes[0].to_string();
+                for writing_tape in writing_tapes.iter().skip(1) {
+                    write_str_rib.push_str(format!("\n{}", writing_tape).as_str());
                 }
 
-                write!(f, "* Backtracked from : {}\n* To  : {}(back to iteration: {})\n* Ribbons:\nREAD:\n{}\nWRITE:\n{}", previous_state, reached_state, backtracked_iteration, read_ribbon, write_str_rib)
+                write!(f, "* Backtracked from : {}\n* To  : {}(back to iteration: {})\n* Tapes:\nREAD:\n{}\nWRITE:\n{}", previous_state, reached_state, backtracked_iteration, reading_tape, write_str_rib)
             },
         }
         
@@ -697,27 +697,27 @@ impl TuringExecutionSteps {
     pub fn get_current_state(&self) -> &TuringState
     {
         match self {
-            TuringExecutionSteps::FirstIteration { init_state, init_read_ribbon:_, init_write_ribbons:_ } => init_state,
-            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_, iteration:_ } => reached_state,
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration:_, backtracked_iteration:_ } => reached_state,
+            TuringExecutionSteps::FirstIteration { init_state, init_reading_tape:_, init_write_tapes:_ } => init_state,
+            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state, state_pointer:_, transition_index_taken:_, transition_taken:_, reading_tape:_, writing_tapes:_, iteration:_ } => reached_state,
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state, state_pointer:_, reading_tape:_, writing_tapes:_, iteration:_, backtracked_iteration:_ } => reached_state,
         }
     }
 
     pub fn get_previous_state(&self) -> Option<&TuringState>
     {
         match self {
-            TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => None,
-            TuringExecutionSteps::TransitionTaken { previous_state, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_, iteration:_ } => Some(previous_state),
-            TuringExecutionSteps::Backtracked { previous_state, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration:_, backtracked_iteration:_ } => Some(previous_state),
+            TuringExecutionSteps::FirstIteration { init_state:_, init_reading_tape:_, init_write_tapes:_ } => None,
+            TuringExecutionSteps::TransitionTaken { previous_state, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, reading_tape:_, writing_tapes:_, iteration:_ } => Some(previous_state),
+            TuringExecutionSteps::Backtracked { previous_state, reached_state:_, state_pointer:_, reading_tape:_, writing_tapes:_, iteration:_, backtracked_iteration:_ } => Some(previous_state),
         }
     }
 
     pub fn get_nb_iterations(&self) -> usize
     {
         match self {
-            TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => 0,
-            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_, iteration } => *iteration,
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons:_, iteration, backtracked_iteration:_ } => *iteration,
+            TuringExecutionSteps::FirstIteration { init_state:_, init_reading_tape:_, init_write_tapes:_ } => 0,
+            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, reading_tape:_, writing_tapes:_, iteration } => *iteration,
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, reading_tape:_, writing_tapes:_, iteration, backtracked_iteration:_ } => *iteration,
         }
     }
 
@@ -725,26 +725,26 @@ impl TuringExecutionSteps {
     pub fn get_state_pointer(&self) -> usize
     {
         match self {
-            TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons:_ } => 0,
-            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons:_, iteration :_} => *state_pointer,
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer, read_ribbon:_, write_ribbons:_, iteration:_, backtracked_iteration:_ } => *state_pointer,
+            TuringExecutionSteps::FirstIteration { init_state:_, init_reading_tape:_, init_write_tapes:_ } => 0,
+            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer, transition_index_taken:_, transition_taken:_, reading_tape:_, writing_tapes:_, iteration :_} => *state_pointer,
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer, reading_tape:_, writing_tapes:_, iteration:_, backtracked_iteration:_ } => *state_pointer,
         }
     }
 
-    pub fn get_reading_ribbon(&self) -> &TuringReadRibbon {
+    pub fn get_reading_tape(&self) -> &TuringReadingTape {
         match self {
-            TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon, init_write_ribbons:_ } => init_read_ribbon,
-            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon, write_ribbons:_, iteration:_ } => read_ribbon,
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon, write_ribbons:_, iteration:_, backtracked_iteration:_ } => read_ribbon,
+            TuringExecutionSteps::FirstIteration { init_state:_, init_reading_tape, init_write_tapes:_ } => init_reading_tape,
+            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, reading_tape, writing_tapes:_, iteration:_ } => reading_tape,
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, reading_tape, writing_tapes:_, iteration:_, backtracked_iteration:_ } => reading_tape,
         }
     }
 
 
-    pub fn get_writting_ribbons(&self) -> &Vec<TuringWriteRibbon> {
+    pub fn get_writing_tapes(&self) -> &Vec<TuringWritingTape> {
         match self {
-            TuringExecutionSteps::FirstIteration { init_state:_, init_read_ribbon:_, init_write_ribbons } => init_write_ribbons,
-            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, read_ribbon:_, write_ribbons, iteration:_ } => write_ribbons,
-            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, read_ribbon:_, write_ribbons, iteration:_, backtracked_iteration:_ } => write_ribbons,
+            TuringExecutionSteps::FirstIteration { init_state:_, init_reading_tape:_, init_write_tapes: init_writing_tapes } => init_writing_tapes,
+            TuringExecutionSteps::TransitionTaken { previous_state:_, reached_state:_, state_pointer:_, transition_index_taken:_, transition_taken:_, reading_tape:_, writing_tapes: writing_tape, iteration:_ } => writing_tape,
+            TuringExecutionSteps::Backtracked { previous_state:_, reached_state:_, state_pointer:_, reading_tape:_, writing_tapes, iteration:_, backtracked_iteration:_ } => writing_tapes,
         }
     }
 }

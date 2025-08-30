@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     turing_errors::TuringError,
-    turing_ribbon::{self},
+    turing_tape::{self},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -39,7 +39,7 @@ pub struct TuringState {
     /// Represents if the state is a final state or not
     pub state_type: TuringStateType,
     /// The vector containing all the transitions to the neighboring states
-    pub transitions: Vec<TuringTransitionMultRibbons>,
+    pub transitions: Vec<TuringTransition>,
     /// The name of this state
     pub name: String,
 }
@@ -60,26 +60,23 @@ impl TuringState {
     }
 
     /// Adds a new transition to the state
-    pub fn add_transition(
-        &mut self,
-        transition: TuringTransitionMultRibbons,
-    ) -> Result<(), TuringError> {
-        // Check that the number of ribbon from a transition is the same for all added transitions
+    pub fn add_transition(&mut self, transition: TuringTransition) -> Result<(), TuringError> {
+        // Check that the number of tapes from a transition is the same for all added transitions
         if !self.transitions.is_empty()
             && self
                 .transitions
                 .first()
                 .unwrap()
-                .get_number_of_affected_ribbons()
-                != transition.get_number_of_affected_ribbons()
+                .get_number_of_affected_tapes()
+                != transition.get_number_of_affected_tapes()
         {
             return Err(TuringError::IncompatibleTransitionError {
                 expected: self
                     .transitions
                     .first()
                     .unwrap()
-                    .get_number_of_affected_ribbons(),
-                received: transition.get_number_of_affected_ribbons(),
+                    .get_number_of_affected_tapes(),
+                received: transition.get_number_of_affected_tapes(),
             });
         }
 
@@ -91,7 +88,7 @@ impl TuringState {
     pub fn remove_transition_with_index(
         &mut self,
         transition_index: usize,
-    ) -> Result<TuringTransitionMultRibbons, TuringError> {
+    ) -> Result<TuringTransition, TuringError> {
         if self.transitions.len() <= transition_index {
             return Err(TuringError::OutOfRangeTransitionError {
                 accessed_index: transition_index,
@@ -104,7 +101,7 @@ impl TuringState {
     /// Removes all the transitions matching the given parameter. Beware that the `index_to_state` field will also be part of the evaluation.
     ///
     /// If the transition wasn't part of this state, nothing will happen.
-    pub fn remove_transition(&mut self, transition: &TuringTransitionMultRibbons) {
+    pub fn remove_transition(&mut self, transition: &TuringTransition) {
         let mut res = vec![];
 
         for t in &self.transitions {
@@ -145,10 +142,7 @@ impl TuringState {
     }
 
     /// Checks for all transitions that can be taken when reading a char in this state
-    pub fn get_valid_transitions(
-        &self,
-        chars_read: &Vec<char>,
-    ) -> Vec<&TuringTransitionMultRibbons> {
+    pub fn get_valid_transitions(&self, chars_read: &Vec<char>) -> Vec<&TuringTransition> {
         let mut res = vec![];
         for t in &self.transitions {
             if chars_read.eq(&t.chars_read) {
@@ -171,7 +165,7 @@ impl TuringState {
     }
 
     /// Gets all the transitions that can be taken to reach the given index.
-    pub fn get_transitions_to(&self, to_index: usize) -> Vec<&TuringTransitionMultRibbons> {
+    pub fn get_transitions_to(&self, to_index: usize) -> Vec<&TuringTransition> {
         let mut res = vec![];
 
         for t in &self.transitions {
@@ -201,7 +195,7 @@ impl PartialEq for TuringState {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-/// Represents the direction of a movement that the pointer of a ribbon can take after reading/writing a character
+/// Represents the direction of a movement that the pointer of a tape can take after reading/writing a character
 pub enum TuringDirection {
     Left,
     Right,
@@ -236,13 +230,13 @@ impl Display for TuringDirection {
 }
 
 #[derive(Debug)]
-/// A struct representing a transition for a turing machine that has strictly more than **1 ribbon** :
+/// A struct representing a transition for a turing machine that has strictly more than **1 tape** :
 /// * `a_0, a_1, ..., a_{n-1} -> D_0, b_1, D_1, b_2, D_2, ..., b_{n-1}, D_{n-1}`
 /// - With :
 ///     * `a_i` : The character *i* being read.
 ///     * `D_i` : Direction to take by taking this transition, see [TuringDirection] for more information.
 ///     * `b_i` : The character to replace the character *i* with.
-pub struct TuringTransitionMultRibbons {
+pub struct TuringTransition {
     /// The chars that have to be read in order apply the rest of the transition : `a_0,..., a_{n-1}`
     pub chars_read: Vec<char>,
     /// The move to take after writing/reading the character : `D_0`
@@ -253,8 +247,8 @@ pub struct TuringTransitionMultRibbons {
     pub index_to_state: Option<usize>,
 }
 
-impl TuringTransitionMultRibbons {
-    /// Creates a new [TuringTransitionMultRibbons].
+impl TuringTransition {
+    /// Creates a new [TuringTransitions].
     pub fn new(
         char_read: Vec<char>,
         move_read: TuringDirection,
@@ -268,13 +262,13 @@ impl TuringTransitionMultRibbons {
         }
     }
 
-    /// Simplifies the creation of a new [TuringTransitionMultRibbons] of the form :
+    /// Simplifies the creation of a new [TuringTransition] of the form :
     /// * `a_0, a_1, ..., a_{n-1} -> D_0, b_1, D_1, b_2, D_2, ..., b_{n-1}, D_{n-1}`
     ///
     /// ## Args :
     /// * **chars_read** : The characters that have to be read in order to take this transition : `a_0,..., a_{n-1}`
     /// * **chars_write** : The characters to replace the characters read : `b_1, ..., b_{n-1}`
-    /// * **directions** : The directions to move the pointers of the ribbons : `D_0, ..., D_{n-1}`
+    /// * **directions** : The directions to move the pointers of the tapes : `D_0, ..., D_{n-1}`
     pub fn create(
         chars_read: Vec<char>,
         chars_write: Vec<char>,
@@ -291,7 +285,7 @@ impl TuringTransitionMultRibbons {
         let move_read = move_read.unwrap().clone();
 
         if chars_write.len() + 1 != directions.len() {
-            return Err(TuringError::TransitionArgsError { reason: "The number of character to write must be equal to the number of directions minus one (for the reading ribbon)".to_string() });
+            return Err(TuringError::TransitionArgsError { reason: "The number of character to write must be equal to the number of directions minus one (for the reading tape)".to_string() });
         }
         if chars_read.len() != directions.len() {
             return Err(TuringError::TransitionArgsError { reason: "The number of characters to read must be equal to the number of given directions".to_string() });
@@ -312,7 +306,7 @@ impl TuringTransitionMultRibbons {
             if inc_char == c && inc_dir == d {
                 Err(TuringError::IllegalActionError {
                     cause: format!(
-                        "Detected the couple : (\"{}\", \"{}\"), this could result in going out of bounds of the ribbon. Change the given direction to None for example.",
+                        "Detected the couple : (\"{}\", \"{}\"), this could result in going out of bounds of the tape. Change the given direction to None for example.",
                         c, d
                     ),
                 })
@@ -321,24 +315,24 @@ impl TuringTransitionMultRibbons {
             }
         };
 
-        //  Only applies to the reading ribbon
+        //  Only applies to the reading tape
         ill_act_error(
             *chars_read.first().unwrap(),
-            turing_ribbon::END_CHAR,
+            turing_tape::END_CHAR,
             &move_read,
             &TuringDirection::Right,
         )?;
 
-        //  Applies to all ribbons, therefore we need to iterate over all of them
+        //  Applies to all tapes, therefore we need to iterate over all of them
 
         // check for reading first
         ill_act_error(
             *chars_read.first().unwrap(),
-            turing_ribbon::INIT_CHAR,
+            turing_tape::INIT_CHAR,
             &move_read,
             &TuringDirection::Left,
         )?;
-        // then for writting ribbons
+        // then for writting tapes
         for i in 1..chars_read.len() {
             let char_read = chars_read.get(i).unwrap();
 
@@ -346,26 +340,26 @@ impl TuringTransitionMultRibbons {
 
             ill_act_error(
                 *char_read,
-                turing_ribbon::INIT_CHAR,
+                turing_tape::INIT_CHAR,
                 char_dir,
                 &TuringDirection::Left,
             )?;
 
-            if *char_read == turing_ribbon::INIT_CHAR {
+            if *char_read == turing_tape::INIT_CHAR {
                 if *char_read != *char_relacement {
                     return Err(TuringError::IllegalActionError {
                         cause: format!(
-                            "Tried to replace a special character ('{}') with another character ('{}') for the writting ribbon {}",
+                            "Tried to replace a special character ('{}') with another character ('{}') for the writing tape {}",
                             char_read,
                             char_relacement,
                             i - 1
                         ),
                     });
                 }
-            } else if *char_relacement == turing_ribbon::INIT_CHAR {
+            } else if *char_relacement == turing_tape::INIT_CHAR {
                 return Err(TuringError::IllegalActionError {
                     cause: format!(
-                        "Tried to replace a normal character ('{}') with a special character ('{}') for the writting ribbon {}",
+                        "Tried to replace a normal character ('{}') with a special character ('{}') for the writing tape {}",
                         char_read,
                         char_relacement,
                         i - 1
@@ -382,13 +376,13 @@ impl TuringTransitionMultRibbons {
         })
     }
 
-    /// Returns the number of ribbons that are going to be affected by this transition.
-    pub fn get_number_of_affected_ribbons(&self) -> usize {
+    /// Returns the number of tapes that are going to be affected by this transition.
+    pub fn get_number_of_affected_tapes(&self) -> usize {
         self.chars_write.len() + 1
     }
 }
 
-impl Clone for TuringTransitionMultRibbons {
+impl Clone for TuringTransition {
     fn clone(&self) -> Self {
         Self {
             chars_read: self.chars_read.clone(),
@@ -399,8 +393,7 @@ impl Clone for TuringTransitionMultRibbons {
     }
 }
 
-
-impl Display for TuringTransitionMultRibbons {
+impl Display for TuringTransition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut char_read = String::from(self.chars_read[0]);
         for i in 1..self.chars_read.len() {
@@ -417,8 +410,8 @@ impl Display for TuringTransitionMultRibbons {
     }
 }
 
-impl PartialEq for TuringTransitionMultRibbons {
-    /// Checks if two [TuringTransitionMultRibbons] are equivalent. Note that the `index_to_state` field is not part of this comparison.
+impl PartialEq for TuringTransition {
+    /// Checks if two [TuringTransition] are equivalent. Note that the `index_to_state` field is not part of this comparison.
     fn eq(&self, other: &Self) -> bool {
         self.chars_read == other.chars_read
             && self.move_read == other.move_read
