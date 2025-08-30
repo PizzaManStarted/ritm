@@ -1,4 +1,4 @@
-use ritm_core::{turing_errors::{TuringError, TuringParserError}, turing_graph::TuringMachineGraph, turing_parser::{parse_transition_string, parse_turing_graph_string}, turing_state::{TuringDirection, TuringTransitionMultRibbons}};
+use ritm_core::{turing_errors::{TuringError, TuringParserError}, turing_graph::TuringMachineGraph, turing_parser::{parse_transition_string, parse_turing_graph_string}, turing_state::{TuringDirection, TuringTransition}};
 
 
 #[test]
@@ -19,13 +19,13 @@ fn test_parse_mt_valid()
     graph.add_state(&q1);
     
     // q_i -> {ç, ç, => R, ç, R} -> q_1
-    let mut transition = TuringTransitionMultRibbons::create(vec!('ç','ç'), vec!('ç'), vec!(TuringDirection::Right, TuringDirection::Right)).unwrap();
+    let mut transition = TuringTransition::create(vec!('ç','ç'), vec!('ç'), vec!(TuringDirection::Right, TuringDirection::Right)).unwrap();
     graph.append_rule_state_by_name(&String::from("i"), transition.clone(), &q1).unwrap();
 
-    transition = TuringTransitionMultRibbons::create(vec!('0','_'), vec!('a'), vec!(TuringDirection::Right, TuringDirection::Right)).unwrap();
+    transition = TuringTransition::create(vec!('0','_'), vec!('a'), vec!(TuringDirection::Right, TuringDirection::Right)).unwrap();
     graph.append_rule_state_by_name(&q1, transition.clone(), &q1).unwrap();
 
-    transition = TuringTransitionMultRibbons::create(vec!('1','_'), vec!('a'), vec!(TuringDirection::Right, TuringDirection::Right)).unwrap();
+    transition = TuringTransition::create(vec!('1','_'), vec!('a'), vec!(TuringDirection::Right, TuringDirection::Right)).unwrap();
     graph.append_rule_state_by_name(&q1, transition.clone(), &q1).unwrap();
 
 
@@ -66,8 +66,8 @@ fn test_parse_transition_valid_mult()
     assert_eq!(String::from("2"), to);
 
     assert_eq!(transitions.len(), 2);
-    assert_eq!(transitions[0], TuringTransitionMultRibbons::new(vec!('0', 'a'), TuringDirection::Right, vec!(('a', TuringDirection::Left))));
-    assert_eq!(transitions[1], TuringTransitionMultRibbons::new(vec!('1', 'b'), TuringDirection::None, vec!(('p', TuringDirection::Right))));
+    assert_eq!(transitions[0], TuringTransition::new(vec!('0', 'a'), TuringDirection::Right, vec!(('a', TuringDirection::Left))));
+    assert_eq!(transitions[1], TuringTransition::new(vec!('1', 'b'), TuringDirection::None, vec!(('p', TuringDirection::Right))));
 }
 
 #[test]
@@ -81,7 +81,7 @@ fn test_parse_transition_valid_single()
     assert_eq!(String::from("2"), to);
 
     assert_eq!(transitions.len(), 1);
-    assert_eq!(transitions[0], TuringTransitionMultRibbons::new(vec!('0', 'a'), TuringDirection::Right, vec!(('a', TuringDirection::Left))));
+    assert_eq!(transitions[0], TuringTransition::new(vec!('0', 'a'), TuringDirection::Right, vec!(('a', TuringDirection::Left))));
 }
 
 

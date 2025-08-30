@@ -1,4 +1,4 @@
-use ritm_core::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_state::{TuringDirection::{self}, TuringStateType, TuringTransitionMultRibbons}};
+use ritm_core::{turing_errors::TuringError, turing_graph::TuringMachineGraph, turing_state::{TuringDirection::{self}, TuringStateType, TuringTransition}};
 
 
 #[test]
@@ -79,16 +79,16 @@ fn add_transition()
     let mut graph = TuringMachineGraph::new(1).unwrap();
 
     graph.append_rule_state_by_name(&String::from("i"), 
-                                TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap(), 
+                                TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap(), 
                                 &String::from("a")).expect("no errors were expected");
 
     // e, is not part of the graph
     expect_unk_name_error(graph.append_rule_state_by_name(&String::from("e"), 
-                                TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap(), 
+                                TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap(), 
                                 &String::from("a")));
     // o, is not part of the graph
     expect_unk_name_error(graph.append_rule_state_by_name(&String::from("a"), 
-                            TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap(), 
+                            TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap(), 
                             &String::from("o")));
     // add e and o to the graph
     graph.add_state(&String::from("e"));
@@ -102,7 +102,7 @@ fn add_transition()
     }
     // add transition
     graph.append_rule_state_by_name(&String::from("e"), 
-                                TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap(), 
+                                TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap(), 
                                 &String::from("o")).expect("no errors were expected");
 
     // Check that the transition was really added
@@ -120,8 +120,8 @@ fn add_transition()
 fn delete_transitions()
 {
     let mut graph = TuringMachineGraph::new(1).unwrap();
-    let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
-    let t2 = TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('_'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
+    let t1 = TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
+    let t2 = TuringTransition::create(vec!('ç', '_'), vec!('_'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
 
     graph.append_rule_state_by_name(&String::from("i"), t1.clone(), &String::from("a")).unwrap();
     graph.append_rule_state_by_name(&String::from("i"), t2.clone(), &String::from("a")).unwrap();
@@ -143,9 +143,9 @@ fn delete_transitions()
 fn delete_all_transitions_two_nodes() 
 {
     let mut graph = TuringMachineGraph::new(1).unwrap();
-    let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
-    let t2 = TuringTransitionMultRibbons::create(vec!('ç', '_'), vec!('_'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
-    let t3 = TuringTransitionMultRibbons::create(vec!('_', '_'), vec!('_'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
+    let t1 = TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
+    let t2 = TuringTransition::create(vec!('ç', '_'), vec!('_'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
+    let t3 = TuringTransition::create(vec!('_', '_'), vec!('_'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
 
     graph.append_rule_state_by_name(&String::from("i"), t1.clone(), &String::from("a")).unwrap();
     graph.append_rule_state_by_name(&String::from("i"), t2.clone(), &String::from("a")).unwrap();
@@ -165,9 +165,9 @@ fn delete_all_transitions_two_nodes()
 fn delete_node()
 {
     let mut graph = TuringMachineGraph::new(1).unwrap();
-    let t1 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
-    let t2 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
-    let t3 = TuringTransitionMultRibbons::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
+    let t1 = TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
+    let t2 = TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
+    let t3 = TuringTransition::create(vec!('ç', 'ç'), vec!('ç'), vec!(TuringDirection::None, TuringDirection::Right)).unwrap();
     
     let _ = graph.add_state(&String::from("t")); 
     let ind_p = graph.add_state(&String::from("p"));
