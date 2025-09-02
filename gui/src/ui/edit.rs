@@ -55,7 +55,10 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                         }
                         if state_selected || transition_selected {
                             // Delete/Edit state/transition
-                            count += 2;
+                            count += 1;
+                        }
+                        if transition_selected {
+                            count += 1;
                         }
                         let width = icon_size * count as f32 + 20.0 * (count - 1) as f32;
 
@@ -141,8 +144,7 @@ pub fn show(app: &mut App, ui: &mut Ui, rect: Rect) {
                                     }
                                 }
 
-                                if (app.selected_state.is_some()
-                                    || app.selected_transition.is_some())
+                                if (app.selected_transition.is_some())
                                     && ui
                                         .add(
                                             ImageButton::new(

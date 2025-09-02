@@ -3,6 +3,7 @@ use egui::{
     Modal, RichText, ScrollArea, Shadow, Stroke, TextEdit, Ui, Vec2b, include_image,
     scroll_area::ScrollBarVisibility, style::WidgetVisuals, vec2,
 };
+use regex::Regex;
 use ritm_core::turing_state::{TuringDirection, TuringTransitionMultRibbons};
 
 use crate::{
@@ -201,20 +202,17 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                     }
 
                     // Undo change
-                    if ui
-                        .add(
-                            ImageButton::new(
-                                Image::new(include_image!("../../../assets/icon/undo.svg"))
-                                    .fit_to_exact_size(vec2(35.0, 35.0))
-                                    .tint(if app.rules_edit[transition_index].has_changed() {
-                                        app.theme.gray
-                                    } else {
-                                        Color32::LIGHT_GRAY
-                                    }),
-                            )
-                            .frame(false),
+                    if ui.add(ImageButton::new(
+                            Image::new(include_image!("../../../assets/icon/undo.svg"))
+                                .fit_to_exact_size(vec2(35.0, 35.0))
+                                .tint(if app.rules_edit[transition_index].has_changed() {
+                                    app.theme.gray
+                                } else {
+                                    Color32::LIGHT_GRAY
+                                }),
                         )
-                        .clicked()
+                        .frame(false),
+                    ).clicked()
                     {
                         // Undo all changes
                         app.rules_edit[transition_index].undo();
@@ -257,15 +255,34 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                                         },
                                     );
                                 }
-                                ui.add(
+                                if ui.add(
                                     TextEdit::singleline(&mut transition.chars_read[i])
                                         .background_color(Color32::LIGHT_GRAY)
                                         .frame(true)
                                         .font(Font::default_medium())
                                         .margin(margin)
                                         .desired_width(Font::get_width(ui, &Font::default_medium()))
-                                        .char_limit(1),
-                                );
+                                        .char_limit(2),
+                                ).changed() {
+
+                                    if transition.chars_read[i].len() > 1 {
+                                        transition.chars_read[i] = transition.chars_read[i].chars().nth(1).unwrap().to_string();
+                                    }
+
+                                    match transition.chars_read[i].as_str() {
+                                        "$" => {
+                                            if transition.move_read == TuringDirection::Right {
+                                                transition.move_read = TuringDirection::None;
+                                            }
+                                        },
+                                        "ç" => {
+                                            if transition.move_read == TuringDirection::Left {
+                                                transition.move_read = TuringDirection::None;
+                                            }
+                                        },
+                                        _ => {}
+                                    }   
+                                }
                             });
 
                             // Aesthetic purpose, add a colon between each reading char
@@ -289,16 +306,20 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                             )
                             .width(20.0) // TODO change and think about this value, I hardcoded it
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(
-                                    &mut transition.move_read,
-                                    TuringDirection::Right,
-                                    "Right",
-                                );
-                                ui.selectable_value(
-                                    &mut transition.move_read,
-                                    TuringDirection::Left,
-                                    "Left",
-                                );
+                                if transition.chars_read[0].as_str() != "$" {
+                                     ui.selectable_value(
+                                        &mut transition.move_read,
+                                        TuringDirection::Right,
+                                        "Right",
+                                    );
+                                }
+                                if transition.chars_read[0].as_str() != "ç" {
+                                    ui.selectable_value(
+                                        &mut transition.move_read,
+                                        TuringDirection::Left,
+                                        "Left",
+                                    );
+                                }
                                 ui.selectable_value(
                                     &mut transition.move_read,
                                     TuringDirection::None,
@@ -322,15 +343,34 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                                         },
                                     );
                                 }
-                                ui.add(
+                                if ui.add(
                                     TextEdit::singleline(&mut transition.chars_write[i].0)
                                         .background_color(Color32::LIGHT_GRAY)
                                         .frame(true)
                                         .font(Font::default_medium())
                                         .margin(margin)
                                         .desired_width(Font::get_width(ui, &Font::default_medium()))
-                                        .char_limit(1),
-                                );
+                                        .char_limit(2),
+                                ).changed() {
+
+                                    if transition.chars_write[i].0.len() > 1 {
+                                        transition.chars_write[i].0 = transition.chars_write[i].0.chars().nth(1).unwrap().to_string();
+                                    }
+
+                                    match transition.chars_write[i].0.as_str() {
+                                        "$" => {
+                                            if transition.chars_write[i].1 == TuringDirection::Right {
+                                                transition.chars_write[i].1= TuringDirection::None;
+                                            }
+                                        },
+                                        "ç" => {
+                                            if transition.chars_write[i].1 == TuringDirection::Left {
+                                                transition.chars_write[i].1 = TuringDirection::None;
+                                            }
+                                        },
+                                        _ => {}
+                                    }   
+                                }
                             });
 
                             // Again, aesthetic purpose
@@ -353,11 +393,13 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                                         TuringDirection::Right,
                                         "Right",
                                     );
-                                    ui.selectable_value(
-                                        &mut transition.chars_write[i].1,
-                                        TuringDirection::Left,
-                                        "Left",
-                                    );
+                                    if transition.chars_read[0].as_str() != "ç" {
+                                        ui.selectable_value(
+                                            &mut transition.chars_write[i].1,
+                                            TuringDirection::Left,
+                                            "Left",
+                                        );
+                                    }
                                     ui.selectable_value(
                                         &mut transition.chars_write[i].1,
                                         TuringDirection::None,

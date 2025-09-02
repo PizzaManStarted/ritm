@@ -470,8 +470,7 @@ impl eframe::App for App {
             }
         }
 
-        if self.event.listen_to_keybind {
-            ctx.input(|r| {
+        ctx.input(|r| {
                 if r.key_pressed(Key::Escape) {
                     if self.popup != RitmPopup::None {
                         // Request graceful exit of popup
@@ -482,7 +481,11 @@ impl eframe::App for App {
                         self.selected_transition = None;
                     }
                 }
+        });
 
+        if self.event.listen_to_keybind && self.popup == RitmPopup::None {
+            ctx.input(|r| {
+                
                 // Press A to create a state
                 if r.key_pressed(Key::A) {
                     self.event.is_adding_state ^= true;
