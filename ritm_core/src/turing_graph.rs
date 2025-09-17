@@ -188,7 +188,7 @@ impl TuringMachineGraph {
     }
 
     /// Returns the **mutable** state (*node*) at the given index.
-    fn get_state_mut(&mut self, pointer: usize) -> Result<&mut TuringState, TuringError> {
+    pub fn get_state_mut(&mut self, pointer: usize) -> Result<&mut TuringState, TuringError> {
         if self.states.len() <= pointer {
             return Err(TuringError::OutOfRangeStateError {
                 accessed_index: pointer,
@@ -284,11 +284,11 @@ impl TuringMachineGraph {
     /// Removes **all** the transitions from a state to the given node, using the nodes `to` node index.
     pub fn remove_transitions_with_index(
         &mut self,
-        from: &String,
+        from: usize,
         to: usize,
     ) -> Result<(), TuringError> {
         // check that `from` state exists
-        let n1_state = self.get_state_from_name_mut(from)?;
+        let n1_state = self.get_state_mut(from)?;
 
         // Remove all transitions from n1 to n2
         n1_state.remove_transitions(to);
@@ -393,13 +393,15 @@ impl TuringMachineGraph {
             prev_val = *self.name_index_hashmap.get_mut(name).unwrap();
             // If this node had a bigger index, we lower it by one in the hashmap (it moved in the `states` vector)
             if prev_val >= state_index {
-                *self.name_index_hashmap.get_mut(name).unwrap() -= 1;
-                // Save this state for later use
                 to_notify_neigh.push(prev_val);
+                let index = *self.name_index_hashmap.get_mut(name).unwrap();
+                *self.name_index_hashmap.get_mut(name).unwrap() = index - 1;
+                // Save this state for later use
+                prev_val = index - 1;
             }
 
             // Remove all transitions to the removed node
-            self.remove_transitions_with_index(name, state_index)?
+            self.remove_transitions_with_index(prev_val, state_index)?
         }
         for state in &mut self.states {
             for changed_index in &to_notify_neigh {

@@ -4,8 +4,8 @@ use std::fmt::Display;
 use colored::{Color, ColoredString, Colorize};
 use ritm_core::{
     turing_machine::{Mode, TuringExecutionSteps, TuringMachines},
-    turing_tape::{TuringReadingTape, TuringWritingTape},
     turing_state::{TuringState, TuringStateType},
+    turing_tape::{TuringReadingTape, TuringWritingTape},
 };
 use strum_macros::EnumIter;
 
@@ -208,7 +208,7 @@ impl ModeEvent for ExecuteTuringMode {
                     "Mode of execution : ".blue(),
                     tm.get_mode().to_string().yellow()
                 );
-                println!("{}", tm.get_graph_ref().to_string().blue());
+                println!("{}", tm.graph_ref().to_string().blue());
                 None
             }
             ExecuteTuringMode::SummaryExecution => {
@@ -341,11 +341,7 @@ fn print_step(
 
                 println!(
                     "{}",
-                    format_tape(
-                        st.get_reading_tape(),
-                        st.get_writing_tapes(),
-                        Color::Green
-                    )
+                    format_tape(st.get_reading_tape(), st.get_writing_tapes(), Color::Green)
                 );
             } else {
                 println!(
@@ -363,11 +359,7 @@ fn print_step(
                 );
                 println!(
                     "{}",
-                    format_tape(
-                        st.get_reading_tape(),
-                        st.get_writing_tapes(),
-                        Color::Blue
-                    )
+                    format_tape(st.get_reading_tape(), st.get_writing_tapes(), Color::Blue)
                 );
             }
         }
@@ -395,11 +387,7 @@ fn print_step(
             );
             println!(
                 "{}",
-                format_tape(
-                    st.get_reading_tape(),
-                    st.get_writing_tapes(),
-                    Color::Yellow
-                )
+                format_tape(st.get_reading_tape(), st.get_writing_tapes(), Color::Yellow)
             );
         }
     }
@@ -505,7 +493,7 @@ fn summarise_execution(
         );
         println!(
             "At state : {}",
-            tm.get_graph_ref()
+            tm.graph_ref()
                 .get_state(saved_state.saved_state_index)
                 .unwrap()
         );

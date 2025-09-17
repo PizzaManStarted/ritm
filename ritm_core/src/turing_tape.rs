@@ -236,11 +236,7 @@ fn tape_to_string(chars_vec: &Vec<char>, pointer: usize, is_inf: bool) -> String
 
 impl Display for TuringWritingTape {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            tape_to_string(&self.chars_vec, self.pointer, true)
-        )
+        write!(f, "{}", tape_to_string(&self.chars_vec, self.pointer, true))
     }
 }
 
@@ -322,16 +318,13 @@ mod tests {
 
         tape.feed_word("test".to_string()).unwrap();
 
-        tape
-            .try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::Right)
+        tape.try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::Right)
             .unwrap();
         assert_eq!(tape.pointer, 1);
-        tape
-            .try_apply_transition('t', 'p', &TuringDirection::Left)
+        tape.try_apply_transition('t', 'p', &TuringDirection::Left)
             .unwrap();
         assert_eq!(tape.pointer, 0);
-        tape
-            .try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::None)
+        tape.try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::None)
             .unwrap();
         assert_eq!(tape.pointer, 0);
 
@@ -340,20 +333,15 @@ mod tests {
             vec!(INIT_CHAR, 't', 'e', 's', 't', END_CHAR)
         );
 
-        tape
-            .try_apply_transition(INIT_CHAR, '_', &TuringDirection::Right)
+        tape.try_apply_transition(INIT_CHAR, '_', &TuringDirection::Right)
             .unwrap();
-        tape
-            .try_apply_transition('t', '_', &TuringDirection::Right)
+        tape.try_apply_transition('t', '_', &TuringDirection::Right)
             .unwrap();
-        tape
-            .try_apply_transition('e', '_', &TuringDirection::Right)
+        tape.try_apply_transition('e', '_', &TuringDirection::Right)
             .unwrap();
-        tape
-            .try_apply_transition('s', '_', &TuringDirection::Right)
+        tape.try_apply_transition('s', '_', &TuringDirection::Right)
             .unwrap();
-        tape
-            .try_apply_transition('t', '_', &TuringDirection::Right)
+        tape.try_apply_transition('t', '_', &TuringDirection::Right)
             .unwrap();
 
         match tape.try_apply_transition(END_CHAR, '_', &TuringDirection::Right) {
@@ -377,8 +365,7 @@ mod tests {
     fn test_illegal_replacement() {
         let mut tape = TuringWritingTape::new();
 
-        tape
-            .try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::Right)
+        tape.try_apply_transition(INIT_CHAR, INIT_CHAR, &TuringDirection::Right)
             .unwrap();
         assert_eq!(tape.pointer, 1);
 
@@ -389,11 +376,9 @@ mod tests {
             panic!("An error should have been returned");
         }
 
-        tape
-            .try_apply_transition(BLANK_CHAR, BLANK_CHAR, &TuringDirection::Left)
+        tape.try_apply_transition(BLANK_CHAR, BLANK_CHAR, &TuringDirection::Left)
             .unwrap();
-        tape
-            .try_apply_transition(BLANK_CHAR, BLANK_CHAR, &TuringDirection::Left)
+        tape.try_apply_transition(BLANK_CHAR, BLANK_CHAR, &TuringDirection::Left)
             .unwrap();
 
         match tape.try_apply_transition(INIT_CHAR, 'p', &TuringDirection::Right) {

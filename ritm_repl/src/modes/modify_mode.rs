@@ -222,7 +222,7 @@ fn remove_transition(
     rl: &mut Editor<(), FileHistory>,
     turing_graph: &mut TuringMachineGraph,
 ) -> Result<(), RiplError> {
-    let (q1, vec_tm, q2)  = query_transition(
+    let (q1, vec_tm, q2) = query_transition(
         rl,
         format!(
             "Enter one or multiple {} to {} from the the graph: ",
@@ -230,7 +230,7 @@ fn remove_transition(
             "remove".bold()
         ),
     )?;
-    
+
     for transition in vec_tm {
         if let Err(e) = turing_graph.remove_transition(&q1, &transition, &q2) {
             print_error_help(RiplError::EncounteredTuringError { error: e });
@@ -246,11 +246,7 @@ fn remove_transition(
     Ok(())
 }
 
-fn format_transition(
-    from: &String,
-    transition: &TuringTransition,
-    to: &String,
-) -> ColoredString {
+fn format_transition(from: &String, transition: &TuringTransition, to: &String) -> ColoredString {
     format!("q_{} {}{}{} q_{}", from, "{", transition, "}", to).yellow()
 }
 
@@ -307,7 +303,12 @@ fn save_tm(
             Some(p) => rl.readline_with_initial(
                 "==> ",
                 (
-                    p.as_path().join("turing_machine").to_str().unwrap().to_string().as_str(),
+                    p.as_path()
+                        .join("turing_machine")
+                        .to_str()
+                        .unwrap()
+                        .to_string()
+                        .as_str(),
                     ".tm",
                 ),
             ),

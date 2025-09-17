@@ -103,13 +103,10 @@ fn query_load_tm(
     load_tm(current_path, &path_str)
 }
 
-
-
 pub fn load_tm(
     current_path: &Option<PathBuf>,
-    given_input: &String
+    given_input: &String,
 ) -> Result<TuringMachineGraph, RiplError> {
-
     // Check if the path is absolute or not
     let path = Path::new(&given_input);
 
