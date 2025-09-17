@@ -41,7 +41,7 @@ In this mode you can either create a new empty turing machine graph or load an e
 
 ### Create
 
-Creating a blank graph is as easy as specifying the number of working ribbons that you will be working with.
+Creating a blank graph is as easy as specifying the number of working tapes that you will be working with.
 
 This is because every transitions will have to respect this value when you will add them later.
 

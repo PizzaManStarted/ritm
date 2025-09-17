@@ -5,7 +5,8 @@ use egui::{
 use egui_flex::{Flex, FlexAlign, FlexAlignContent, item};
 
 use crate::{
-    ui::{component::grid::Grid, constant::Constant, font::Font}, App
+    App,
+    ui::{component::grid::Grid, constant::Constant, font::Font},
 };
 
 pub fn show(app: &mut App, ui: &mut Ui) {

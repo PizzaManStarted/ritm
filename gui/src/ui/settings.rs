@@ -6,7 +6,8 @@ use egui_flex::{Flex, FlexAlign, FlexAlignContent, FlexDirection, item};
 use include_directory::{Dir, include_directory};
 
 use crate::{
-    ui::{constant::Constant, font::Font, popup::RitmPopup}, App
+    App,
+    ui::{constant::Constant, font::Font, popup::RitmPopup},
 };
 
 static EXAMPLES: Dir = include_directory!("ritm_core/resources");
@@ -190,5 +191,4 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             }
         }
     });
-
 }

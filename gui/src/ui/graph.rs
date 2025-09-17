@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
 use egui::{
-    include_image, vec2, Id, Image, ImageButton, LayerId, Rect, Scene, Ui, UiBuilder, Vec2
+    Id, Image, ImageButton, LayerId, Rect, Scene, Ui, UiBuilder, Vec2, include_image, vec2,
 };
 
 use crate::{
-    turing::State, ui::{constant::Constant, edit, popup::RitmPopup, utils}, App
+    App,
+    turing::State,
+    ui::{constant::Constant, edit, popup::RitmPopup, utils},
 };
 
 pub mod state;
@@ -78,7 +80,11 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     // If the graph scene is clicked
     if scene_response.clicked() {
         if app.event.is_adding_state {
-            app.temp_state = Some(State::new_at_pos(0, "temp".to_string(), scene_response.interact_pointer_pos().unwrap()));
+            app.temp_state = Some(State::new_at_pos(
+                0,
+                "temp".to_string(),
+                scene_response.interact_pointer_pos().unwrap(),
+            ));
             app.popup = RitmPopup::StateEdit;
         }
 

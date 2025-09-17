@@ -6,7 +6,7 @@ use std::{
 };
 
 use egui::{
-    vec2, FontData, FontDefinitions, FontFamily, Key, Pos2, Rect, Ui, UserData, ViewportCommand
+    FontData, FontDefinitions, FontFamily, Key, Pos2, Rect, Ui, UserData, ViewportCommand, vec2,
 };
 use egui_extras::install_image_loaders;
 use image::{ExtendedColorType, save_buffer};
@@ -15,7 +15,7 @@ use ritm_core::{
     turing_graph::TuringMachineGraph,
     turing_machine::{Mode, TuringExecutionSteps, TuringMachines},
     turing_parser::{graph_to_string, parse_turing_graph_string},
-    turing_state::{TuringDirection, TuringStateType, TuringTransitionMultRibbons},
+    turing_state::{TuringDirection, TuringStateType, TuringTransition},
 };
 
 use crate::{
@@ -133,7 +133,7 @@ impl Default for App {
         let graph = TuringMachineGraph::new(1).ok().unwrap();
 
         let mut turing = TuringMachines::new(graph, "".to_string(), Mode::StopAfter(500)).unwrap();
-        
+
         let step = turing.into_iter().next().unwrap();
 
         let mut sf = Self {
@@ -205,7 +205,6 @@ impl App {
 
     /// Add a state to the turing machine at a certain position
     pub fn add_state(&mut self, position: Pos2, name: String) {
-
         // Create the state in the core of the application to miror the id into
         // the gui structure
         let id = self.turing.graph_mut().add_state(&name);
@@ -228,25 +227,48 @@ impl App {
                 .retain(|t| t.target_id != self.selected_state.unwrap());
         }
         self.states.remove(&self.selected_state.unwrap());
-
         self.selected_state = None;
     }
 
     /// Remove the selected state from the core and the gui structure
     pub fn remove_transitions(&mut self) {
-        // for (_, state) in self.states.iter_mut() {
-        //     state
-        //         .transitions
-        //         .retain(|t| t.target_id != self.selected_state.unwrap());
-        // }
-        // self.states.remove(&self.selected_state.unwrap());
+        let (from, to) = self.selected_transition.unwrap();
+        if let Err(_) = self
+            .turing
+            .graph_mut()
+            .remove_transitions_with_index(from, to)
+        {
+            println!("Error occured !")
+        }
 
-        // self.selected_state = None;
+        self.states.get_mut(&from).unwrap().transitions.clear();
+        for (i, transition) in self
+            .turing
+            .graph_ref()
+            .get_state(from)
+            .unwrap()
+            .transitions
+            .iter()
+            .enumerate()
+        {
+            self.states
+                .get_mut(&from)
+                .unwrap()
+                .transitions
+                .push(Transition {
+                    id: i,
+                    identifier: (from, i),
+                    parent_id: from,
+                    target_id: to,
+                    text: transition.to_string(),
+                });
+        }
+        self.selected_transition = None;
     }
 
     /// Add a transition graphically and logically
     pub fn add_transition(&mut self, target: usize) {
-        let transition = TuringTransitionMultRibbons::new(
+        let transition = TuringTransition::new(
             vec!['ç'; self.turing.graph_ref().get_k() + 1],
             TuringDirection::None,
             vec![('ç', TuringDirection::None); self.turing.graph_ref().get_k()],
@@ -329,7 +351,7 @@ impl App {
                 self.rules_edit
                     .iter()
                     .map(|transition| transition.to().unwrap())
-                    .collect::<Vec<TuringTransitionMultRibbons>>()
+                    .collect::<Vec<TuringTransition>>()
                     .as_mut(),
             );
 
@@ -471,21 +493,20 @@ impl eframe::App for App {
         }
 
         ctx.input(|r| {
-                if r.key_pressed(Key::Escape) {
-                    if self.popup != RitmPopup::None {
-                        // Request graceful exit of popup
-                        self.event.close_popup = true;
-                    } else {
-                        // Unselect what is selected
-                        self.selected_state = None;
-                        self.selected_transition = None;
-                    }
+            if r.key_pressed(Key::Escape) {
+                if self.popup != RitmPopup::None {
+                    // Request graceful exit of popup
+                    self.event.close_popup = true;
+                } else {
+                    // Unselect what is selected
+                    self.selected_state = None;
+                    self.selected_transition = None;
                 }
+            }
         });
 
         if self.event.listen_to_keybind && self.popup == RitmPopup::None {
             ctx.input(|r| {
-                
                 // Press A to create a state
                 if r.key_pressed(Key::A) {
                     self.event.is_adding_state ^= true;
@@ -575,20 +596,19 @@ pub fn take_screenshot(app: &mut App, ui: &mut Ui) {
         ctx.send_viewport_cmd(ViewportCommand::Screenshot(UserData::default()));
 
         ctx.input(|i| {
-            i.events
-                .iter()
-                .for_each(|e| {
-                    if let egui::Event::Screenshot { image, .. } = e {
-                        let image = image.region(&rect, Some(i.pixels_per_point));
-                        save_buffer(
-                            Path::new("assets/help/screenshot.png"),
-                            image.as_raw(),
-                            image.source_size.x as u32,
-                            image.source_size.y as u32,
-                            ExtendedColorType::Rgba8,
-                        ).unwrap();
-                    }
-                })
+            i.events.iter().for_each(|e| {
+                if let egui::Event::Screenshot { image, .. } = e {
+                    let image = image.region(&rect, Some(i.pixels_per_point));
+                    save_buffer(
+                        Path::new("assets/help/screenshot.png"),
+                        image.as_raw(),
+                        image.source_size.x as u32,
+                        image.source_size.y as u32,
+                        ExtendedColorType::Rgba8,
+                    )
+                    .unwrap();
+                }
+            })
         });
     }
 }

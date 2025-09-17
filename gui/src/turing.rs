@@ -1,6 +1,6 @@
 use egui::{Color32, Pos2, accesskit::Invalid};
 use rand::random_range;
-use ritm_core::turing_state::{TuringDirection, TuringTransitionMultRibbons};
+use ritm_core::turing_state::{TuringDirection, TuringTransition};
 
 use crate::App;
 
@@ -28,7 +28,7 @@ pub struct Transition {
     pub identifier: (usize, usize),
 }
 
-/// Copy of the [`TuringTransitionMultRibbons`] but with string to allow empty char
+/// Copy of the [`TuringTransition`] but with string to allow empty char
 #[derive(Clone, PartialEq)]
 pub struct TuringTransitionString {
     pub chars_read: Vec<String>,
@@ -44,7 +44,7 @@ pub struct TransitionEdit {
 }
 
 impl TransitionEdit {
-    pub fn from(ttmr: &TuringTransitionMultRibbons) -> Self {
+    pub fn from(ttmr: &TuringTransition) -> Self {
         let tts = TuringTransitionString {
             chars_read: ttmr
                 .chars_read
@@ -67,7 +67,7 @@ impl TransitionEdit {
         }
     }
 
-    pub fn to(&self) -> Result<TuringTransitionMultRibbons, Invalid> {
+    pub fn to(&self) -> Result<TuringTransition, Invalid> {
         if self.edit.chars_read.iter().any(|string| string.is_empty())
             || self
                 .edit
@@ -78,7 +78,7 @@ impl TransitionEdit {
             return Err(Invalid::True);
         }
 
-        Ok(TuringTransitionMultRibbons {
+        Ok(TuringTransition {
             chars_read: self
                 .edit
                 .chars_read
@@ -162,7 +162,7 @@ impl Transition {
     }
 
     pub fn get(app: &App, identifier: (usize, usize)) -> &Self {
-        State::get(app, identifier.0)
+        &State::get(app, identifier.0)
             .transitions
             .get(identifier.1)
             .unwrap()

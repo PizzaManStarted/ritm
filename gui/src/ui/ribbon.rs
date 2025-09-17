@@ -6,9 +6,9 @@ use egui::{
     scroll_area::{ScrollBarVisibility, ScrollSource},
     vec2,
 };
-use ritm_core::turing_ribbon::TuringRibbon;
+use ritm_core::turing_tape::TuringTape;
 
-use crate::{ui::constant::Constant, App};
+use crate::{App, ui::constant::Constant};
 
 pub fn show(app: &mut App, ui: &mut Ui) {
     let ribbon_count = app.turing.graph_ref().get_k() + 1;
@@ -93,11 +93,11 @@ fn ribbon(app: &mut App, ui: &mut Ui, width: f32, ribbon_id: usize) {
             // Get the chars and pointer from reading or writing ribbon
             let (chars, pointer): (&Vec<char>, i32) = if ribbon_id == 0 {
                 (
-                    &app.step.get_reading_ribbon().get_contents(),
-                    app.step.get_reading_ribbon().get_pointer() as i32,
+                    &app.step.get_reading_tape().get_contents(),
+                    app.step.get_reading_tape().get_pointer() as i32,
                 )
             } else {
-                let write_ribbon = &app.step.get_writting_ribbons()[ribbon_id - 1 as usize];
+                let write_ribbon = &app.step.get_writing_tapes()[ribbon_id - 1 as usize];
                 (
                     &write_ribbon.get_contents(),
                     write_ribbon.get_pointer() as i32,

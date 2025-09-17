@@ -1,5 +1,6 @@
 use egui::{
-    include_image, vec2, Align, AtomExt, Button, Color32, Context, Frame, Id, Image, Layout, Margin, Modal, Pos2, RichText, Stroke, TextEdit, Ui, Vec2
+    Align, AtomExt, Button, Color32, Context, Frame, Id, Image, Layout, Margin, Modal, Pos2,
+    RichText, Stroke, TextEdit, Ui, Vec2, include_image, vec2,
 };
 
 use crate::{
@@ -68,7 +69,6 @@ pub fn show(app: &mut App, ctx: &Context) {
                         )
                         .clicked()
                     {
-
                         // no mut borrow
                         let state = app.temp_state.as_ref().unwrap();
                         app.add_state(state.position, state.name.clone());

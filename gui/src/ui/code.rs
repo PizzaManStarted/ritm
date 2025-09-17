@@ -3,11 +3,10 @@ use egui::{
     scroll_area::ScrollBarVisibility, text::LayoutJob, vec2,
 };
 
-use crate::{ui::font::Font, App};
+use crate::{App, ui::font::Font};
 
 /// Display the code section of the application
 pub fn show(app: &mut App, ui: &mut Ui) {
-
     ScrollArea::vertical()
         .scroll_bar_visibility(ScrollBarVisibility::AlwaysHidden)
         .show(ui, |ui| {

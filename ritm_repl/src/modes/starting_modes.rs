@@ -42,7 +42,7 @@ impl ModeEvent for StartingMode {
             match self {
                 StartingMode::CreateTM => format!(
                     "Creates a new {tm_it} by specifying the {}",
-                    "number of writting ribbons".purple()
+                    "number of writting tapes".purple()
                 ),
                 StartingMode::LoadTM => format!(
                     "Loads a new {tm_it} by specifying a {} to it from",
@@ -78,7 +78,7 @@ fn create_tm(rl: &mut Editor<(), FileHistory>) -> Result<TuringMachineGraph, Rip
         rl,
         format!(
             "Enter the numbers of {} of the Turing machine ({}) :",
-            "writting ribbons".blue(),
+            "writting tapes".blue(),
             "k".blue().italic()
         ),
     )?;
@@ -103,13 +103,10 @@ fn query_load_tm(
     load_tm(current_path, &path_str)
 }
 
-
-
 pub fn load_tm(
     current_path: &Option<PathBuf>,
-    given_input: &String
+    given_input: &String,
 ) -> Result<TuringMachineGraph, RiplError> {
-
     // Check if the path is absolute or not
     let path = Path::new(&given_input);
 

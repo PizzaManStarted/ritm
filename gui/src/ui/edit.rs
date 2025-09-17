@@ -4,7 +4,9 @@ use egui::{
 };
 
 use crate::{
-    app::take_screenshot, ui::{constant::Constant, popup::RitmPopup, theme::Theme}, App
+    App,
+    app::take_screenshot,
+    ui::{constant::Constant, popup::RitmPopup, theme::Theme},
 };
 
 /// Control of the graph

@@ -3,8 +3,7 @@ use egui::{
     Modal, RichText, ScrollArea, Shadow, Stroke, TextEdit, Ui, Vec2b, include_image,
     scroll_area::ScrollBarVisibility, style::WidgetVisuals, vec2,
 };
-use regex::Regex;
-use ritm_core::turing_state::{TuringDirection, TuringTransitionMultRibbons};
+use ritm_core::turing_state::{TuringDirection, TuringTransition};
 
 use crate::{
     App,
@@ -110,17 +109,15 @@ pub fn show(app: &mut App, ctx: &Context) {
                             )
                             .clicked()
                         {
-                            app.rules_edit.push(TransitionEdit::from(
-                                &TuringTransitionMultRibbons {
-                                    chars_read: vec!['ç'; app.turing.graph_ref().get_k() + 1],
-                                    move_read: TuringDirection::None,
-                                    chars_write: vec![
-                                        ('ç', TuringDirection::None);
-                                        app.turing.graph_ref().get_k()
-                                    ],
-                                    index_to_state: Some(selected_transition.1),
-                                },
-                            ));
+                            app.rules_edit.push(TransitionEdit::from(&TuringTransition {
+                                chars_read: vec!['ç'; app.turing.graph_ref().get_k() + 1],
+                                move_read: TuringDirection::None,
+                                chars_write: vec![
+                                    ('ç', TuringDirection::None);
+                                    app.turing.graph_ref().get_k()
+                                ],
+                                index_to_state: Some(selected_transition.1),
+                            }));
                         }
                     })
                     .response
@@ -202,17 +199,20 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                     }
 
                     // Undo change
-                    if ui.add(ImageButton::new(
-                            Image::new(include_image!("../../../assets/icon/undo.svg"))
-                                .fit_to_exact_size(vec2(35.0, 35.0))
-                                .tint(if app.rules_edit[transition_index].has_changed() {
-                                    app.theme.gray
-                                } else {
-                                    Color32::LIGHT_GRAY
-                                }),
+                    if ui
+                        .add(
+                            ImageButton::new(
+                                Image::new(include_image!("../../../assets/icon/undo.svg"))
+                                    .fit_to_exact_size(vec2(35.0, 35.0))
+                                    .tint(if app.rules_edit[transition_index].has_changed() {
+                                        app.theme.gray
+                                    } else {
+                                        Color32::LIGHT_GRAY
+                                    }),
+                            )
+                            .frame(false),
                         )
-                        .frame(false),
-                    ).clicked()
+                        .clicked()
                     {
                         // Undo all changes
                         app.rules_edit[transition_index].undo();
@@ -255,18 +255,27 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                                         },
                                     );
                                 }
-                                if ui.add(
-                                    TextEdit::singleline(&mut transition.chars_read[i])
-                                        .background_color(Color32::LIGHT_GRAY)
-                                        .frame(true)
-                                        .font(Font::default_medium())
-                                        .margin(margin)
-                                        .desired_width(Font::get_width(ui, &Font::default_medium()))
-                                        .char_limit(2),
-                                ).changed() {
-
+                                if ui
+                                    .add(
+                                        TextEdit::singleline(&mut transition.chars_read[i])
+                                            .background_color(Color32::LIGHT_GRAY)
+                                            .frame(true)
+                                            .font(Font::default_medium())
+                                            .margin(margin)
+                                            .desired_width(Font::get_width(
+                                                ui,
+                                                &Font::default_medium(),
+                                            ))
+                                            .char_limit(2),
+                                    )
+                                    .changed()
+                                {
                                     if transition.chars_read[i].len() > 1 {
-                                        transition.chars_read[i] = transition.chars_read[i].chars().nth(1).unwrap().to_string();
+                                        transition.chars_read[i] = transition.chars_read[i]
+                                            .chars()
+                                            .nth(1)
+                                            .unwrap()
+                                            .to_string();
                                     }
 
                                     match transition.chars_read[i].as_str() {
@@ -274,14 +283,14 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                                             if transition.move_read == TuringDirection::Right {
                                                 transition.move_read = TuringDirection::None;
                                             }
-                                        },
+                                        }
                                         "ç" => {
                                             if transition.move_read == TuringDirection::Left {
                                                 transition.move_read = TuringDirection::None;
                                             }
-                                        },
+                                        }
                                         _ => {}
-                                    }   
+                                    }
                                 }
                             });
 
@@ -307,7 +316,7 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                             .width(20.0) // TODO change and think about this value, I hardcoded it
                             .show_ui(ui, |ui| {
                                 if transition.chars_read[0].as_str() != "$" {
-                                     ui.selectable_value(
+                                    ui.selectable_value(
                                         &mut transition.move_read,
                                         TuringDirection::Right,
                                         "Right",
@@ -343,33 +352,45 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
                                         },
                                     );
                                 }
-                                if ui.add(
-                                    TextEdit::singleline(&mut transition.chars_write[i].0)
-                                        .background_color(Color32::LIGHT_GRAY)
-                                        .frame(true)
-                                        .font(Font::default_medium())
-                                        .margin(margin)
-                                        .desired_width(Font::get_width(ui, &Font::default_medium()))
-                                        .char_limit(2),
-                                ).changed() {
-
+                                if ui
+                                    .add(
+                                        TextEdit::singleline(&mut transition.chars_write[i].0)
+                                            .background_color(Color32::LIGHT_GRAY)
+                                            .frame(true)
+                                            .font(Font::default_medium())
+                                            .margin(margin)
+                                            .desired_width(Font::get_width(
+                                                ui,
+                                                &Font::default_medium(),
+                                            ))
+                                            .char_limit(2),
+                                    )
+                                    .changed()
+                                {
                                     if transition.chars_write[i].0.len() > 1 {
-                                        transition.chars_write[i].0 = transition.chars_write[i].0.chars().nth(1).unwrap().to_string();
+                                        transition.chars_write[i].0 = transition.chars_write[i]
+                                            .0
+                                            .chars()
+                                            .nth(1)
+                                            .unwrap()
+                                            .to_string();
                                     }
 
                                     match transition.chars_write[i].0.as_str() {
                                         "$" => {
-                                            if transition.chars_write[i].1 == TuringDirection::Right {
-                                                transition.chars_write[i].1= TuringDirection::None;
-                                            }
-                                        },
-                                        "ç" => {
-                                            if transition.chars_write[i].1 == TuringDirection::Left {
+                                            if transition.chars_write[i].1 == TuringDirection::Right
+                                            {
                                                 transition.chars_write[i].1 = TuringDirection::None;
                                             }
-                                        },
+                                        }
+                                        "ç" => {
+                                            if transition.chars_write[i].1 == TuringDirection::Left
+                                            {
+                                                transition.chars_write[i].1 = TuringDirection::None;
+                                            }
+                                        }
                                         _ => {}
-                                    }   
+                                    }
                                 }
                             });
 

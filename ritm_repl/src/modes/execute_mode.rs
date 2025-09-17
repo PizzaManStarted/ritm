@@ -4,8 +4,8 @@ use std::fmt::Display;
 use colored::{Color, ColoredString, Colorize};
 use ritm_core::{
     turing_machine::{Mode, TuringExecutionSteps, TuringMachines},
-    turing_ribbon::{TuringReadRibbon, TuringWriteRibbon},
     turing_state::{TuringState, TuringStateType},
+    turing_tape::{TuringReadingTape, TuringWritingTape},
 };
 use strum_macros::EnumIter;
 
@@ -297,8 +297,8 @@ fn print_step(
     match st {
         TuringExecutionSteps::FirstIteration {
             init_state: _,
-            init_read_ribbon: _,
-            init_write_ribbons: _,
+            init_reading_tape: _,
+            init_write_tapes: _,
         } => {
             println!(
                 "{} {}",
@@ -307,9 +307,9 @@ fn print_step(
             );
             println!(
                 "{}",
-                format_ribbons(
-                    st.get_reading_ribbon(),
-                    st.get_writting_ribbons(),
+                format_tape(
+                    st.get_reading_tape(),
+                    st.get_writing_tapes(),
                     Color::Magenta
                 )
             );
@@ -320,8 +320,8 @@ fn print_step(
             state_pointer: _,
             transition_index_taken: _,
             transition_taken,
-            read_ribbon: _,
-            write_ribbons: _,
+            reading_tape: _,
+            writing_tapes: _,
             iteration: _,
         } => {
             if let TuringStateType::Accepting = reached_state.state_type {
@@ -341,11 +341,7 @@ fn print_step(
 
                 println!(
                     "{}",
-                    format_ribbons(
-                        st.get_reading_ribbon(),
-                        st.get_writting_ribbons(),
-                        Color::Green
-                    )
+                    format_tape(st.get_reading_tape(), st.get_writing_tapes(), Color::Green)
                 );
             } else {
                 println!(
@@ -363,11 +359,7 @@ fn print_step(
                 );
                 println!(
                     "{}",
-                    format_ribbons(
-                        st.get_reading_ribbon(),
-                        st.get_writting_ribbons(),
-                        Color::Blue
-                    )
+                    format_tape(st.get_reading_tape(), st.get_writing_tapes(), Color::Blue)
                 );
             }
         }
@@ -375,8 +367,8 @@ fn print_step(
             previous_state,
             reached_state,
             state_pointer: _,
-            read_ribbon: _,
-            write_ribbons: _,
+            reading_tape: _,
+            writing_tapes: _,
             iteration,
             backtracked_iteration,
         } => {
@@ -395,11 +387,7 @@ fn print_step(
             );
             println!(
                 "{}",
-                format_ribbons(
-                    st.get_reading_ribbon(),
-                    st.get_writting_ribbons(),
-                    Color::Yellow
-                )
+                format_tape(st.get_reading_tape(), st.get_writing_tapes(), Color::Yellow)
             );
         }
     }
@@ -413,19 +401,19 @@ fn color_state(state: &TuringState) -> ColoredString {
     })
 }
 
-fn format_ribbons(
-    reading_ribbon: &TuringReadRibbon,
-    writing_ribbons: &Vec<TuringWriteRibbon>,
+fn format_tape(
+    reading_tape: &TuringReadingTape,
+    writing_tapes: &Vec<TuringWritingTape>,
     color: Color,
 ) -> ColoredString {
     let first = format!(
         "{}\n{}\n",
-        "* Reading ribbon: ".bold(),
-        reading_ribbon.to_string().white()
+        "* Reading tape: ".bold(),
+        reading_tape.to_string().white()
     );
 
-    let mut second = format!("{}\n", "* Writing ribbons: ".bold());
-    for rib in writing_ribbons {
+    let mut second = format!("{}\n", "* Writing tapes: ".bold());
+    for rib in writing_tapes {
         second = format!("{}{}", second, format!("{}\n", rib).white());
     }
     format!("{}{}", first, second).color(color)
@@ -510,10 +498,10 @@ fn summarise_execution(
                 .unwrap()
         );
         println!(
-            "Saved Ribbons :\n{}",
-            format_ribbons(
-                &saved_state.saved_read_ribbon,
-                &saved_state.saved_write_ribbons,
+            "Saved Tapes :\n{}",
+            format_tape(
+                &saved_state.saved_reading_tape,
+                &saved_state.saved_writing_tapes,
                 Color::Cyan
             )
         );

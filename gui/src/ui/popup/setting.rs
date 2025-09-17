@@ -1,7 +1,8 @@
 use egui::{
-    Checkbox, Context, Frame, Grid, Id, Label, Margin, Modal, RichText, Separator, Stroke, Ui,
-    style::WidgetVisuals, vec2,
+    AtomExt, Button, Checkbox, Context, Frame, Grid, Id, Image, Label, Margin, Modal, RichText,
+    Separator, Stroke, Ui, Vec2, include_image, style::WidgetVisuals, vec2,
 };
+use egui_flex::{Flex, FlexAlignContent, item};
 use ritm_core::turing_machine::Mode;
 
 use crate::{
@@ -33,9 +34,35 @@ pub fn show(app: &mut App, ctx: &Context) {
                     },
                 );
 
-                ui.add(Label::new(
-                    RichText::new("Settings").font(Font::default_big()),
-                ));
+                // Popup header
+                Flex::horizontal()
+                    .w_full()
+                    .align_content(FlexAlignContent::SpaceBetween)
+                    .show(ui, |flex| {
+                        flex.add(
+                            item(),
+                            Label::new(RichText::new("Settings").font(Font::default_big())),
+                        );
+
+                        flex.grow();
+
+                        let img = Image::new(include_image!("../../../assets/icon/back.svg"))
+                            .fit_to_exact_size(Vec2::splat(25.0))
+                            .tint(app.theme.gray)
+                            .atom_size(Vec2::splat(25.0));
+
+                        if flex
+                            .add(
+                                item(),
+                                Button::new((img, RichText::new("Back").font(Font::default_big())))
+                                    .frame(false),
+                            )
+                            .clicked()
+                        {
+                            app.popup = RitmPopup::None;
+                        }
+                    });
+
                 ui.add(Separator::default().horizontal().grow(10.0));
 
                 Grid::new("settings")

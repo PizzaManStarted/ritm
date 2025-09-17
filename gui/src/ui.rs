@@ -16,10 +16,11 @@ pub mod theme;
 pub mod utils;
 
 use crate::{
+    App,
     ui::{
         font::Font,
         popup::{help, setting, state_edit, transition_edit},
-    }, App
+    },
 };
 
 pub fn show(app: &mut App, ctx: &egui::Context) {
