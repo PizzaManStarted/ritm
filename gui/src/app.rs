@@ -311,6 +311,22 @@ impl App {
         }
     }
 
+    /// Reset the graph
+    pub fn reset_graph(&mut self) {
+        self.turing = TuringMachines::new(
+            TuringMachineGraph::new(1).ok().unwrap(),
+            self.turing.get_word().to_string(),
+            Mode::StopAfter(500),
+        )
+        .unwrap();
+        self.step = self.turing.into_iter().next().unwrap();
+        self.selected_state = None;
+        self.selected_transition = None;
+        self.event.need_recenter = true;
+        self.turing_to_graph();
+        self.reset();
+    }
+
     /// Reset the machine execution
     pub fn reset(&mut self) {
         self.turing.reset();
