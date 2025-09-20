@@ -1,3 +1,4 @@
+use eframe::glow::CLEAR_TEXTURE;
 use egui::{
     Align, AtomExt, Button, Color32, Context, Frame, Id, Image, ImageButton, Label, Layout, Margin,
     Modal, RichText, ScrollArea, Shadow, Stroke, TextEdit, Ui, Vec2b, include_image,
@@ -22,6 +23,7 @@ pub fn show(app: &mut App, ctx: &Context) {
         })
         .show(ctx, |ui: &mut Ui| {
             let selected_transition = app.selected_transition.unwrap();
+            ui.set_max_width(300.0);
 
             // Main layout
             ui.vertical_centered(|ui| {
@@ -42,22 +44,8 @@ pub fn show(app: &mut App, ctx: &Context) {
                     .vertical_centered(|ui| {
                         ui.style_mut().spacing.item_spacing = vec2(0.0, 10.0);
 
-                        // Copy the transition (Modify without change)
-                        if app.rules_edit.is_empty() {
-                            app.rules_edit = app
-                                .turing
-                                .graph_ref()
-                                .get_state(selected_transition.0)
-                                .unwrap()
-                                .transitions
-                                .iter()
-                                .map(|transition| TransitionEdit::from(transition))
-                                .collect::<Vec<TransitionEdit>>();
-                        }
-
                         Frame::new()
                             .fill(Color32::LIGHT_GRAY)
-                            // .stroke(Stroke::new(1.0, app.theme.gray))
                             .shadow(Shadow {
                                 blur: 0,
                                 color: app.theme.gray,
@@ -72,6 +60,8 @@ pub fn show(app: &mut App, ctx: &Context) {
                                     .scroll_bar_visibility(ScrollBarVisibility::AlwaysVisible)
                                     .max_height(ui.ctx().input(|i| i.screen_rect()).height() / 3.0)
                                     .show(ui, |ui| {
+                                        ui.set_width(ui.available_width());
+
                                         // Create a row with the rule of each transition
                                         let count = app.rules_edit.len();
                                         let mut marked_to_delete: Vec<usize> = vec![];
@@ -92,9 +82,10 @@ pub fn show(app: &mut App, ctx: &Context) {
                                         }
 
                                         // Remove transitions
-                                        marked_to_delete.iter().for_each(|transition| {
-                                            app.rules_edit.remove(*transition);
-                                        });
+                                        marked_to_delete.sort_by(|a, b| b.cmp(a));
+                                        for t in marked_to_delete {
+                                            app.rules_edit.remove(t);
+                                        }
                                     });
                             });
 
@@ -180,7 +171,7 @@ fn transition(app: &mut App, ui: &mut Ui, transition_index: usize) -> bool {
         .corner_radius(5)
         .show(ui, |ui| {
             ui.allocate_ui_with_layout(
-                vec2(300.0, 10.0),
+                vec2(ui.available_width(), 10.0),
                 Layout::right_to_left(egui::Align::Center),
                 |ui| {
                     // Delete
