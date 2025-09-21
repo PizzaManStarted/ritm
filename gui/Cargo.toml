@@ -14,7 +14,7 @@ rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
 eframe = "0.32.0"
 getrandom = { version = "0.3", features = ["wasm_js"] }
 egui = "0.32.0"
-egui_extras = { version = "0.32.0", features = ["all_loaders"] }
+egui_extras = { version = "0.32.0", features = ["svg", "gif"] }
 egui_flex = "0.4.0"
 egui_infinite_scroll = "0.7.0"
 egui_animation = "0.8.0"
