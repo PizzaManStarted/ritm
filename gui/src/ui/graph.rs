@@ -11,13 +11,11 @@ use crate::{
     error::RitmError,
     turing::{State, TransitionId, Turing},
     ui::{
-        constant::Constant,
         edit,
         graph::transition::{draw_arrow, draw_self_arrow},
         popup::RitmPopupEnum,
         tutorial::TutorialBox,
-        utils,
-    },
+    }, utils::{constant::Constant, physic},
 };
 
 pub mod state;
@@ -304,11 +302,11 @@ fn apply_force(app: &mut App) {
             let are_adjacent = transition_hashmap.contains_key(&(i, j))
                 || transition_hashmap.contains_key(&(j, i));
 
-            let distance = utils::distance(
+            let distance = physic::distance(
                 states[i].inner_state.position,
                 states[j].inner_state.position,
             );
-            let direction = utils::direction(
+            let direction = physic::direction(
                 states[i].inner_state.position,
                 states[j].inner_state.position,
             );
@@ -316,13 +314,13 @@ fn apply_force(app: &mut App) {
 
             // different equations are use based on the adjacency of the states
             if are_adjacent {
-                force = utils::attract_force(
+                force = physic::attract_force(
                     states[i].inner_state.position,
                     states[j].inner_state.position,
                     size,
                 );
             } else if distance < size {
-                force = -utils::rep_force(
+                force = -physic::rep_force(
                     states[i].inner_state.position,
                     states[j].inner_state.position,
                 );

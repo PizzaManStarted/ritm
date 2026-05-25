@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use egui::{Context, Id, Label, Modal, RichText, vec2};
 
-use crate::{App, turing::TransitionId, ui::font::Font};
+use crate::{App, turing::TransitionId, utils::font::Font};
 
 #[derive(Debug, PartialEq)]
 pub enum RitmError {

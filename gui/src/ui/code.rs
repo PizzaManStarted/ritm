@@ -6,10 +6,7 @@ use ritm_core::turing_parser::TuringParserError;
 use crate::{
     App,
     error::{GuiError, RitmError},
-    ui::{
-        font::Font,
-        tutorial::{TutorialBox, TutorialEnum},
-    },
+    ui::tutorial::{TutorialBox, TutorialEnum}, utils::font::Font,
 };
 
 #[derive(serde::Deserialize, serde::Serialize)]

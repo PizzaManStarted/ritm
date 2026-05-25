@@ -3,7 +3,7 @@ use egui::{Align, Label, Rect, Sense, Stroke, Ui, text::{LayoutJob, TextWrapping
 use crate::{
     App,
     error::RitmError,
-    ui::{constant::Constant, font::Font},
+    utils::constant::Constant, utils::font::Font,
 };
 
 /// Display every state of the turing machine

@@ -14,7 +14,7 @@ use i_overlay::{
 use i_triangle::float::triangulatable::Triangulatable;
 use ordermap::OrderSet;
 
-use crate::{App, ui::font::Font};
+use crate::{App, utils::font::Font};
 
 #[derive(
     serde::Deserialize, serde::Serialize, Eq, Hash, PartialEq, PartialOrd, Ord, Debug, Clone, Copy,

@@ -11,7 +11,7 @@ use crate::{
     App,
     error::{GuiError, RitmError},
     turing::{Transition, TransitionEdit, TransitionWrapper},
-    ui::{component::combobox::ComboBox, font::Font, theme::Theme},
+    ui::{component::combobox::ComboBox, theme::Theme}, utils::font::Font,
 };
 
 pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {

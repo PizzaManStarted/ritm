@@ -4,17 +4,14 @@ use egui::{
 
 pub mod code;
 pub mod component;
-pub mod constant;
 pub mod control;
 pub mod edit;
-pub mod font;
 pub mod graph;
 pub mod menu;
 pub mod popup;
 pub mod tape;
 pub mod theme;
 pub mod tutorial;
-pub mod utils;
 
 use crate::{App, error::RitmError};
 

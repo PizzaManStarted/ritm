@@ -7,7 +7,7 @@ use crate::{
     App,
     error::RitmError,
     turing::StateEdit,
-    ui::{font::Font, popup::RitmPopupEnum, theme::Theme},
+    ui::{popup::RitmPopupEnum, theme::Theme}, utils::font::Font,
 };
 
 pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {

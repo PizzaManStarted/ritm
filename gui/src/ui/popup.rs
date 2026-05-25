@@ -6,8 +6,7 @@ use egui_flex::{Flex, FlexAlignContent, item};
 
 use crate::{
     App,
-    error::RitmError,
-    ui::{font::Font, theme::Theme},
+    error::RitmError, ui::theme::Theme, utils::font::Font,
 };
 
 pub mod settings;

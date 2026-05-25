@@ -9,12 +9,9 @@ use crate::{
     App,
     error::{GuiError, RitmError},
     ui::{
-        constant::Constant,
-        font::Font,
         popup::{RitmPopupEnum, boolean_popup},
         tutorial::{TutorialBox, TutorialEnum},
-        utils::{FileDialog},
-    },
+    }, utils::{constant::Constant, file::FileDialog, font::Font},
 };
 
 static EXAMPLES: Dir = include_directory!("ritm_core/resources");

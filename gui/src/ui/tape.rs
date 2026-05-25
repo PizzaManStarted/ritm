@@ -9,11 +9,7 @@ use egui::{
 
 use crate::{
     App,
-    ui::{
-        constant::Constant,
-        tutorial::TutorialBox,
-        utils::{self, fade::Fade},
-    },
+    ui::tutorial::TutorialBox, utils::{constant::Constant, effect::{Fade, fade}},
 };
 
 pub fn show(app: &mut App, ui: &mut Ui) {
@@ -149,7 +145,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             pos2(res.response.rect.min.x, res.response.rect.max.y - 50.0),
             res.response.rect.max,
         );
-        utils::fade::fade(
+        fade(
             ui,
             fade_rect,
             egui::Direction::BottomUp,

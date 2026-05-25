@@ -8,7 +8,7 @@ use ritm_core::{turing_graph::TuringStateInfo, turing_machine::TuringExecutionSt
 use crate::{
     App,
     error::RitmError,
-    ui::{component::grid::Grid, constant::Constant, font::Font, tutorial::TutorialBox},
+    ui::{component::grid::Grid, tutorial::TutorialBox}, utils::{constant::Constant, font::Font},
 };
 
 #[derive(Default)]

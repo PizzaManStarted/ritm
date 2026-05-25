@@ -12,7 +12,7 @@ use ritm_core::turing_machine::Mode;
 use crate::{
     App,
     error::RitmError,
-    ui::{font::Font, theme::Theme},
+    ui::theme::Theme, utils::font::Font,
 };
 
 #[derive(serde::Deserialize, serde::Serialize)]

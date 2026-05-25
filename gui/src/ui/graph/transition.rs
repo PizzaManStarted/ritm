@@ -7,12 +7,7 @@ use crate::{
     App,
     error::RitmError,
     turing::TransitionId,
-    ui::{
-        constant::Constant,
-        font::Font,
-        theme::Theme,
-        utils::{self},
-    },
+    ui::theme::Theme, utils::{constant::Constant, font::Font, physic},
 };
 use egui::{
     Align2, Color32, Pos2, Rect, Sense, Stroke, TextFormat, Ui, Vec2,
@@ -119,8 +114,8 @@ pub fn draw_arrow(
 
     // compute the direction of the curve
     let mut delta = (source - target).rot90().normalized();
-    let need_to_flip = utils::distance(center + delta, graph_center)
-        < utils::distance(center - delta, graph_center);
+    let need_to_flip = physic::distance(center + delta, graph_center)
+        < physic::distance(center - delta, graph_center);
 
     delta = if reverse.is_some_and(|f| !f) && need_to_flip {
         -delta
