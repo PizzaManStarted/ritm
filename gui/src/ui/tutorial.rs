@@ -4,9 +4,7 @@ use std::{
 };
 
 use egui::{
-    Align2, Area, Color32, Context, CornerRadius, Frame, Id, Image, ImageButton, Label, Layout,
-    Margin, Mesh, Pos2, Rect, Sense, TextBuffer, Ui, UiBuilder, Vec2, include_image, pos2,
-    text::LayoutJob, vec2,
+    Align2, Area, Button, Color32, Context, CornerRadius, Frame, Id, Image, Label, Layout, Margin, Mesh, Pos2, Rect, Sense, TextBuffer, Ui, UiBuilder, Vec2, include_image, pos2, text::LayoutJob, vec2
 };
 use i_overlay::{
     core::{fill_rule::FillRule, overlay_rule::OverlayRule},
@@ -351,7 +349,7 @@ fn tuto_box(ui: &mut Ui, app: &mut App, boxe: TutorialBox, pos: Pos2, max_size: 
             max_size.x,
         )
     };
-    let galley = ui.fonts(|f| f.layout_job(job));
+    let galley = ui.fonts_mut(|f| f.layout_job(job));
     let rect = Rect::from_center_size(
         pos + vec2(
             boxe.alignment.x().to_sign() * (galley.size().x / 2.0 + margin.leftf() + 20.0),
@@ -378,7 +376,7 @@ fn tuto_box(ui: &mut Ui, app: &mut App, boxe: TutorialBox, pos: Pos2, max_size: 
                         if boxe.close_tutorial {
                             if ui
                                 .add(
-                                    ImageButton::new(
+                                    Button::image(
                                         Image::new(include_image!("../../assets/icon/close.svg"))
                                             .shrink_to_fit()
                                             .tint(app.theme.overlay),
@@ -392,7 +390,7 @@ fn tuto_box(ui: &mut Ui, app: &mut App, boxe: TutorialBox, pos: Pos2, max_size: 
                         } else if next
                             && ui
                                 .add(
-                                    ImageButton::new(
+                                    Button::image(
                                         Image::new(include_image!("../../assets/icon/right.svg"))
                                             .shrink_to_fit()
                                             .tint(app.theme.overlay),
@@ -424,7 +422,7 @@ struct Pos {
     y: f32,
 }
 
-impl FloatPointCompatible<f32> for Pos {
+impl FloatPointCompatible for Pos {
     fn from_xy(x: f32, y: f32) -> Self {
         Self { x, y }
     }
@@ -436,6 +434,8 @@ impl FloatPointCompatible<f32> for Pos {
     fn y(&self) -> f32 {
         self.y
     }
+    
+    type Scalar = f32;
 }
 
 impl From<Pos2> for Pos {

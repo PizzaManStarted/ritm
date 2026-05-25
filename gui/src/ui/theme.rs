@@ -231,8 +231,8 @@ impl Theme {
     }
 }
 
-pub fn theme_changer(ctx: &Context, app: &mut App) {
-    ctx.show_viewport_immediate(
+pub fn theme_changer(ui: &Ui, app: &mut App) {
+    ui.show_viewport_immediate(
         ViewportId::from_hash_of(Id::new("test")),
         ViewportBuilder::default().with_always_on_top(),
         |ctx, _vc| {
@@ -242,7 +242,7 @@ pub fn theme_changer(ctx: &Context, app: &mut App) {
                         .fill(Color32::LIGHT_GRAY)
                         .inner_margin(Margin::same(10)),
                 )
-                .show(ctx, |ui| {
+                .show_inside(ctx, |ui| {
                     if ui.button("save theme").clicked() {
                         print_theme(app);
                     }

@@ -1,5 +1,5 @@
 use egui::{
-    Align2, AtomExt, Button, Color32, Frame, Image, ImageButton, Margin, Popup, PopupCloseBehavior,
+    Align2, AtomExt, Button, Color32, Frame, Image, Margin, Popup, PopupCloseBehavior,
     RectAlign, RichText, Separator, Stroke, Ui, Vec2, include_image, vec2,
 };
 use egui_flex::{Flex, FlexAlign, FlexAlignContent, FlexDirection, FlexInstance, item};
@@ -53,7 +53,7 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
         .inner_margin(Margin::same(5))
         .show(ui, |ui| {
             flex.show(ui, |ui| {
-                app.transient.is_small_window = ui.ui().ctx().screen_rect().width()
+                app.transient.is_small_window = ui.ui().content_rect().width()
                     < ((Constant::ICON_SIZE + 10.0) * 6.0) * 3.0;
 
                 if app.transient.is_small_window {
@@ -87,7 +87,7 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
 fn settings(app: &mut App, ui: &mut FlexInstance) {
     let button = ui.add(
         item(),
-        ImageButton::new(
+        Button::image(
             Image::new(include_image!("../../assets/icon/setting.svg"))
                 .fit_to_exact_size(Vec2::splat(Constant::ICON_SIZE))
                 .tint(app.theme.icon),
@@ -107,7 +107,7 @@ fn settings(app: &mut App, ui: &mut FlexInstance) {
 fn save(app: &mut App, ui: &mut FlexInstance) -> Result<(), RitmError> {
     let button = ui.add(
         item(),
-        ImageButton::new(
+        Button::image(
             Image::new(include_image!("../../assets/icon/save.svg"))
                 .fit_to_exact_size(Vec2::splat(Constant::ICON_SIZE))
                 .tint(if app.code.current_code()?.is_empty() {
@@ -136,7 +136,7 @@ fn save(app: &mut App, ui: &mut FlexInstance) -> Result<(), RitmError> {
 fn machine_folder(app: &mut App, ui: &mut FlexInstance) -> Result<(), RitmError> {
     let res = ui.add(
         item(),
-        ImageButton::new(
+        Button::image(
             Image::new(include_image!("../../assets/icon/machine_folder.svg"))
                 .fit_to_exact_size(Vec2::splat(Constant::ICON_SIZE))
                 .tint(app.theme.icon),
@@ -237,7 +237,7 @@ fn machine_folder(app: &mut App, ui: &mut FlexInstance) -> Result<(), RitmError>
 fn help(app: &mut App, ui: &mut FlexInstance) {
     let button = ui.add(
         item(),
-        ImageButton::new(
+        Button::image(
             Image::new(include_image!("../../assets/icon/help.svg"))
                 .fit_to_exact_size(Vec2::splat(Constant::ICON_SIZE))
                 .tint(app.theme.icon),
@@ -303,7 +303,7 @@ fn help(app: &mut App, ui: &mut FlexInstance) {
 fn to_graph(app: &mut App, ui: &mut FlexInstance) -> Result<(), RitmError> {
     let button = ui.add(
         item(),
-        ImageButton::new(
+        Button::image(
             Image::new(include_image!("../../assets/icon/graph.svg"))
                 .fit_to_exact_size(Vec2::splat(Constant::ICON_SIZE))
                 .tint(app.theme.icon),
@@ -325,7 +325,7 @@ fn to_graph(app: &mut App, ui: &mut FlexInstance) -> Result<(), RitmError> {
 fn panel_close(app: &mut App, ui: &mut FlexInstance) {
     let button = ui.add(
         item(),
-        ImageButton::new(
+        Button::image(
             Image::new(include_image!("../../assets/icon/panel_close.svg"))
                 .fit_to_exact_size(Vec2::splat(Constant::ICON_SIZE))
                 .tint(app.theme.icon),
@@ -348,7 +348,7 @@ fn panel_open(app: &mut App, ui: &mut FlexInstance) {
         && ui
             .add(
                 item(),
-                ImageButton::new(
+                Button::image(
                     Image::new(include_image!("../../assets/icon/panel_open.svg"))
                         .fit_to_exact_size(Vec2::splat(Constant::ICON_SIZE))
                         .tint(app.theme.icon),

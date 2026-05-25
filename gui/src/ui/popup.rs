@@ -1,5 +1,5 @@
 use egui::{
-    Align2, AtomExt, Button, Context, Frame, Id, Image, Label, Margin, Modal, RichText, Separator,
+    Align2, AtomExt, Button, Frame, Id, Image, Label, Margin, Modal, RichText, Separator,
     Stroke, Ui, Vec2, include_image, style::WidgetVisuals, vec2,
 };
 use egui_flex::{Flex, FlexAlignContent, item};
@@ -51,7 +51,7 @@ impl RitmPopup {
     }
 }
 
-pub fn show(ctx: &Context, app: &mut App) -> Result<(), RitmError> {
+pub fn show(ui: &Ui, app: &mut App) -> Result<(), RitmError> {
     if let Some(ritmpopup) = app.popup.current_popup.clone() {
         match ritmpopup {
             RitmPopupEnum::TransitionEdit((source_id, target_id)) => {
@@ -65,10 +65,10 @@ pub fn show(ctx: &Context, app: &mut App) -> Result<(), RitmError> {
                         } else {
                             0.0
                         },
-                    ctx.available_rect().height(),
+                    ui.available_rect_before_wrap().height(),
                 );
                 modal(
-                    ctx,
+                    ui,
                     app,
                     format!("{} -> {}", source, target),
                     false,
@@ -85,17 +85,17 @@ pub fn show(ctx: &Context, app: &mut App) -> Result<(), RitmError> {
                 } else {
                     "New State".to_string()
                 };
-                let max_size = vec2(300.0, ctx.available_rect().height());
-                modal(ctx, app, title, false, |ui, app| {
+                let max_size = vec2(300.0, ui.available_rect_before_wrap().height());
+                modal(ui, app, title, false, |ui, app| {
                     ui.set_max_size(max_size);
                     ui.set_min_size(vec2(max_size.x, 0.0));
                     state_edit::show(ui, app)
                 })?
             }
             RitmPopupEnum::Settings => {
-                modal(ctx, app, t!("settings").to_string(), true, |ui, app| {
-                    ui.set_max_size(ui.ctx().screen_rect().size() * 0.8);
-                    ui.set_min_size(ui.ctx().screen_rect().size() * 0.8);
+                modal(ui, app, t!("settings").to_string(), true, |ui, app| {
+                    ui.set_max_size(ui.content_rect().size() * 0.8);
+                    ui.set_min_size(ui.content_rect().size() * 0.8);
                     settings::show(ui, app)
                 })?
             }
@@ -105,7 +105,7 @@ pub fn show(ctx: &Context, app: &mut App) -> Result<(), RitmError> {
 }
 
 fn modal<R>(
-    ctx: &Context,
+    ui: &Ui,
     app: &mut App,
     title: String,
     can_be_closed: bool,
@@ -121,7 +121,7 @@ fn modal<R>(
 
     Modal::new(Id::new(&title))
         .frame(frame)
-        .show(ctx, |ui| header(ui, app, title, can_be_closed, content))
+        .show(ui, |ui| header(ui, app, title, can_be_closed, content))
         .inner
 }
 
@@ -187,7 +187,7 @@ pub fn boolean_popup(
     app: &mut App,
     question: &str,
 ) -> Result<Option<bool>, RitmError> {
-    modal(ui.ctx(), app, "Info".to_string(), false, |ui, app| {
+    modal(ui, app, "Info".to_string(), false, |ui, app| {
         ui.label(RichText::new(question).font(Font::default_medium()));
         ui.add_space(10.0);
         ui.spacing_mut().button_padding = vec2(0.0, 8.0);

@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, time::Duration};
 
-use egui::{Context, Key, Pos2};
+use egui::{Key, Pos2, Ui};
 use egui_extras::install_image_loaders;
 use ritm_core::{
     turing_graph::TuringGraph,
@@ -230,9 +230,9 @@ impl eframe::App for App {
     }
 
     /// Draw every frame the application
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        install_image_loaders(ctx);
-        Constant::update_scale(ctx);
+    fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
+        install_image_loaders(ui);
+        Constant::update_scale(ui);
         #[cfg(feature = "profiling")]
         puffin::profile_scope!("root");
 
@@ -243,14 +243,14 @@ impl eframe::App for App {
         }
 
         // Draw the whole application and show any error
-        if let Err(error) = ui::show(self, ctx) {
+        if let Err(error) = ui::show(self, ui) {
             self.error.push_back(error);
         }
 
-        error::show(ctx, self);
+        error::show(ui, self);
 
         // Draw the tutorial
-        tutorial::show(ctx, self);
+        tutorial::show(ui, self);
 
         // End the tutorial
         if let Some(tutorial) = self.tutorial.has_finished {
@@ -262,29 +262,29 @@ impl eframe::App for App {
         }
 
         // Force the Ui to update if the machine is running
-        if self.control.is_running() && self.control.update_time(ctx.input(|r| r.time)) {
+        if self.control.is_running() && self.control.update_time(ui.input(|r| r.time)) {
             self.turing.next_step();
             if self.turing.accepted.is_some() {
                 self.control.pause();
-                ctx.request_repaint(); // To update the ui one last time
+                ui.request_repaint(); // To update the ui one last time
             }
         }
 
         // While the machine is running we update the application 100 times per step
         if self.control.is_running() {
-            ctx.request_repaint_after(Duration::from_millis(
+            ui.request_repaint_after(Duration::from_millis(
                 (self.control.interval() * 10.0) as u64,
             ));
         }
 
-        keybind(ctx, self);
+        keybind(ui, self);
 
         if self.settings.theme_changer {
-            theme_changer(ctx, self);
+            theme_changer(ui, self);
         }
 
         if self.settings.enable_debug {
-            debug_show(ctx, self);
+            debug_show(ui, self);
         }
 
         if let Some(screenshot) = &self.transient.temp_screenshot {
@@ -294,11 +294,11 @@ impl eframe::App for App {
     }
 }
 
-fn keybind(ctx: &Context, app: &mut App) {
+fn keybind(ui: &mut Ui, app: &mut App) {
     if app.transient.listen_to_keybind {
         let popup_displayed = app.popup.current().is_some();
 
-        ctx.input(|r| {
+        ui.input(|r| {
             if r.key_pressed(Key::Escape) {
                 if app.popup.current().is_some() {
                     // Request graceful exit of popup

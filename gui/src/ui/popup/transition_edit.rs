@@ -1,5 +1,5 @@
 use egui::{
-    Align, AtomExt, Button, Color32, Frame, Image, ImageButton, Key, Label, Layout, Margin,
+    Align, AtomExt, Button, Color32, Frame, Image, Key, Label, Layout, Margin,
     RichText, ScrollArea, Shadow, Stroke, TextEdit, Ui, Vec2, Vec2b, include_image,
     scroll_area::ScrollBarVisibility, style::WidgetVisuals, vec2,
 };
@@ -40,7 +40,7 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
                         ScrollArea::vertical()
                             .auto_shrink(Vec2b::new(true, true))
                             .scroll_bar_visibility(ScrollBarVisibility::AlwaysVisible)
-                            .max_height(ui.ctx().input(|i| i.screen_rect()).height() / 3.0)
+                            .max_height(ui.ctx().input(|i| i.content_rect()).height() / 3.0)
                             .show(ui, |ui| {
                                 ui.set_width(ui.available_width());
 
@@ -79,7 +79,7 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
 
                 if ui
                     .add(
-                        ImageButton::new(
+                        Button::image(
                             Image::new(include_image!("../../../assets/icon/plus.svg"))
                                 .fit_to_exact_size(vec2(35.0, 35.0))
                                 .tint(app.theme.overlay),
@@ -198,7 +198,7 @@ fn transition(
                     // Delete
                     if ui
                         .add(
-                            ImageButton::new(
+                            Button::image(
                                 Image::new(include_image!("../../../assets/icon/delete.svg"))
                                     .fit_to_exact_size(vec2(30.0, 30.0))
                                     .tint(app.theme.error),
@@ -215,7 +215,7 @@ fn transition(
                     // Undo change
                     if ui
                         .add(
-                            ImageButton::new(
+                            Button::image(
                                 Image::new(include_image!("../../../assets/icon/undo.svg"))
                                     .fit_to_exact_size(vec2(30.0, 30.0))
                                     .tint(
@@ -385,7 +385,6 @@ fn read_edit(
                 TextEdit::singleline(&mut text)
                     .background_color(Color32::LIGHT_GRAY)
                     .lock_focus(false)
-                    .frame(true)
                     .font(Font::default_medium())
                     .margin(MARGIN)
                     .desired_width(Font::get_width(ui, &Font::default_medium()))

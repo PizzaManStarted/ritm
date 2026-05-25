@@ -1,5 +1,5 @@
 use egui::{
-    Align, Align2, Atom, AtomExt, Button, Color32, Frame, Id, Image, ImageButton, Label, Layout, Margin, RichText, ScrollArea, Stroke, TextEdit, TextFormat, Ui, Vec2, include_image, scroll_area::ScrollBarVisibility, text::LayoutJob, vec2
+    Align, Align2, Atom, AtomExt, Button, Color32, Frame, Id, Image, Label, Layout, Margin, RichText, ScrollArea, Stroke, TextEdit, TextFormat, Ui, Vec2, include_image, scroll_area::ScrollBarVisibility, text::LayoutJob, vec2
 };
 use ritm_core::turing_parser::TuringParserError;
 
@@ -243,7 +243,7 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                                         ))
                                         .font(Font::default(Font::BIG_SIZE))
                                         .background_color(app.theme.code_background)
-                                        .frame(false)
+                                        .frame(Frame::NONE)
                                         .text_color(app.theme.code);
 
                                         let response = ui.put(rect, text_edit);
@@ -295,7 +295,7 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                                         && ui
                                             .put(
                                                 rect,
-                                                ImageButton::new(
+                                                Button::image(
                                                     Image::new(include_image!(
                                                         "../../assets/icon/close_small.svg"
                                                     ))
@@ -342,7 +342,7 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                             .inner_margin(vec2(8.0, 0.0))
                             .show(ui, |ui| {
                                 ui.add(
-                                    ImageButton::new(
+                                    Button::image(
                                         Image::new(include_image!("../../assets/icon/plus.svg"))
                                             .tint(app.theme.code)
                                             .fit_to_exact_size(Vec2::splat(ui.available_height())),
@@ -506,7 +506,7 @@ pub fn code(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                             }
                         }
                         layout_job.wrap.max_width = wrap_width;
-                        ui.fonts(|f| f.layout_job(layout_job))
+                        ui.fonts_mut(|f| f.layout_job(layout_job))
                     };
 
                     let salt = app.code.tabs[app.code.current_tab].name.clone();
@@ -514,7 +514,7 @@ pub fn code(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                         .code_editor()
                         .id_salt(salt)
                         .font(Font::default_medium())
-                        .frame(false)
+                        .frame(Frame::NONE)
                         .margin(Margin::same(0))
                         .background_color(app.theme.code_background)
                         .layouter(&mut layouter);

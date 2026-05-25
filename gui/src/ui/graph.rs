@@ -1,8 +1,7 @@
 use std::{collections::HashMap, io::Cursor};
 
 use egui::{
-    Align2, Event, Id, Image, ImageButton, LayerId, Pos2, Rect, Scene, Sense, Ui, UiBuilder,
-    UserData, Vec2, ViewportCommand, include_image, vec2,
+    Align2, Button, Event, Id, Image, LayerId, Pos2, Rect, Scene, Sense, Ui, UiBuilder, UserData, Vec2, ViewportCommand, include_image, vec2
 };
 use image::{ImageBuffer, Rgba};
 use ritm_core::turing_graph::TuringStateWrapper;
@@ -364,7 +363,7 @@ fn to_code_button(ui: &mut Ui, app: &mut App, layer: LayerId) {
             |ui| {
                 let button = ui.put(
                     Rect::from_min_size(ui.min_rect().min, icon_size),
-                    ImageButton::new(
+                    Button::image(
                         Image::new(include_image!("../../assets/icon/code.svg"))
                             .fit_to_exact_size(icon_size)
                             .tint(app.theme.overlay),
@@ -400,7 +399,7 @@ fn reset_button(ui: &mut Ui, app: &mut App, layer: LayerId) {
                     ui.max_rect().right_top() - vec2(icon_size.x + 10.0, 0.0),
                     icon_size,
                 ),
-                ImageButton::new(
+                Button::image(
                     Image::new(include_image!("../../assets/icon/erase.svg"))
                         .fit_to_exact_size(icon_size)
                         .tint(app.theme.overlay),
@@ -434,7 +433,7 @@ fn take_screenshot_button(ui: &mut Ui, app: &mut App, layer: LayerId) {
                     ui.max_rect().left_bottom() - vec2(0.0, icon_size.y),
                     icon_size,
                 ),
-                ImageButton::new(
+                Button::image(
                     Image::new(include_image!("../../assets/icon/screenshot.svg"))
                         .fit_to_exact_size(icon_size)
                         .tint(app.theme.overlay),

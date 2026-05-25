@@ -52,8 +52,8 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             let content = ScrollArea::vertical()
                 .scroll_bar_visibility(ScrollBarVisibility::VisibleWhenNeeded)
                 .auto_shrink(true)
-                .min_scrolled_height(ui.ctx().screen_rect().height() / 3.0)
-                .max_height(ui.ctx().screen_rect().height() / 3.0)
+                .min_scrolled_height(ui.ctx().content_rect().height() / 3.0)
+                .max_height(ui.ctx().content_rect().height() / 3.0)
                 .show(ui, |ui| {
                     // Scroll area to center and display the ribbon
                     ScrollArea::horizontal()
@@ -144,7 +144,7 @@ pub fn show(app: &mut App, ui: &mut Ui) {
             )
         });
 
-    if !res.inner.1 && res.inner.0 >= ui.ctx().screen_rect().height() / 3.0 {
+    if !res.inner.1 && res.inner.0 >= ui.ctx().content_rect().height() / 3.0 {
         let fade_rect = Rect::from_min_max(
             pos2(res.response.rect.min.x, res.response.rect.max.y - 50.0),
             res.response.rect.max,

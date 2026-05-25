@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use egui::{
-    AtomExt, CentralPanel, Checkbox, ComboBox, Context, DragValue, Grid, Id, Image, ImageSource,
+    AtomExt, CentralPanel, Checkbox, ComboBox, DragValue, Grid, Id, Image, ImageSource,
     RichText, Stroke, TextBuffer, Ui, UserData, ViewportBuilder, ViewportCommand, ViewportId,
     include_image, style::WidgetVisuals, vec2,
 };
@@ -334,15 +334,15 @@ fn tape_count(ui: &mut Ui, app: &mut App) {
     ui.end_row();
 }
 
-pub fn debug_show(ctx: &Context, app: &mut App) {
+pub fn debug_show(ui: &Ui, app: &mut App) {
     let mut x = false;
-    ctx.show_viewport_immediate(
+    ui.show_viewport_immediate(
         ViewportId::from_hash_of(Id::new("test")),
         ViewportBuilder::default()
             .with_always_on_top()
             .with_inner_size(vec2(150.0, 30.0)),
-        |ctx, _vc| {
-            CentralPanel::default().show(ctx, |ui| {
+        |ui, _vc| {
+            CentralPanel::default().show_inside(ui, |ui| {
                 if ui.button("Take screenshot").clicked() {
                     x = true;
                 }
@@ -351,16 +351,16 @@ pub fn debug_show(ctx: &Context, app: &mut App) {
     );
 
     if x {
-        ctx.send_viewport_cmd(ViewportCommand::Screenshot(UserData::default()));
+        ui.send_viewport_cmd(ViewportCommand::Screenshot(UserData::default()));
     }
-    take_screenshot(app, ctx);
+    take_screenshot(app, ui);
 }
 
-fn take_screenshot(_app: &mut App, ctx: &Context) {
-    let rect = ctx.screen_rect();
+fn take_screenshot(_app: &mut App, ui: &Ui) {
+    let rect = ui.content_rect();
 
-    let time = ctx.input(|r| r.time);
-    ctx.input(|i| {
+    let time = ui.input(|r| r.time);
+    ui.input(|i| {
         i.events.iter().for_each(|e| {
             if let egui::Event::Screenshot { image, .. } = e {
                 let image = image.region(&rect, Some(i.pixels_per_point));

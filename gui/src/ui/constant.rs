@@ -1,4 +1,6 @@
-use egui::{Context, Vec2, vec2};
+#[cfg(not(target_arch = "wasm32"))]
+use egui::Ui;
+use egui::{Vec2, vec2};
 
 /// Constant used in the application
 pub struct Constant {}
@@ -41,24 +43,24 @@ impl Constant {
     //     }
     // }
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn update_scale(ctx: &Context) {
-        let size = ctx.screen_rect().size() * ctx.pixels_per_point();
+    pub fn update_scale(ui: &Ui) {
+        let size = ui.viewport_rect().size() * ui.pixels_per_point();
         if Self::DEFAULT_SIZE.x <= size.x && Self::DEFAULT_SIZE.y <= size.y {
-            ctx.set_pixels_per_point(1.0);
+            ui.set_pixels_per_point(1.0);
         } else {
-            ctx.set_pixels_per_point(
+            ui.set_pixels_per_point(
                 (size.x / Self::DEFAULT_SIZE.x).min(size.y / Self::DEFAULT_SIZE.y),
             );
         }
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn update_scale(ctx: &Context) {
-        let size = ctx.screen_rect().size() * ctx.pixels_per_point();
+    pub fn update_scale(ui: &Ui) {
+        let size = ui.viewport_rect().size() * ui.pixels_per_point();
         if Self::DEFAULT_SIZE.x <= size.x && Self::DEFAULT_SIZE.y <= size.y {
-            ctx.set_pixels_per_point(1.0);
+            ui.set_pixels_per_point(1.0);
         } else {
-            ctx.set_pixels_per_point(
+            ui.set_pixels_per_point(
                 (size.x / Self::DEFAULT_SIZE.x).min(size.y / Self::DEFAULT_SIZE.y),
             );
         }

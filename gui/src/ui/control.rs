@@ -1,5 +1,5 @@
 use egui::{
-    Align, Align2, Button, Frame, Image, ImageButton, ImageSource, Label, Layout, Response,
+    Align, Align2, Button, Frame, Image, ImageSource, Label, Layout, Response,
     RichText, Sense, Stroke, TextEdit, Ui, Vec2, include_image, vec2,
 };
 use egui_flex::{Flex, FlexAlign, FlexAlignContent, FlexInstance, item};
@@ -245,7 +245,7 @@ fn speed_control(app: &mut App, ui: &mut Ui) {
             if flex
                 .add(
                     item(),
-                    ImageButton::new(
+                    Button::image(
                         Image::new(include_image!("../../assets/icon/less.svg"))
                             .fit_to_exact_size(Vec2::splat(25.0))
                             .tint(if min {
@@ -273,7 +273,7 @@ fn speed_control(app: &mut App, ui: &mut Ui) {
             if flex
                 .add(
                     item(),
-                    ImageButton::new(
+                    Button::image(
                         Image::new(include_image!("../../assets/icon/add.svg"))
                             .fit_to_exact_size(Vec2::splat(25.0))
                             .tint(if max {
@@ -377,7 +377,7 @@ fn button(flex: &mut FlexInstance, app: &mut App, icon: ImageSource, disabled: b
     let icon_size = Vec2::splat(Constant::CONTROL_ICON_SIZE);
     flex.add(
         item(),
-        ImageButton::new(
+        Button::image(
             Image::new(icon)
                 .fit_to_exact_size(icon_size)
                 .tint(if disabled {

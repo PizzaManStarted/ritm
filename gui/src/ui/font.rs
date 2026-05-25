@@ -58,7 +58,7 @@ impl Font {
 
     /// Compute the size of a text with a certain font
     pub fn _text_size(ui: &Ui, fond_id: FontId, text: &str) -> Vec2 {
-        let rect = ui.fonts(|f| {
+        let rect = ui.fonts_mut(|f| {
             f.layout_job(LayoutJob::simple_singleline(
                 text.to_string(),
                 fond_id,
@@ -71,15 +71,15 @@ impl Font {
     }
 
     pub fn get_heigth(ui: &Ui, fond_id: &FontId) -> f32 {
-        ui.fonts(|f| f.row_height(fond_id))
+        ui.fonts_mut(|f| f.row_height(fond_id))
     }
 
     pub fn get_width(ui: &Ui, fond_id: &FontId) -> f32 {
-        ui.fonts(|f| f.glyph_width(fond_id, 'M'))
+        ui.fonts_mut(|f| f.glyph_width(fond_id, 'M'))
     }
 
     pub fn get_width_word(ui: &Ui, fond_id: &FontId, word: &String) -> f32 {
-        ui.fonts(|f| {
+        ui.fonts_mut(|f| {
             f.layout_no_wrap(word.to_string(), fond_id.clone(), Color32::PLACEHOLDER)
                 .size()
                 .x

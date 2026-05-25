@@ -1,6 +1,5 @@
 use egui::{
-    Align, Align2, Frame, Id, Image, ImageButton, ImageSource, LayerId, Layout, Margin, Pos2, Rect,
-    Response, Sense, Stroke, Ui, UiBuilder, Vec2, include_image, vec2,
+    Align, Align2, Button, Frame, Id, Image, ImageSource, LayerId, Layout, Margin, Pos2, Rect, Response, Sense, Stroke, Ui, UiBuilder, Vec2, include_image, vec2
 };
 
 use crate::{
@@ -223,7 +222,7 @@ fn button(ui: &mut Ui, app: &mut App, icon: ImageSource, selected: bool) -> Resp
         .inner_margin(Margin::same(margin))
         .show(ui, |ui| {
             ui.add(
-                ImageButton::new(
+                Button::image(
                     Image::new(icon)
                         .fit_to_exact_size(Vec2::splat(app.settings.edit_button_size))
                         .tint(if selected {
