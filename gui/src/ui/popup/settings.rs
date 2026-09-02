@@ -1,19 +1,15 @@
 use std::path::Path;
 
 use egui::{
-    AtomExt, CentralPanel, Checkbox, ComboBox, DragValue, Grid, Id, Image, ImageSource,
-    RichText, Stroke, TextBuffer, Ui, UserData, ViewportBuilder, ViewportCommand, ViewportId,
-    include_image, style::WidgetVisuals, vec2,
+    AtomExt, CentralPanel, Checkbox, ComboBox, DragValue, Grid, Id, Image, ImageSource, RichText,
+    Stroke, TextBuffer, Ui, UserData, ViewportBuilder, ViewportCommand, ViewportId, include_image,
+    style::WidgetVisuals, vec2,
 };
 use image::{ExtendedColorType, save_buffer};
 use include_directory::{Dir, include_directory};
 use ritm_core::turing_machine::Mode;
 
-use crate::{
-    App,
-    error::RitmError,
-    ui::theme::Theme, utils::font::Font,
-};
+use crate::{App, error::RitmError, ui::theme::{LIGHT_THEME, Theme}, utils::font::Font};
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct Settings {
@@ -52,10 +48,10 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
         Theme::set_widget(
             ui,
             WidgetVisuals {
-                bg_stroke: Stroke::new(1.0, app.theme.border),
+                bg_stroke: Stroke::new(1.0, LIGHT_THEME.border),
                 corner_radius: 5.into(),
                 expansion: 3.0,
-                ..app.theme.default_widget()
+                ..ui.visuals().widgets.inactive
             },
         );
 
@@ -154,7 +150,7 @@ fn localisation_setting(ui: &mut Ui, app: &mut App) {
             Image::new(get_file(&format!("{locale}.svg"))).shrink_to_fit(),
             locale.clone(),
             Image::new(include_image!("../../../assets/icon/down.svg"))
-                .tint(app.theme.overlay)
+                .tint(LIGHT_THEME.surface)
                 .shrink_to_fit(),
         ),
         |ui| {
@@ -219,13 +215,13 @@ fn localisation_setting(ui: &mut Ui, app: &mut App) {
 //     ui.label(
 //         RichText::new("Debug")
 //             .font(Font::default_medium())
-//             .color(app.theme.surface),
+//             .color(LIGHT_THEME.surface),
 //     );
 //     if ui
 //         .add(
 //             Button::new("")
 //                 .min_size(vec2(25.0, 15.0))
-//                 .fill(app.theme.surface)
+//                 .fill(LIGHT_THEME.surface)
 //                 .frame(false),
 //         )
 //         .clicked()
@@ -239,13 +235,13 @@ fn localisation_setting(ui: &mut Ui, app: &mut App) {
 //     ui.label(
 //         RichText::new("Theme changer")
 //             .font(Font::default_medium())
-//             .color(app.theme.surface),
+//             .color(LIGHT_THEME.surface),
 //     );
 //     if ui
 //         .add(
 //             Button::new("")
 //                 .min_size(vec2(25.0, 15.0))
-//                 .fill(app.theme.surface)
+//                 .fill(LIGHT_THEME.surface)
 //                 .frame(false),
 //         )
 //         .clicked()
@@ -259,11 +255,11 @@ fn theme_choose(ui: &mut Ui, app: &mut App) {
     ui.label(RichText::new(t!("theme")).font(Font::default_medium()));
     ComboBox::from_id_salt("Themes")
         .selected_text(
-            RichText::new(if app.theme == Theme::default() {
+            RichText::new(if LIGHT_THEME == Theme::default() {
                 t!("default")
-            } else if app.theme == Theme::retro() {
+            } else if LIGHT_THEME == Theme::retro() {
                 t!("retro")
-            } else if app.theme == Theme::monochrome() {
+            } else if LIGHT_THEME == Theme::monochrome() {
                 t!("monochrome")
             } else {
                 t!("default")
@@ -272,16 +268,16 @@ fn theme_choose(ui: &mut Ui, app: &mut App) {
         )
         .width(20.0) // TODO change and think about this value, I hardcoded it
         .show_ui(ui, |ui| {
-            if app.theme != Theme::default() {
-                ui.selectable_value(&mut app.theme, Theme::default(), "Default");
+            if LIGHT_THEME != Theme::default() {
+                ui.selectable_value(&mut LIGHT_THEME, Theme::default(), "Default");
             }
 
-            if app.theme != Theme::retro() {
-                ui.selectable_value(&mut app.theme, Theme::retro(), "Retro");
+            if LIGHT_THEME != Theme::retro() {
+                ui.selectable_value(&mut LIGHT_THEME, Theme::retro(), "Retro");
             };
 
-            if app.theme != Theme::monochrome() {
-                ui.selectable_value(&mut app.theme, Theme::monochrome(), "Monochrome");
+            if LIGHT_THEME != Theme::monochrome() {
+                ui.selectable_value(&mut LIGHT_THEME, Theme::monochrome(), "Monochrome");
             }
         });
     ui.end_row();

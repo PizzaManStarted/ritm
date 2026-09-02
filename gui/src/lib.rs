@@ -9,5 +9,6 @@ mod error;
 mod turing;
 mod ui;
 mod utils;
+mod api;
 
 pub use app::App;

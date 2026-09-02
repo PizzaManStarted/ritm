@@ -10,7 +10,7 @@ use ritm_core::{
 
 #[test]
 fn create_graph_test() {
-    let graph = SimpleTuringGraph::new(2, true).unwrap();
+    let graph = SimpleTuringGraph::new(2, true);
 
     assert_eq!(graph.try_get_state("i").expect("present").get_id(), 0);
     assert_eq!(graph.try_get_state("a").expect("present").get_id(), 1);
@@ -25,12 +25,12 @@ fn create_graph_test() {
         graph.try_get_state("i").unwrap().get_type()
     );
 
-    SimpleTuringGraph::new(1, true).unwrap();
+    SimpleTuringGraph::new(1, true);
 }
 
 #[test]
 fn create_graph_no_accepting_test() {
-    let graph = SimpleTuringGraph::new(2, false).unwrap();
+    let graph = SimpleTuringGraph::new(2, false);
 
     assert_eq!(
         graph
@@ -48,7 +48,7 @@ fn create_graph_no_accepting_test() {
 
 #[test]
 fn delete_init_nodes_test() {
-    let mut graph = SimpleTuringGraph::new(2, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(2, true);
 
     assert!(matches!(
         graph.remove_state("i"),
@@ -65,7 +65,7 @@ fn delete_init_nodes_test() {
 
 #[test]
 fn add_nodes() {
-    let mut graph = SimpleTuringGraph::new(1, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(1, true);
 
     // Check they already exists
     assert!(matches!(
@@ -117,7 +117,7 @@ fn add_nodes() {
 
 #[test]
 fn get_nodes_test() {
-    let mut graph = SimpleTuringGraph::new(1, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(1, true);
     // Add new nodes
     graph
         .try_add_state("b", TuringStateType::Normal)
@@ -156,7 +156,7 @@ fn get_nodes_test() {
 
 #[test]
 fn add_transitions_one() {
-    let mut graph = SimpleTuringGraph::new(0, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(0, true);
 
     graph
         .append_transition(
@@ -177,7 +177,7 @@ fn add_transitions_one() {
 
 #[test]
 fn add_transitions_k() {
-    let mut graph = SimpleTuringGraph::new(1, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(1, true);
     let transition = TransitionMultRibbonInfo::create(
         vec!['ç', 'ç'],
         vec!['ç'],
@@ -259,7 +259,7 @@ fn add_transitions_k() {
 
 #[test]
 fn add_default_transitions() {
-    let mut graph = SimpleTuringGraph::new(3, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(3, true);
 
     graph
         .append_default_transition(0, None, 1)
@@ -287,7 +287,7 @@ fn add_default_transitions() {
         })
     ));
 
-    let mut graph = SimpleTuringGraph::new(0, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(0, true);
 
     graph
         .append_default_transition(0, None, 1)
@@ -323,7 +323,7 @@ fn add_default_transitions() {
 
 #[test]
 fn delete_transitions() {
-    let mut graph = SimpleTuringGraph::new(1, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(1, true);
     let t1 = TransitionMultRibbonInfo::create(
         vec!['ç', 'ç'],
         vec!['ç'],
@@ -338,8 +338,8 @@ fn delete_transitions() {
     )
     .unwrap();
 
-    graph.append_transition("i", t1.clone(), "a").unwrap();
-    graph.append_transition("i", t2.clone(), "a").unwrap();
+    let _ = graph.append_transition("i", t1.clone(), "a");
+    let _ = graph.append_transition("i", t2.clone(), "a");
 
     assert!(matches!(
         graph.remove_transition(("i", t1.clone(), "d")),
@@ -379,7 +379,7 @@ fn delete_transitions() {
 
 #[test]
 fn delete_transitions_with_indexes() {
-    let mut graph = SimpleTuringGraph::new(1, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(1, true);
     let t1 = TransitionMultRibbonInfo::create(
         vec!['ç', 'ç'],
         vec!['ç'],
@@ -423,7 +423,7 @@ fn delete_transitions_with_indexes() {
 
 #[test]
 fn delete_all_transitions_two_nodes() {
-    let mut graph = SimpleTuringGraph::new(1, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(1, true);
     let t1 = TransitionMultRibbonInfo::create(
         vec!['ç', 'ç'],
         vec!['ç'],
@@ -466,7 +466,7 @@ fn delete_all_transitions_two_nodes() {
 
 #[test]
 fn delete_node() {
-    let mut graph = SimpleTuringGraph::new(1, true).expect("no errors");
+    let mut graph = SimpleTuringGraph::new(1, true);
     let t1 = TransitionMultRibbonInfo::create(
         vec!['ç', 'ç'],
         vec!['ç'],
@@ -529,7 +529,7 @@ fn delete_node() {
 #[test]
 fn rename_state() {
     // i and a are present
-    let mut graph = SimpleTuringGraph::new(2, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(2, true);
 
     // rename i as start :
     graph.rename_state("i", "start").expect("no problem");
@@ -548,7 +548,7 @@ fn rename_state() {
 
 #[test]
 fn get_valid_transitions() {
-    let mut graph = SimpleTuringGraph::new(1, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(1, true);
 
     let t1 = TransitionMultRibbonInfo::create(
         vec!['ç', 'ç'],
@@ -625,7 +625,7 @@ fn get_valid_transitions() {
 
 #[test]
 fn add_empty_state_name() {
-    let mut g = SimpleTuringGraph::new(2, false).expect("correct");
+    let mut g = SimpleTuringGraph::new(2, false);
 
     assert!(matches!(
         g.try_add_state("", TuringStateType::Normal),
@@ -641,7 +641,7 @@ fn add_empty_state_name() {
 #[test]
 fn is_deterministic_test_mult_rib() {
     // Deterministic graph :
-    let mut deter_g = SimpleTuringGraph::new(1, false).expect("correct");
+    let mut deter_g = SimpleTuringGraph::new(1, false);
     deter_g
         .try_add_state("1", TuringStateType::Normal)
         .expect("valid name");
@@ -675,7 +675,7 @@ fn is_deterministic_test_mult_rib() {
 #[test]
 fn is_deterministic_test_one_rib() {
     // Deterministic graph :
-    let mut deter_g = SimpleTuringGraph::new(0, false).expect("correct");
+    let mut deter_g = SimpleTuringGraph::new(0, false);
     deter_g
         .try_add_state("1", TuringStateType::Normal)
         .expect("valid name");

@@ -7,6 +7,9 @@ edition = "2024"
 all-features = true
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
 [target.wasm32-unknown-unknown]
 rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
 
@@ -24,7 +27,6 @@ ritm_core = { path = "../ritm_core" }
 egui-colorgradient = "0.2.3"
 unicode-segmentation = "1.13.2"
 rfd = "0.17.2"
-poll-promise = {version="0.3.0", features=["web"]}
 wasm-bindgen-futures = "0.4"
 egui_alignments = "0.3.8"
 web-sys = { version = "*", features = ["Window", "Url", "File", "Blob", "HtmlAnchorElement", "BlobPropertyBag", "FilePropertyBag", "Document", "Element", "HtmlElement", "console", "Event", "EventTarget", "PointerEvent"] }
@@ -46,19 +48,30 @@ puffin_http = "0.17.0"
 profiling = { version = "1.0.18", features = ["profile-with-puffin"] }
 ordermap = "1.2.0"
 svg = "0.18.0"
+reqwest = {version = "0.13.4", features = ["json"]}
+tokio = "1.52.3"
+serde_json = "1.0.150"
+serde_path_to_error = "0.1.20"
+serde_repr = "0.1.20"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 env_logger = "0.11"
+poll-promise = { version = "0.3.0", features = ["tokio"] }
+
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
 web-sys = {version="0.3.98", features = ["Worker"]}
+poll-promise = { version = "0.3.0", features = ["tokio"] }
+
 
 [profile.dev]
 opt-level = 1
+incremental = true
+debug = 0
 
 [profile.dev.package."*"]
-opt-level = 3
+opt-level = 2
 
 [profile.release]
 codegen-units = 1

@@ -15,10 +15,13 @@ fn main() {
     #[cfg(feature = "profiling")]
     start_puffin_server();
 
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let _guard = runtime.enter();
+
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1400.0, 800.0])
-            .with_min_inner_size([100.0, 100.0])
+            .with_min_inner_size([400.0, 400.0])
             .with_icon(
                 icon_data::from_png_bytes(include_bytes!("../assets/icon/logo.png"))
                     .unwrap_or_default(),

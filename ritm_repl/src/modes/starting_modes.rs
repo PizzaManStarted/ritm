@@ -84,11 +84,8 @@ fn create_tm(rl: &mut Editor<(), FileHistory>) -> Result<SimpleTuringGraph, Ripl
     )?;
 
     let tm = SimpleTuringGraph::new(res, true);
-    if let Err(e) = tm {
-        return Err(RiplError::EncounteredTuringError { error: e.into() });
-    }
 
-    Ok(tm.unwrap())
+    Ok(tm)
 }
 
 fn query_load_tm(

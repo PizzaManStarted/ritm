@@ -9,9 +9,9 @@ repository = "https://github.com/PizzaManStarted/ritm"
 homepage = "https://github.com/PizzaManStarted/ritm"
 
 [dependencies]
-colored = "3.0.0"
-ctrlc = "3.4.7"
+colored = "3.1.1"
+ctrlc = "3.5.2"
 ritm_core = { version = "0.1.0", path = "../ritm_core" }
-rustyline = "16.0.0"
-strum = "0.27.2"
-strum_macros = "0.27.2"
+rustyline = "18.0.0"
+strum = "0.28.0"
+strum_macros = "0.28.0"

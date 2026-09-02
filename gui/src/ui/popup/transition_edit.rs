@@ -1,6 +1,6 @@
 use egui::{
-    Align, AtomExt, Button, Color32, Frame, Image, Key, Label, Layout, Margin,
-    RichText, ScrollArea, Shadow, Stroke, TextEdit, Ui, Vec2, Vec2b, include_image,
+    Align, AtomExt, Button, Color32, Frame, Image, Key, Label, Layout, Margin, RichText,
+    ScrollArea, Shadow, Stroke, TextEdit, Ui, Vec2, Vec2b, include_image,
     scroll_area::ScrollBarVisibility, style::WidgetVisuals, vec2,
 };
 use ritm_core::turing_transition::{
@@ -11,7 +11,11 @@ use crate::{
     App,
     error::{GuiError, RitmError},
     turing::{Transition, TransitionEdit, TransitionWrapper},
-    ui::{component::combobox::ComboBox, theme::Theme}, utils::font::Font,
+    ui::{
+        component::combobox::ComboBox,
+        theme::{LIGHT_THEME, Theme},
+    },
+    utils::font::Font,
 };
 
 pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
@@ -28,7 +32,7 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
                     .fill(Color32::LIGHT_GRAY)
                     .shadow(Shadow {
                         blur: 0,
-                        color: app.theme.shadow,
+                        color: LIGHT_THEME.border,
                         offset: [0, 2],
                         spread: 0,
                     })
@@ -82,7 +86,7 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
                         Button::image(
                             Image::new(include_image!("../../../assets/icon/plus.svg"))
                                 .fit_to_exact_size(vec2(35.0, 35.0))
-                                .tint(app.theme.overlay),
+                                .tint(LIGHT_THEME.surface),
                         )
                         .frame(false),
                     )
@@ -118,33 +122,33 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
         ui.spacing_mut().item_spacing = vec2(10.0, 0.0);
         ui.columns(2, |columns| {
             let text = RichText::new("Cancel")
-                .color(Theme::constrast_color(app.theme.error))
+                .color(Theme::constrast_color(LIGHT_THEME.error))
                 .font(Font::default_medium())
                 .atom_grow(true);
             if columns[1]
                 .add(
                     Button::new(text)
-                        .stroke(Stroke::new(2.0, app.theme.border))
-                        .fill(app.theme.error)
+                        .stroke(Stroke::new(2.0, LIGHT_THEME.border))
+                        .fill(LIGHT_THEME.error)
                         .corner_radius(10.0),
                 )
                 .clicked()
                 || columns[0].ctx().input(|r| r.key_pressed(Key::Escape))
             {
-                app.popup.close();
+                app.ui.popup.close();
                 app.turing.cancel_transition_change();
             };
 
             let text = RichText::new("Save")
-                .color(Theme::constrast_color(app.theme.success))
+                .color(Theme::constrast_color(LIGHT_THEME.success))
                 .font(Font::default_medium())
                 .atom_grow(true);
 
             if columns[0]
                 .add(
                     Button::new(text)
-                        .stroke(Stroke::new(2.0, app.theme.border))
-                        .fill(app.theme.success)
+                        .stroke(Stroke::new(2.0, LIGHT_THEME.border))
+                        .fill(LIGHT_THEME.success)
                         .corner_radius(10.0),
                 )
                 .clicked()
@@ -155,7 +159,7 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
                         reason: reason.to_string(),
                     }));
                 } else {
-                    app.popup.close();
+                    app.ui.popup.close();
                 }
             };
 
@@ -182,11 +186,11 @@ fn transition(
     let mut marked_to_delete = false;
     let error = &app.turing.get_transitions_edit()?.1[transition_index].1;
     let frame = Frame::new()
-        .fill(app.theme.surface)
+        .fill(LIGHT_THEME.surface)
         .inner_margin(Margin::symmetric(10, 6))
         .corner_radius(5)
         .stroke(if error.is_some() {
-            Stroke::new(2.0, app.theme.error)
+            Stroke::new(2.0, LIGHT_THEME.error)
         } else {
             Stroke::NONE
         })
@@ -201,7 +205,7 @@ fn transition(
                             Button::image(
                                 Image::new(include_image!("../../../assets/icon/delete.svg"))
                                     .fit_to_exact_size(vec2(30.0, 30.0))
-                                    .tint(app.theme.error),
+                                    .tint(LIGHT_THEME.error),
                             )
                             .frame(false),
                         )
@@ -220,9 +224,9 @@ fn transition(
                                     .fit_to_exact_size(vec2(30.0, 30.0))
                                     .tint(
                                         if selected_transition[transition_index].0.has_changed() {
-                                            app.theme.overlay
+                                            LIGHT_THEME.surface
                                         } else {
-                                            app.theme.disabled
+                                            LIGHT_THEME.border
                                         },
                                     ),
                             )
@@ -261,8 +265,8 @@ fn transition(
                                     &mut transition.chars_read,
                                     &mut transition.move_pointer,
                                     WidgetVisuals {
-                                        bg_stroke: Stroke::new(1.0, app.theme.error),
-                                        ..app.theme.default_widget()
+                                        bg_stroke: Stroke::new(1.0, LIGHT_THEME.error),
+                                        ..ui.visuals().widgets.inactive
                                     },
                                 );
                             }
@@ -274,8 +278,8 @@ fn transition(
                                         &mut transition.chars_read[i],
                                         &mut transition.move_read,
                                         WidgetVisuals {
-                                            bg_stroke: Stroke::new(1.0, app.theme.error),
-                                            ..app.theme.default_widget()
+                                            bg_stroke: Stroke::new(1.0, LIGHT_THEME.error),
+                                            ..ui.visuals().widgets.inactive
                                         },
                                     );
 
@@ -297,8 +301,8 @@ fn transition(
                                     &mut transition.replace_with,
                                     &mut transition.move_pointer,
                                     WidgetVisuals {
-                                        bg_stroke: Stroke::new(1.0, app.theme.error),
-                                        ..app.theme.default_widget()
+                                        bg_stroke: Stroke::new(1.0, LIGHT_THEME.error),
+                                        ..ui.visuals().widgets.inactive
                                     },
                                 );
 
@@ -331,8 +335,8 @@ fn transition(
                                         ui,
                                         &mut transition.chars_write[i],
                                         WidgetVisuals {
-                                            bg_stroke: Stroke::new(1.0, app.theme.error),
-                                            ..app.theme.default_widget()
+                                            bg_stroke: Stroke::new(1.0, LIGHT_THEME.error),
+                                            ..ui.visuals().widgets.inactive
                                         },
                                     );
 

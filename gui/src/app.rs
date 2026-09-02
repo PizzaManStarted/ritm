@@ -8,66 +8,41 @@ use ritm_core::{
 };
 
 use crate::{
-    error::{self, RitmError},
+    api::Api,
+    error::RitmError,
     turing::{StateEdit, Turing},
     ui::{
-        self,
-        code::Code,
-        control::Control,
-        edit::Edit,
-        graph::Graph,
-        menu::Menu,
-        popup::{
-            RitmPopup,
-            settings::{Settings, debug_show},
-        },
-        theme::{Theme, theme_changer},
-        tutorial::{self, TutorialEnum, Tutorials},
-    }, utils::{constant::Constant, file::{FileData, FileDialog}, font::load_font, keybind::keybind},
+        self, RitmUi, popup::settings::Settings, theme::Theme
+    },
+    utils::{
+        constant::Constant,
+        file::FileData,
+        font::load_font,
+    },
 };
 
 /// The only structure that is persistent each redraw of the application
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Default, serde::Deserialize, serde::Serialize)]
 pub struct App {
     /// The turing machine itself
     #[serde(skip)]
     pub turing: Turing,
 
-    #[serde(skip)]
-    pub edit: Edit,
-
-    #[serde(skip)]
-    pub graph: Graph,
-
-    #[serde(skip)]
-    pub control: Control,
-
     pub settings: Settings,
-
-    #[serde(skip)]
-    pub menu: Menu,
-
-    /// Which popup to display
-    #[serde(skip)]
-    pub popup: RitmPopup,
-
-    /// The code used to create the turing machine
-    pub code: Code,
-
-    #[serde(skip)]
-    pub error: VecDeque<RitmError>,
 
     /// The event/state of the application
     #[serde(skip)]
     pub transient: Transient,
 
-    /// Current theme
-    pub theme: Theme,
+    /// The api access
+    pub api: Api,
 
+    /// The ui data
+    pub ui: RitmUi,
+
+    /// Errors that happen during execution
     #[serde(skip)]
-    pub help_slide_index: usize,
-
-    pub tutorial: Tutorials,
+    pub errors: VecDeque<RitmError>
 }
 
 /// Keep the state of the application
@@ -81,33 +56,11 @@ pub struct Transient {
 
     pub temp_code: Option<String>,
 
-    pub temp_tutorial: Option<TutorialEnum>,
-
     pub add_transition: bool,
 
     pub taking_screenshot: bool,
 
     pub temp_screenshot: Option<FileData>,
-}
-
-impl Default for App {
-    fn default() -> Self {
-        Self {
-            menu: Menu::default(),
-            turing: Turing::default(),
-            edit: Edit::default(),
-            graph: Graph::default(),
-            transient: Transient::default(),
-            theme: Theme::retro(),
-            popup: RitmPopup::default(),
-            code: Code::default(),
-            help_slide_index: 0,
-            control: Control::default(),
-            settings: Settings::default(),
-            error: VecDeque::new(),
-            tutorial: Tutorials::default(),
-        }
-    }
 }
 
 impl Default for Transient {
@@ -116,7 +69,6 @@ impl Default for Transient {
             is_small_window: false,
             listen_to_keybind: true,
             temp_code: None,
-            temp_tutorial: None,
             add_transition: false,
             taking_screenshot: false,
             temp_screenshot: None,
@@ -126,7 +78,7 @@ impl Default for Transient {
 
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // cc.egui_ctx.set_debug_on_hover(true);
+        cc.egui_ctx.set_debug_on_hover(true);
 
         // Load the fonts used in the application
         load_font(cc);
@@ -138,7 +90,7 @@ impl App {
             Default::default()
         };
 
-        app.theme.as_global_theme(&cc.egui_ctx);
+        Theme::as_global_theme(&cc.egui_ctx);
         app
     }
 
@@ -149,38 +101,13 @@ impl App {
 
     /// Reset the machine execution with the new input
     pub fn set_input(&mut self) -> Result<(), RitmError> {
-        self.turing.set_word(self.control.input())
-    }
-
-    /// Convert the graph to code
-    pub fn graph_to_code(&mut self) {
-        let code = graph_to_string(self.turing.tm.graph_ref());
-        self.code.new_tab(self.code.tab_name(), code);
-    }
-
-    /// Convert the current tab code into a graph
-    /// TODO: handle in case the code is invalid
-    pub fn code_to_graph(&mut self) -> Result<(), RitmError> {
-        match parse_turing_graph_string(self.code.current_code()?) {
-            Ok(graph) => {
-                self.turing = Turing::new_graph(graph)?;
-                self.turing.layer_graph();
-                self.code.set_curr_parsing_error(None);
-            }
-            Err(e) => {
-                self.code.set_curr_parsing_error(Some(e));
-            }
-        }
-        self.graph.recenter();
-        Ok(())
+        self.turing.set_word(self.ui.control.input())
     }
 
     /// Change the number of tapes in the graph
     pub fn update_k(&mut self, k: usize) -> Result<(), RitmError> {
-        self.graph.reset();
-        let new_turing = Turing::new_graph(
-            TuringGraph::new(k, true).map_err(|e| RitmError::CoreError(e.to_string()))?,
-        )?;
+        self.ui.graph.reset();
+        let new_turing = Turing::new_graph(TuringGraph::new(k, true))?;
         self.turing = new_turing;
         self.turing.layer_graph();
         Ok(())
@@ -189,18 +116,18 @@ impl App {
     /// Prepare the edition of a state and open the popup
     pub fn edit_state(&mut self, state_id: usize) -> Result<(), RitmError> {
         self.turing.prepare_state_edit(state_id)?;
-        self.popup
-            .switch_to(ui::popup::RitmPopupEnum::StateEdit(Some(state_id)));
+        self.ui.popup
+            .open(ui::popup::RitmPopupEnum::StateEdit(state_id));
         Ok(())
     }
 
     /// Prepare the edition of a state and open the popup
     pub fn edit_transition(&mut self, source_id: usize, target_id: usize) -> Result<(), RitmError> {
         self.turing.prepare_transition_edit(source_id, target_id)?;
-        self.popup
-            .switch_to(ui::popup::RitmPopupEnum::TransitionEdit((
-                source_id, target_id,
-            )));
+        self.ui.popup
+            .open(ui::popup::RitmPopupEnum::TransitionEdit(
+                (source_id, target_id).into(),
+            ));
         Ok(())
     }
 
@@ -214,12 +141,10 @@ impl App {
         );
 
         self.turing.state_edit = Some(state_edit);
-        self.popup
-            .switch_to(ui::popup::RitmPopupEnum::StateEdit(None));
+        self.ui.popup.open(ui::popup::RitmPopupEnum::NewState);
     }
 }
 
-/// Update loop
 impl eframe::App for App {
     /// Save the state of the application
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
@@ -229,65 +154,62 @@ impl eframe::App for App {
     /// Draw every frame the application
     fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
         install_image_loaders(ui);
-        Constant::update_scale(ui);
-        #[cfg(feature = "profiling")]
-        puffin::profile_scope!("root");
 
-        // Start the tutorial
-        if let Some(tutorial) = self.transient.temp_tutorial {
-            self.transient.temp_tutorial = None;
-            self.tutorial.start(tutorial);
-        }
+        // Update the scale to enable responsive UI when the window size change
+        // Constant::update_scale(ui);
+        // Check if the window is too small to display the menu icons
+        self.transient.is_small_window =
+            ui.content_rect().width() < ((Constant::ICON_SIZE + 10.0) * 6.0) * 3.0;
 
-        // Draw the whole application and show any error
-        if let Err(error) = ui::show(self, ui) {
-            self.error.push_back(error);
-        }
+        // Draw the whole application
+        let _ = ui::show(self, ui).err();
 
-        error::show(ui, self);
+        // Stack the errors founds
+        // if let Some(error) = err {
+        //     self.error.push_back(error);
+        // }
+
+        // Display any error that arose
+        // TODO use popup
+        // error::show(ui, self);
 
         // Draw the tutorial
-        tutorial::show(ui, self);
+        // tutorial::show(ui, self);
 
         // End the tutorial
-        if let Some(tutorial) = self.tutorial.has_finished {
-            self.tutorial.has_finished = None;
-            self.tutorial
-                .already_played
-                .entry(tutorial)
-                .and_modify(|b| *b = true);
-        }
+        // if let Some(tutorial) = self.tutorial.has_finished {
+        //     self.tutorial.has_finished = None;
+        //     self.tutorial
+        //         .already_played
+        //         .entry(tutorial)
+        //         .and_modify(|b| *b = true);
+        // }
 
         // Force the Ui to update if the machine is running
-        if self.control.is_running() && self.control.update_time(ui.input(|r| r.time)) {
+        if self.ui.control.is_running() && self.ui.control.update_time(ui.input(|r| r.time)) {
             self.turing.next_step();
             if self.turing.accepted.is_some() {
-                self.control.pause();
+                self.ui.control.pause();
                 ui.request_repaint(); // To update the ui one last time
             }
         }
 
         // While the machine is running we update the application 100 times per step
-        if self.control.is_running() {
+        if self.ui.control.is_running() {
             ui.request_repaint_after(Duration::from_millis(
-                (self.control.interval() * 10.0) as u64,
+                (self.ui.control.interval() * 10.0) as u64,
             ));
         }
 
-        keybind(ui, self);
+        // keybind(ui, self);
 
-        if self.settings.theme_changer {
-            theme_changer(ui, self);
-        }
+        // if self.settings.enable_debug {
+        //     debug_show(ui, self);
+        // }
 
-        if self.settings.enable_debug {
-            debug_show(ui, self);
-        }
-
-        if let Some(screenshot) = &self.transient.temp_screenshot {
-            FileDialog::default().save("test.png", screenshot.to_vec());
-            self.transient.temp_screenshot = None;
-        }
+        // if let Some(screenshot) = &self.transient.temp_screenshot {
+        //     FileDialog::default().save("test.png", screenshot.to_vec());
+        //     self.transient.temp_screenshot = None;
+        // }
     }
 }
-

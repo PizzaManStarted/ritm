@@ -186,7 +186,7 @@ where
     T: TuringTransition,
 {
     let graph = turing_graph.get_or_insert({
-        let mut g = TuringGraph::new(0, false).expect("correct machine");
+        let mut g = TuringGraph::new(0, false);
 
         if let Some(init_rule) = init_rule.take()
             && let Err(e) = parse_rename_init(&mut g, init_rule.clone())
@@ -315,8 +315,7 @@ where
                             .get_number_of_affected_tapes()
                             - 1,
                         false,
-                    )
-                    .expect("correct machine");
+                    );
 
                     if let Some(init_rule) = init_rule.take()
                         && let Err(e) = parse_rename_init(&mut g, init_rule)

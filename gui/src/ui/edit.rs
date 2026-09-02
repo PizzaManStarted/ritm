@@ -1,13 +1,13 @@
 use egui::{
-    Align, Align2, Button, Frame, Id, Image, ImageSource, LayerId, Layout, Margin, Pos2, Rect, Response, Sense, Stroke, Ui, UiBuilder, Vec2, include_image, vec2
+    Align, Button, Frame, Id, Image, ImageSource, LayerId, Layout, Margin, Pos2, Rect,
+    Response, Sense, Stroke, Ui, UiBuilder, Vec2, include_image, vec2,
 };
 
 use crate::{
     App,
     error::RitmError,
     ui::{
-        popup::RitmPopupEnum,
-        tutorial::{TutorialBox, TutorialEnum},
+        popup::RitmPopupEnum, theme::LIGHT_THEME,
     },
 };
 
@@ -19,7 +19,7 @@ pub struct Edit {
 
 /// Control of the graph
 pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
-    let icon_size = app.settings.edit_button_size+10.0;
+    let icon_size = app.settings.edit_button_size + 10.0;
 
     // The parent ui paint on the background layer, so we need to change it to a higher layer
     let layer = LayerId::new(egui::Order::Middle, Id::new("edit"));
@@ -35,26 +35,21 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
             .layout(Layout::bottom_up(Align::Center).with_cross_align(Align::Center))
             .layer_id(layer),
         |ui| {
-            if app.tutorial.current_tutorial().is_some_and(|t| t == TutorialEnum::Edit)
-                && app.tutorial.current_step() >= 4
-            {
-                app.graph.select_state(0);
-            }
 
             // TODO: replace with flags from bitflags crate
             let state_selected =
-                app.graph.selected_state().is_some() && app.graph.selected_transitions().is_none();
+                app.ui.graph.selected_state().is_some() && app.ui.graph.selected_transitions().is_none();
             let _transition_selected =
-                app.graph.selected_transitions().is_some() && app.graph.selected_state().is_none();
+                app.ui.graph.selected_transitions().is_some() && app.ui.graph.selected_state().is_none();
             let _both_selected =
-                app.graph.selected_state().is_some() && app.graph.selected_transitions().is_some();
+                app.ui.graph.selected_state().is_some() && app.ui.graph.selected_transitions().is_some();
             let either_selected =
-                app.graph.selected_state().is_some() || app.graph.selected_transitions().is_some();
+                app.ui.graph.selected_state().is_some() || app.ui.graph.selected_transitions().is_some();
             let none_selected =
-                app.graph.selected_state().is_none() && app.graph.selected_transitions().is_none();
+                app.ui.graph.selected_state().is_none() && app.ui.graph.selected_transitions().is_none();
 
             // Vertical alignment, bottom to up
-            let edit = ui
+            let _edit = ui
                 .allocate_ui_with_layout(
                     vec2(icon_size, ui.available_height()),
                     Layout::bottom_up(Align::Center).with_cross_align(Align::Center),
@@ -69,16 +64,11 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                                 ui,
                                 app,
                                 include_image!("../../assets/icon/stateplus.svg"),
-                                app.edit.is_adding_state,
+                                app.ui.edit.is_adding_state,
                             );
                             if state.clicked() {
-                                app.edit.is_adding_state ^= true;
+                                app.ui.edit.is_adding_state ^= true;
                             }
-                            app.tutorial.add_boxe(
-                                "add_state",
-                                TutorialBox::new(state.rect.expand(6.0))
-                                    .with_align(Align2::LEFT_TOP),
-                            );
                         }
 
                         // Transition
@@ -88,22 +78,16 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                                 ui,
                                 app,
                                 include_image!("../../assets/icon/transition.svg"),
-                                app.edit.is_adding_transition,
+                                app.ui.edit.is_adding_transition,
                             );
                             if button.clicked() {
-                                app.edit.is_adding_transition ^= true;
+                                app.ui.edit.is_adding_transition ^= true;
                             }
-
-                            app.tutorial.add_boxe(
-                                "add_transition",
-                                TutorialBox::new(button.rect.expand(6.0))
-                                    .with_align(Align2::LEFT_TOP),
-                            );
                         }
 
                         // Delete
                         // If a state or transition is selected, then display the delete button
-                        if either_selected && app.graph.selected_state().is_some_and(|s| s > 1) {
+                        if either_selected && app.ui.graph.selected_state().is_some_and(|s| s > 1) {
                             let delete = button(
                                 ui,
                                 app,
@@ -111,11 +95,11 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                                 false,
                             );
                             if delete.clicked() {
-                                if let Some(state_selected) = app.graph.selected_state() {
+                                if let Some(state_selected) = app.ui.graph.selected_state() {
                                     app.turing.remove_state(state_selected)?;
                                 }
 
-                                if let Some(transition_selected) = app.graph.selected_transitions()
+                                if let Some(transition_selected) = app.ui.graph.selected_transitions()
                                 {
                                     app.turing.remove_transitions(
                                         transition_selected.source_id,
@@ -123,7 +107,7 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                                     )?;
                                 }
                             }
-                            // app.tutorial.add_boxe(
+                            // app.ui.tutorial.add_boxe(
                             //     "delete",
                             //     TutorialBox::new(delete.rect.expand(6.0))
                             //         .with_align(Align2::LEFT_TOP),
@@ -139,16 +123,19 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                                 false,
                             );
                             if edit.clicked() {
-                                if let Some(state_selected) = app.graph.selected_state() {
+                                if let Some(state_selected) = app.ui.graph.selected_state() {
                                     app.edit_state(state_selected)?
                                 }
 
-                                if let Some(transition_selected) = app.graph.selected_transitions()
+                                if let Some(transition_selected) = app.ui.graph.selected_transitions()
                                 {
-                                    app.popup.switch_to(RitmPopupEnum::TransitionEdit((
-                                        transition_selected.source_id,
-                                        transition_selected.target_id,
-                                    )));
+                                    app.ui.popup.open(RitmPopupEnum::TransitionEdit(
+                                        (
+                                            transition_selected.source_id,
+                                            transition_selected.target_id,
+                                        )
+                                            .into(),
+                                    ));
 
                                     app.turing.prepare_transition_edit(
                                         transition_selected.source_id,
@@ -156,11 +143,6 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                                     )?;
                                 }
                             }
-                            app.tutorial.add_boxe(
-                                "edit",
-                                TutorialBox::new(edit.rect.expand(6.0))
-                                    .with_align(Align2::LEFT_TOP),
-                            );
                         }
 
                         // Recenter the graph
@@ -171,14 +153,8 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                             false,
                         );
                         if recenter.clicked() {
-                            app.graph.recenter();
+                            app.ui.graph.recenter();
                         }
-
-                        app.tutorial.add_boxe(
-                            "recenter",
-                            TutorialBox::new(recenter.rect.expand(6.0))
-                                .with_align(Align2::LEFT_TOP),
-                        );
 
                         // Unpin every state of the graph
                         let unpin = button(
@@ -191,23 +167,10 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                             app.turing.unpin_all();
                         }
 
-                        app.tutorial.add_boxe(
-                            "unpin",
-                            TutorialBox::new(unpin.rect).with_align(Align2::LEFT_TOP),
-                        );
-
                         Ok::<(), RitmError>(())
                     },
                 )
                 .response;
-            app.tutorial.add_boxe(
-                "edit_section",
-                TutorialBox::new(edit.rect.expand(3.0)).with_align(Align2::LEFT_TOP),
-            );
-            app.tutorial.add_boxe(
-                "by_edit",
-                TutorialBox::new(edit.rect.expand(3.0)).with_align(Align2::LEFT_CENTER),
-            );
         },
     );
     Ok(())
@@ -216,9 +179,9 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
 fn button(ui: &mut Ui, app: &mut App, icon: ImageSource, selected: bool) -> Response {
     let margin = 5;
     Frame::new()
-        .stroke(Stroke::new(1.0, app.theme.border))
+        .stroke(Stroke::new(1.0, LIGHT_THEME.border))
         .corner_radius(app.settings.edit_button_size / 2.0)
-        .fill(app.theme.surface)
+        .fill(LIGHT_THEME.surface)
         .inner_margin(Margin::same(margin))
         .show(ui, |ui| {
             ui.add(
@@ -226,9 +189,9 @@ fn button(ui: &mut Ui, app: &mut App, icon: ImageSource, selected: bool) -> Resp
                     Image::new(icon)
                         .fit_to_exact_size(Vec2::splat(app.settings.edit_button_size))
                         .tint(if selected {
-                            app.theme.active
+                            LIGHT_THEME.active
                         } else {
-                            app.theme.overlay
+                            LIGHT_THEME.surface
                         }),
                 )
                 .frame(false)

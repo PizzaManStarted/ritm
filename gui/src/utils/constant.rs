@@ -23,8 +23,8 @@ impl Constant {
     // Ribbon
     pub const SQUARE_SIZE: f32 = 50.0;
     pub const VERTICAL_SPACING: f32 = 5.0;
-    pub const HORIZONTAL_SPACING: f32 = 5.0;
-    pub const SQUARE_CORNER: f32 = 8.0;
+    pub const HORIZONTAL_SPACING: f32 = 3.0;
+    pub const SQUARE_CORNER: f32 = 10.0;
 
     // Control
     pub const CONTROL_ICON_SIZE: f32 = 40.0;
