@@ -12,9 +12,13 @@ pub struct Font;
 ///
 /// To add one, first load it in the app.rs
 impl Font {
-    pub const BIG_SIZE: f32 = 20.0;
-    pub const MEDIUM_SIZE: f32 = 16.0;
-    pub const SMALL_SIZE: f32 = 12.0;
+    pub const SMALL: f32 = 16.0;
+    pub const MEDIUM: f32 = 20.0;
+    pub const BIG: f32 = 24.0;
+    pub const ICON: f32 = 24.0;
+
+    pub const DEFAULT_FONT: TextStyle = TextStyle::Body;
+    pub const MONO_FONT: TextStyle = TextStyle::Monospace;
 
     /// default font used in the application
     pub fn default(size: f32) -> FontId {
@@ -28,7 +32,7 @@ impl Font {
     pub fn default_medium() -> FontId {
         FontId {
             family: FontFamily::Name("RobotoMono-regular".into()),
-            size: Self::MEDIUM_SIZE,
+            size: Self::MEDIUM,
         }
     }
 
@@ -36,7 +40,7 @@ impl Font {
     pub fn default_big() -> FontId {
         FontId {
             family: FontFamily::Name("RobotoMono-regular".into()),
-            size: Self::BIG_SIZE,
+            size: Self::BIG,
         }
     }
 
@@ -44,7 +48,7 @@ impl Font {
     pub fn default_small() -> FontId {
         FontId {
             family: FontFamily::Name("RobotoMono-regular".into()),
-            size: Self::SMALL_SIZE,
+            size: Self::SMALL,
         }
     }
 
@@ -115,6 +119,14 @@ pub fn load_font(cc: &eframe::CreationContext<'_>) {
     newfam.insert(
         FontFamily::Name("RobotoMono-regular".into()),
         vec!["RobotoMono-regular".to_owned()],
+    );
+    newfam.insert(
+        FontFamily::Proportional,
+        vec!["RobotoMono-regular".to_owned()],
+    );
+    newfam.insert(
+        FontFamily::Monospace,
+        vec!["RobotoMono-Bold".to_owned()],
     );
     fonts.families.append(&mut newfam);
 

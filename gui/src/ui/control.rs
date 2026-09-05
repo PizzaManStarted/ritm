@@ -1,6 +1,6 @@
 use egui::{
-    Align, Align2, Button, Frame, Image, ImageSource, Label, Layout, Response,
-    RichText, Sense, Stroke, TextEdit, Ui, Vec2, include_image, vec2,
+    Align, Align2, Button, FontId, Frame, Image, ImageSource, Label, Layout, Response, RichText,
+    Sense, Stroke, TextEdit, Ui, Vec2, include_image, vec2,
 };
 use egui_flex::{Flex, FlexAlign, FlexAlignContent, FlexInstance, item};
 use ritm_core::{turing_graph::TuringStateInfo, turing_machine::TuringExecutionSteps};
@@ -8,7 +8,8 @@ use ritm_core::{turing_graph::TuringStateInfo, turing_machine::TuringExecutionSt
 use crate::{
     App,
     error::RitmError,
-    ui::{component::grid::Grid, tutorial::TutorialBox}, utils::{constant::Constant, font::Font},
+    ui::{component::grid::Grid, theme::LIGHT_THEME},
+    utils::{constant::Constant, font::Font},
 };
 
 #[derive(Default)]
@@ -69,40 +70,18 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
         let grid = Grid::new(ui, 2, 3);
 
         let input = grid.place(ui, 1, 1, |ui| input(app, ui));
-        app.tutorial.add_boxe(
-            "input",
-            TutorialBox::new(input.response.rect).with_align(Align2::RIGHT_CENTER),
-        );
         input.inner?;
 
-        let control = grid.place(ui, 1, 2, |ui| control(app, ui));
-        app.tutorial.add_boxe(
-            "autoplay",
-            TutorialBox::new(control.response.rect).with_align(Align2::CENTER_BOTTOM),
-        );
-        let speed = grid.place(ui, 2, 2, |ui| speed_control(app, ui));
-        app.tutorial.add_boxe(
-            "speed",
-            TutorialBox::new(speed.response.rect).with_align(Align2::CENTER_BOTTOM),
-        );
+        grid.place(ui, 1, 2, |ui| control(app, ui));
 
-        let step = grid.place(ui, 1, 3, |ui| step(app, ui));
-        app.tutorial.add_boxe(
-            "step",
-            TutorialBox::new(step.response.rect).with_align(Align2::LEFT_CENTER),
-        );
-        let result = grid.place(ui, 2, 3, |ui| state(app, ui));
-        app.tutorial.add_boxe(
-            "result",
-            TutorialBox::new(result.response.rect).with_align(Align2::LEFT_CENTER),
-        );
+        grid.place(ui, 2, 2, |ui| speed_control(app, ui));
+
+        grid.place(ui, 1, 3, |ui| step(app, ui));
+
+        grid.place(ui, 2, 3, |ui| state(app, ui));
+
         Ok::<(), RitmError>(())
     });
-
-    app.tutorial.add_boxe(
-        "control_section",
-        TutorialBox::new(res.response.rect).with_align(Align2::CENTER_BOTTOM),
-    );
     res.inner
 }
 
@@ -116,28 +95,34 @@ fn input(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
         |ui| {
             if ui
                 .add(
-                    Button::new(RichText::new("Submit").font(Font::default(Font::MEDIUM_SIZE)))
-                        .stroke(Stroke::new(1.0, app.theme.border)),
+                    Button::new(
+                        RichText::new("Submit")
+                            .font(FontId::proportional(Font::MEDIUM))
+                            .color(LIGHT_THEME.surface),
+                    )
+                    .stroke(Stroke::new(1.0, LIGHT_THEME.border))
+                    .fill(LIGHT_THEME.primary)
+                    .corner_radius(5.0),
                 )
                 .clicked()
             {
-                app.turing.set_word(&app.control.input)?;
+                app.turing.set_word(&app.ui.control.input)?;
             }
 
             if ui
                 .add_sized(
                     vec2(
                         ui.available_width(),
-                        4.0 + Font::get_heigth(ui, &Font::default(Font::MEDIUM_SIZE)),
+                        4.0 + Font::get_heigth(ui, &Font::default(20.0)),
                     ), // 4.0 is 2 times the hardcoded default vertical margin of textedit
-                    TextEdit::singleline(&mut app.control.input)
-                        .font(Font::default(Font::MEDIUM_SIZE))
+                    TextEdit::singleline(&mut app.ui.control.input)
+                        .font(Font::default(20.0))
                         .hint_text(
                             RichText::new("Input...")
-                                .font(Font::default(Font::MEDIUM_SIZE))
-                                .color(app.theme.text_secondary),
+                                .font(Font::default(20.0))
+                                .color(LIGHT_THEME.text_secondary),
                         )
-                        .background_color(app.theme.surface)
+                        .background_color(LIGHT_THEME.surface)
                         .char_limit(10000),
                 )
                 .has_focus()
@@ -165,7 +150,7 @@ fn control(app: &mut App, ui: &mut Ui) {
         .show(ui, |flex| {
             flex.grow();
             // If playing
-            if app.control.is_running() {
+            if app.ui.control.is_running() {
                 // Display pause button
                 if button(
                     flex,
@@ -175,7 +160,7 @@ fn control(app: &mut App, ui: &mut Ui) {
                 )
                 .clicked()
                 {
-                    app.control.pause();
+                    app.ui.control.pause();
                 }
             } else {
                 // Else display play button
@@ -186,12 +171,8 @@ fn control(app: &mut App, ui: &mut Ui) {
                     finished,
                 );
                 if button.clicked() {
-                    app.control.run();
+                    app.ui.control.run();
                 }
-                app.tutorial.add_boxe(
-                    "play",
-                    TutorialBox::new(button.rect).with_align(Align2::CENTER_BOTTOM),
-                );
             }
 
             // Next button
@@ -204,10 +185,6 @@ fn control(app: &mut App, ui: &mut Ui) {
             if res.clicked() {
                 app.turing.next_step();
             }
-            app.tutorial.add_boxe(
-                "next",
-                TutorialBox::new(res.rect).with_align(Align2::CENTER_BOTTOM),
-            );
 
             // Reset button
             let res = button(
@@ -219,11 +196,6 @@ fn control(app: &mut App, ui: &mut Ui) {
             if res.clicked() {
                 app.reset();
             }
-            app.tutorial.add_boxe(
-                "reset",
-                TutorialBox::new(res.rect).with_align(Align2::CENTER_BOTTOM),
-            );
-
             flex.grow();
         });
 }
@@ -231,8 +203,8 @@ fn control(app: &mut App, ui: &mut Ui) {
 /// Control the speed of the automatic iteration
 /// TODO: make the speed width fixed so the button does not move
 fn speed_control(app: &mut App, ui: &mut Ui) {
-    let min = app.control.interval_power >= 3;
-    let max = app.control.interval_power <= -5;
+    let min = app.ui.control.interval_power >= 3;
+    let max = app.ui.control.interval_power <= -5;
 
     Flex::horizontal()
         .align_content(FlexAlignContent::Center)
@@ -249,24 +221,24 @@ fn speed_control(app: &mut App, ui: &mut Ui) {
                         Image::new(include_image!("../../assets/icon/less.svg"))
                             .fit_to_exact_size(Vec2::splat(25.0))
                             .tint(if min {
-                                app.theme.disabled
+                                LIGHT_THEME.border
                             } else {
-                                app.theme.icon
+                                LIGHT_THEME.icon
                             }),
                     )
                     .frame(false),
                 )
                 .clicked()
             {
-                app.control.speed_up();
+                app.ui.control.speed_up();
             }
 
             flex.add(
                 item(),
                 Label::new(
-                    RichText::new(format!("{}X", 1.0 / app.control.interval()))
-                        .font(Font::default(Font::MEDIUM_SIZE))
-                        .color(app.theme.icon),
+                    RichText::new(format!("{}X", 1.0 / app.ui.control.interval()))
+                        .font(Font::default(20.0))
+                        .color(LIGHT_THEME.icon),
                 ),
             );
 
@@ -277,16 +249,16 @@ fn speed_control(app: &mut App, ui: &mut Ui) {
                         Image::new(include_image!("../../assets/icon/add.svg"))
                             .fit_to_exact_size(Vec2::splat(25.0))
                             .tint(if max {
-                                app.theme.disabled
+                                LIGHT_THEME.border
                             } else {
-                                app.theme.icon
+                                LIGHT_THEME.icon
                             }),
                     )
                     .frame(false),
                 )
                 .clicked()
             {
-                app.control.speed_down();
+                app.ui.control.speed_down();
             }
 
             flex.grow()
@@ -309,8 +281,8 @@ fn step(app: &mut App, ui: &mut Ui) {
                         "step",
                         "step" = app.turing.current_step.get_nb_iterations()
                     ))
-                    .font(Font::default(Font::MEDIUM_SIZE))
-                    .color(app.theme.text_primary),
+                    .font(Font::default(20.0))
+                    .color(LIGHT_THEME.text_primary),
                 ),
             );
             flex.grow();
@@ -329,22 +301,22 @@ fn state(app: &mut App, ui: &mut Ui) {
             let (text, color) = {
                 if let Some(r) = app.turing.accepted {
                     if r {
-                        (t!("accepted"), app.theme.success)
+                        (t!("accepted"), LIGHT_THEME.success)
                     } else {
-                        (t!("rejected"), app.theme.error)
+                        (t!("rejected"), LIGHT_THEME.error)
                     }
                 } else {
                     let is_running = |from: &TuringStateInfo, to: &TuringStateInfo| {
                         (
                             t!("info", "to" = to.get_name(), "from" = from.get_name()),
-                            app.theme.text_primary,
+                            LIGHT_THEME.text_primary,
                         )
                     };
                     match &app.turing.current_step {
                         TuringExecutionSteps::FirstIteration {
                             init_state: _,
                             init_tapes: _,
-                        } => (t!("initialization"), app.theme.text_primary),
+                        } => (t!("initialization"), LIGHT_THEME.text_primary),
                         TuringExecutionSteps::TransitionTaken {
                             previous_state,
                             reached_state,
@@ -355,7 +327,7 @@ fn state(app: &mut App, ui: &mut Ui) {
                             ..
                         } => (
                             t!("backtracking", "step" = backtracked_iteration),
-                            app.theme.backtracked,
+                            LIGHT_THEME.info,
                         ),
                     }
                 }
@@ -363,11 +335,7 @@ fn state(app: &mut App, ui: &mut Ui) {
 
             flex.add(
                 item(),
-                Label::new(
-                    RichText::new(text)
-                        .color(color)
-                        .font(Font::default(Font::MEDIUM_SIZE)),
-                ),
+                Label::new(RichText::new(text).color(color).font(Font::default(20.0))),
             );
             flex.grow();
         });
@@ -381,9 +349,9 @@ fn button(flex: &mut FlexInstance, app: &mut App, icon: ImageSource, disabled: b
             Image::new(icon)
                 .fit_to_exact_size(icon_size)
                 .tint(if disabled {
-                    app.theme.disabled
+                    LIGHT_THEME.border
                 } else {
-                    app.theme.icon
+                    LIGHT_THEME.icon
                 }),
         )
         .frame(false)

@@ -1,31 +1,54 @@
+use std::format;
+
 use egui::{
-    Align, Align2, Atom, AtomExt, Button, Color32, Frame, Id, Image, Label, Layout, Margin, RichText, ScrollArea, Stroke, TextEdit, TextFormat, Ui, Vec2, include_image, scroll_area::ScrollBarVisibility, text::LayoutJob, vec2
+    Align, Align2, Atom, AtomExt, Atoms, Button, Color32, FontId, Frame, Id, Image, IntoAtoms,
+    Label, Layout, Margin, RichText, ScrollArea, Stroke, TextEdit, TextFormat, Ui, Vec2,
+    include_image, scroll_area::ScrollBarVisibility, text::LayoutJob, vec2,
 };
 use ritm_core::turing_parser::TuringParserError;
 
 use crate::{
     App,
     error::{GuiError, RitmError},
-    ui::tutorial::{TutorialBox, TutorialEnum}, utils::font::Font,
+    ui::theme::LIGHT_THEME,
+    utils::{file::FileDialog, font::Font},
 };
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct Code {
-    tabs: Vec<Tab>,
-    code_closed: bool,
     current_tab: usize,
+    tabs: Vec<Tab>,
+
+    // Is the code section closed ?
+    code_closed: bool,
+
+    // Do we need to scroll to the end ?
+    auto_scroll: bool,
+
+    // Is the tab name currently being edited ?
     #[serde(skip)]
     editing_name: bool,
-    auto_scroll: bool,
+
     // The current parsing error
     #[serde(skip)]
     curr_parsing_error: Option<TuringParserError>,
+
+    // Used to save file
+    #[serde(skip)]
+    pub file: FileDialog,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
 struct Tab {
     name: String,
     code: String,
+    marked_as_delete: bool,
+}
+
+impl Tab {
+    fn mark_to_delete(&mut self) {
+        self.marked_as_delete = true;
+    }
 }
 
 impl Default for Code {
@@ -53,12 +76,14 @@ q_check {1, 1 -> R, 1, L} q_check;
 q_check {$, ç -> N, ç, N} q_a;"
                     .to_string(),
                 name: "binary_palindrome".to_string(),
+                marked_as_delete: false,
             }],
             code_closed: Default::default(),
             current_tab: 0,
             editing_name: false,
             auto_scroll: false,
             curr_parsing_error: None,
+            file: FileDialog::default(),
         }
     }
 }
@@ -84,7 +109,7 @@ impl Code {
     pub fn tab_name_check(&mut self) {
         // If empty then default name
         if self.tabs[self.current_tab].name.is_empty() {
-            self.tabs[self.current_tab].name = self.tab_name();
+            self.tabs[self.current_tab].name = self.default_tab_name();
             return;
         }
 
@@ -108,11 +133,16 @@ impl Code {
         self.tabs.push(Tab {
             code,
             name: tab_name,
+            marked_as_delete: false,
         });
 
         self.auto_scroll = true;
         self.switch_to(self.tabs.len() - 1);
         self.tab_name_check();
+    }
+
+    pub fn add_default_tab(&mut self) {
+        self.new_tab(self.default_tab_name(), "".to_string());
     }
 
     pub fn is_closed(&self) -> bool {
@@ -127,12 +157,8 @@ impl Code {
         self.code_closed = false;
     }
 
-    pub(crate) fn tab_name(&self) -> String {
+    pub(crate) fn default_tab_name(&self) -> String {
         format!("tab{}", self.tabs.len() + 1)
-    }
-
-    pub(crate) fn toggle(&mut self) {
-        self.code_closed ^= true;
     }
 
     pub(crate) fn switch_to(&mut self, id: usize) {
@@ -148,260 +174,313 @@ impl Code {
     pub(crate) fn set_curr_parsing_error(&mut self, error: Option<TuringParserError>) {
         self.curr_parsing_error = error;
     }
+
+    pub(crate) fn save_current_tab(&self) -> Result<(), RitmError> {
+        if !self.current_code()?.is_empty() {
+            FileDialog::default().save(
+                &format!("{}.tm", self.tabs[self.current_tab].name),
+                self.current_code()?.as_bytes().to_vec(),
+            );
+        }
+        Ok(())
+    }
 }
 
-pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
-    app.tutorial.add_boxe(
-        "code_section",
-        TutorialBox::new(ui.available_rect_before_wrap()).with_align(Align2::RIGHT_CENTER),
-    );
+pub fn show(app: &mut App, ui: &mut Ui) {
+    if app.ui.code.code_closed {
+        ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
+            ui.style_mut().visuals.widgets.inactive.weak_bg_fill = Color32::TRANSPARENT;
+            ui.style_mut().visuals.widgets.hovered.weak_bg_fill = Color32::from_white_alpha(25);
+            ui.style_mut().visuals.widgets.active.weak_bg_fill = Color32::from_white_alpha(50);
+            ui.style_mut().visuals.widgets.inactive.bg_stroke = Stroke::NONE;
+            ui.style_mut().visuals.widgets.hovered.bg_stroke = Stroke::NONE;
+            ui.style_mut().visuals.widgets.active.bg_stroke = Stroke::NONE;
 
-    let tab_response = Frame::new()
-        .fill(Color32::from_gray(128).blend(app.theme.code_background.gamma_multiply_u8(240)))
+            // Close Code
+            ui.allocate_ui_with_layout(
+                vec2(40.0, 40.0),
+                Layout::left_to_right(Align::Min)
+                    .with_cross_align(Align::Center)
+                    .with_cross_justify(true),
+                |ui: &mut Ui| {
+                    Frame::new().inner_margin(5).show(ui, |ui| {
+                        if ui
+                            .add(
+                                Button::image(
+                                    Image::new(include_image!("../../assets/icon/panel_open.svg"))
+                                        .fit_to_exact_size(Vec2::splat(Font::ICON)),
+                                )
+                                .min_size(Vec2::splat(30.0)),
+                            )
+                            .clicked()
+                        {
+                            app.ui.code.open();
+                        }
+                    })
+                },
+            );
+        });
+    } else {
+        ui.set_width(ui.content_rect().width() / 3.0);
+        codebar(app, ui);
+        code(app, ui);
+    }
+}
+
+fn codebar(app: &mut App, ui: &mut Ui) {
+    Frame::new().show(ui, |ui| {
+        ui.allocate_ui_with_layout(
+            vec2(ui.available_width(), 36.0),
+            Layout::right_to_left(Align::Min),
+            |ui| {
+                ui.style_mut().visuals.widgets.inactive.weak_bg_fill = Color32::TRANSPARENT;
+                ui.style_mut().visuals.widgets.hovered.weak_bg_fill = Color32::from_white_alpha(25);
+                ui.style_mut().visuals.widgets.active.weak_bg_fill = Color32::from_white_alpha(50);
+                ui.style_mut().visuals.widgets.inactive.bg_stroke = Stroke::NONE;
+                ui.style_mut().visuals.widgets.hovered.bg_stroke = Stroke::NONE;
+                ui.style_mut().visuals.widgets.active.bg_stroke = Stroke::NONE;
+                ui.spacing_mut().item_spacing.x = 0.0;
+
+                actions(ui, app);
+                tabs(ui, app);
+            },
+        );
+    });
+}
+
+fn actions(ui: &mut Ui, app: &mut App) {
+    Frame::new()
+        .fill(Color32::from_white_alpha(2))
+        .inner_margin(Margin::symmetric(5, 3))
         .show(ui, |ui| {
+            ui.with_layout(
+                Layout::right_to_left(Align::Min)
+                    .with_cross_justify(true)
+                    .with_cross_align(Align::Center),
+                |ui| {
+                    ui.spacing_mut().item_spacing.x = 5.0;
+                    // Close Code
+                    if ui
+                        .add(
+                            Button::image(
+                                Image::new(include_image!("../../assets/icon/panel_close.svg"))
+                                    .fit_to_exact_size(Vec2::splat(Font::ICON)),
+                            )
+                            .min_size(Vec2::splat(30.0)),
+                        )
+                        .clicked()
+                    {
+                        app.ui.code.close();
+                    }
+
+                    // Add a new tab
+                    if ui
+                        .add(
+                            Button::image(
+                                Image::new(include_image!("../../assets/icon/plus.svg"))
+                                    .fit_to_exact_size(Vec2::splat(Font::ICON)),
+                            )
+                            .min_size(Vec2::splat(30.0)),
+                        )
+                        .clicked()
+                    {
+                        app.ui.code.add_default_tab();
+                    }
+                },
+            );
+        });
+}
+
+fn tabs(ui: &mut Ui, app: &mut App) {
+    // List of tabs
+    Frame::new()
+        .fill(Color32::from_gray(128).blend(LIGHT_THEME.code_background.gamma_multiply_u8(230)))
+        .show(ui, |ui| {
+            ui.spacing_mut().scroll.bar_width = ui.spacing().scroll.floating_width;
+            ui.spacing_mut().scroll.active_background_opacity = 0.0;
+            ui.spacing_mut().scroll.dormant_background_opacity = 0.0;
             ScrollArea::horizontal()
                 .id_salt("tabs")
-                .max_height(30.0)
-                .scroll_bar_visibility(ScrollBarVisibility::AlwaysHidden)
+                .max_height(ui.available_height())
                 .show(ui, |ui| {
-                    ui.set_min_width(ui.available_width());
-                    ui.horizontal(|ui| {
-                        ui.spacing_mut().item_spacing = vec2(4.0, 0.0);
-                        let mut marked_to_delete: Vec<usize> = vec![];
+                    ui.with_layout(
+                        Layout::left_to_right(Align::Min).with_cross_justify(true),
+                        |ui| {
+                            ui.spacing_mut().item_spacing = vec2(4.0, 0.0);
 
-                        // Iterate over the tabs
-                        for i in 0..app.code.tabs.len() {
-                            let is_current_tab = app.code.current_tab == i;
-
-                            // Tab frame
-                            let frame = Frame::new()
-                                .fill(if !is_current_tab {
-                                    Color32::from_gray(128)
-                                        .blend(app.theme.code_background.gamma_multiply_u8(210))
-                                } else {
-                                    app.theme.code_background
-                                })
-                                .inner_margin(Margin {
-                                    left: 8,
-                                    right: 2,
-                                    ..Default::default()
-                                })
-                                .show(ui, |ui| {
-                                    // Define the id for the sub button
-                                    let text_edit_id = Id::new("text_edit");
-                                    let delete_button_id = Id::new("delete_button");
-
-                                    // Get the tab data
-                                    let tab = &mut app.code.tabs[i];
-
-                                    // Layout the button
-                                    ui.spacing_mut().icon_spacing = 4.0;
-                                    ui.spacing_mut().button_padding = vec2(0.0, 0.0);
-                                    let button = Button::new((
-                                        if is_current_tab && app.code.editing_name {
-                                            Atom::custom(
-                                                text_edit_id,
-                                                vec2(
-                                                    Font::get_width_word(
-                                                        ui,
-                                                        &Font::default_big(),
-                                                        &app.code.tabs[app.code.current_tab].name,
-                                                    )
-                                                    .max(30.0)
-                                                        + 5.0,
-                                                    Font::BIG_SIZE,
-                                                ),
-                                            )
-                                        } else {
-                                            RichText::new(tab.name.clone())
-                                                .color(app.theme.code)
-                                                .font(Font::default_big())
-                                                .into()
-                                        },
-                                        Atom::custom(delete_button_id, Vec2::splat(Font::BIG_SIZE))
-                                            .atom_size(vec2(25.0, 25.0)),
-                                    ))
-                                    .frame(false)
-                                    .fill(app.theme.code_background)
-                                    .atom_ui(ui);
-
-                                    // Textedit
-                                    // TODO: change text_edit color
-                                    if let Some(rect) = button.rect(text_edit_id) {
-                                        let text_edit = TextEdit::singleline(
-                                            &mut app.code.tabs[app.code.current_tab].name,
-                                        )
-                                        .margin(Margin::symmetric(
-                                            2,
-                                            -((Font::get_heigth(ui, &Font::default_big())
-                                                - Font::BIG_SIZE)
-                                                / 2.0)
-                                                as i8,
-                                        ))
-                                        .font(Font::default(Font::BIG_SIZE))
-                                        .background_color(app.theme.code_background)
-                                        .frame(Frame::NONE)
-                                        .text_color(app.theme.code);
-
-                                        let response = ui.put(rect, text_edit);
-
-                                        if response.lost_focus() {
-                                            app.code.tab_name_check();
-                                            app.code.editing_name = false;
-                                        }
-
-                                        if app.code.editing_name {
-                                            response.request_focus();
-                                        }
-
-                                        // TODO: maybe reenable this ?
-                                        // no (i mean put a setting at least)
-                                        // response.request_focus();
-                                    }
-
-                                    if !is_current_tab && button.response.clicked() {
-                                        app.code.switch_to(i);
-                                    }
-
-                                    ui.visuals_mut().widgets.hovered.weak_bg_fill =
-                                        if !is_current_tab {
-                                            Color32::from_gray(128).blend(
-                                                app.theme.code_background.gamma_multiply_u8(180),
-                                            )
-                                        } else {
-                                            Color32::from_gray(128).blend(
-                                                app.theme.code_background.gamma_multiply_u8(210),
-                                            )
-                                        };
-                                    ui.visuals_mut().widgets.inactive.weak_bg_fill =
-                                        if !is_current_tab {
-                                            Color32::from_gray(128).blend(
-                                                app.theme.code_background.gamma_multiply_u8(210),
-                                            )
-                                        } else {
-                                            app.theme.code_background
-                                        };
-                                    ui.visuals_mut().widgets.inactive.bg_stroke = Stroke::NONE;
-                                    ui.visuals_mut().widgets.hovered.bg_stroke = Stroke::NONE;
-                                    ui.visuals_mut().widgets.active.bg_stroke = Stroke::NONE;
-                                    ui.spacing_mut().button_padding.x = 0.0;
-
-                                    if !(app.code.editing_name)
-                                        && ui.rect_contains_pointer(button.response.rect)
-                                        && let Some(rect) = button.rect(delete_button_id)
-                                        && ui
-                                            .put(
-                                                rect,
-                                                Button::image(
-                                                    Image::new(include_image!(
-                                                        "../../assets/icon/close_small.svg"
-                                                    ))
-                                                    .shrink_to_fit()
-                                                    .tint(app.theme.code),
-                                                ),
-                                            )
-                                            .clicked()
-                                    {
-                                        marked_to_delete.push(i);
-                                    }
-
-                                    if button.response.double_clicked() {
-                                        app.code.editing_name = true;
-                                    }
-
-                                    Ok::<(), RitmError>(())
-                                })
-                                .response;
-
-                            // Only add tutorial if this is the first tab
-                            if i == 0 {
-                                app.tutorial.add_boxe(
-                                    "tab_rename",
-                                    TutorialBox::new(frame.rect).with_align(Align2::RIGHT_CENTER),
-                                );
-
-                                if let Some(tutorial) = app.tutorial.current_tutorial()
-                                    && tutorial == TutorialEnum::Code
-                                    && app.tutorial.current_step() == 2
-                                {
-                                    frame.scroll_to_me(Some(Align::Min));
-                                    app.code.auto_scroll = false
-                                }
+                            // Iterate over the tabs
+                            for i in 0..app.ui.code.tabs.len() {
+                                tab(app, ui, i);
                             }
-                        }
 
-                        // ui.set_max_width(ui.available_width() + 50.0);
-                        let plus = Frame::new()
-                            .fill(
-                                Color32::from_gray(128)
-                                    .blend(app.theme.code_background.gamma_multiply_u8(210)),
-                            )
-                            .inner_margin(vec2(8.0, 0.0))
-                            .show(ui, |ui| {
-                                ui.add(
-                                    Button::image(
-                                        Image::new(include_image!("../../assets/icon/plus.svg"))
-                                            .tint(app.theme.code)
-                                            .fit_to_exact_size(Vec2::splat(ui.available_height())),
-                                    )
-                                    .frame(false),
-                                )
-                            });
+                            // Remove the tabs closed
+                            app.ui.code.tabs.retain(|tab| !tab.marked_as_delete);
 
-                        app.tutorial.add_boxe(
-                            "tab_add",
-                            TutorialBox::new(plus.response.rect).with_align(Align2::RIGHT_CENTER),
-                        );
+                            // If we create a remove method on the Code struct
+                            // we can detect this outside the UI
+                            if app.ui.code.tabs.is_empty() {
+                                app.ui
+                                    .code
+                                    .new_tab(app.ui.code.default_tab_name(), "".to_string());
+                            }
 
-                        if let Some(tutorial) = app.tutorial.current_tutorial()
-                            && tutorial == TutorialEnum::Code
-                            && app.tutorial.current_step() == 3
-                        {
-                            plus.response.scroll_to_me(Some(Align::Max));
-                            app.code.auto_scroll = false
-                        }
+                            // Same for this
+                            if app.ui.code.current_tab > app.ui.code.tabs.len() - 1 {
+                                app.ui.code.switch_to(app.ui.code.tabs.len() - 1);
+                            }
 
-                        // move the scrollbar to the last element
-                        if app.code.auto_scroll {
-                            plus.response.scroll_to_me(Some(Align::Max));
-                            app.code.auto_scroll = false
-                        }
-
-                        // Add a tab
-                        if plus.inner.clicked() {
-                            app.code.new_tab("".to_string(), "".to_string());
-                        }
-
-                        // Remove the tabs closed
-                        for i in marked_to_delete.iter().rev() {
-                            app.code.tabs.remove(*i);
-                        }
-
-                        if app.code.tabs.is_empty() {
-                            app.code.new_tab(app.code.tab_name(), "".to_string());
-                        }
-
-                        if app.code.current_tab > app.code.tabs.len() - 1 {
-                            app.code.switch_to(app.code.tabs.len() - 1);
-                        }
-
-                        Ok::<(), RitmError>(())
-                    });
+                            Ok::<(), RitmError>(())
+                        },
+                    );
                 });
+        });
+}
+
+/// A tab
+fn tab(app: &mut App, ui: &mut Ui, index: usize) {
+    let is_current_tab = app.ui.code.current_tab == index;
+    // Tab frame
+    Frame::new()
+        .fill(if !is_current_tab {
+            Color32::from_gray(128).blend(LIGHT_THEME.code_background.gamma_multiply_u8(200))
+        } else {
+            LIGHT_THEME.code_background
         })
-        .response;
+        .inner_margin(Margin::symmetric(5, 2))
+        .show(ui, |ui| {
 
-    app.tutorial.add_boxe(
-        "tabs",
-        TutorialBox::new(tab_response.rect).with_align(Align2::CENTER_BOTTOM),
-    );
+            ui.horizontal_centered(|ui| {
 
-    code(app, ui)?;
-    Ok(())
+            // Define the id for the sub buttons
+            let text_edit_id = Id::new("text_edit");
+            let delete_button_id = Id::new("delete_button");
+
+            // Get the tab data
+            let tab = &mut app.ui.code.tabs[index];
+
+            // Layout the button
+            ui.spacing_mut().icon_spacing = 4.0;
+            ui.spacing_mut().button_padding = vec2(0.0, 0.0);
+            let button = Button::new(if is_current_tab && app.ui.code.editing_name {
+                Atoms::new(
+                    // Atom::custom(Id::NULL, vec2(0.0, 30.0)),
+                    Atom::custom(
+                        text_edit_id,
+                        vec2(
+                            Font::get_width_word(
+                                ui,
+                                &FontId::proportional(Font::MEDIUM),
+                                &app.ui.code.tabs[app.ui.code.current_tab].name,
+                            ) + 10.0,
+                            30.0,
+                        ),
+                    ),
+                )
+            } else {
+                (
+                    Atom::custom(Id::NULL, vec2(0.0, 30.0)),
+                    RichText::new(tab.name.clone())
+                        .color(LIGHT_THEME.code)
+                        .font(FontId::proportional(Font::MEDIUM)),
+                    Atom::custom(delete_button_id, Vec2::splat(Font::ICON))
+                        .atom_align(Align2::RIGHT_CENTER),
+                )
+                    .into_atoms()
+            })
+            .min_size(vec2(0.0, ui.available_height()))
+            .frame(false)
+            .fill(LIGHT_THEME.code_background)
+            .atom_ui(ui);
+
+            // Textedit
+            // TODO: change text_edit color
+            if let Some(rect) = button.rect(text_edit_id) {
+                let text_edit =
+                    TextEdit::singleline(&mut app.ui.code.tabs[app.ui.code.current_tab].name)
+                        // .margin(Margin::symmetric(
+                        //     2,
+                        //     -((Font::get_heigth(ui, &FontId::proportional(Font::SMALL)) - Font::BIG_SIZE) / 2.0)
+                        //         as i8,
+                        // ))
+                        .vertical_align(Align::Center)
+                        .background_color(Color32::PLACEHOLDER)
+                        .font(Font::default(20.0))
+                        .frame(Frame::NONE)
+                        .text_color(LIGHT_THEME.code);
+
+                let response = ui.put(rect, text_edit);
+
+                if response.lost_focus() {
+                    app.ui.code.tab_name_check();
+                    app.ui.code.editing_name = false;
+                }
+
+                if app.ui.code.editing_name {
+                    response.request_focus();
+                }
+
+                // TODO: maybe reenable this ?
+                // no (i mean put a setting at least)
+                // response.request_focus();
+            }
+
+            if !is_current_tab && button.response.clicked() {
+                app.ui.code.switch_to(index);
+            }
+
+            // A bunch of visual, can't wait for a style update
+            ui.visuals_mut().widgets.hovered.weak_bg_fill = if !is_current_tab {
+                Color32::from_gray(128).blend(LIGHT_THEME.code_background.gamma_multiply_u8(180))
+            } else {
+                Color32::from_gray(128).blend(LIGHT_THEME.code_background.gamma_multiply_u8(210))
+            };
+            ui.visuals_mut().widgets.inactive.weak_bg_fill = if !is_current_tab {
+                Color32::from_gray(128).blend(LIGHT_THEME.code_background.gamma_multiply_u8(210))
+            } else {
+                LIGHT_THEME.code_background
+            };
+            ui.visuals_mut().widgets.inactive.bg_stroke = Stroke::NONE;
+            ui.visuals_mut().widgets.hovered.bg_stroke = Stroke::NONE;
+            ui.visuals_mut().widgets.active.bg_stroke = Stroke::NONE;
+            ui.spacing_mut().button_padding.x = 0.0;
+
+            // Show the close button only if hovered or if it's the current tab
+            if !(app.ui.code.editing_name)
+                && (ui.rect_contains_pointer(button.response.rect) || is_current_tab)
+                && let Some(rect) = button.rect(delete_button_id)
+                && ui
+                    .put(
+                        rect,
+                        Button::image(
+                            Image::new(include_image!("../../assets/icon/close_small.svg"))
+                                .shrink_to_fit()
+                                .tint(LIGHT_THEME.code),
+                        ),
+                    )
+                    .clicked()
+            {
+                app.ui.code.tabs[index].mark_to_delete();
+            }
+
+            if button.response.double_clicked() {
+                app.ui.code.editing_name = true;
+            }
+
+            });
+            Ok::<(), RitmError>(())
+        });
+}
+
+/// If there is no tabe, propose the creation of a new one or loading
+/// an existing machine code
+/// TODO i'm lazy
+#[allow(unused)]
+pub fn no_code(app: &mut App, ui: &mut Ui) {
+    todo!()
 }
 
 /// Display the code section of the application
-pub fn code(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
+pub fn code(app: &mut App, ui: &mut Ui) {
     ScrollArea::vertical()
         .id_salt("code")
         .scroll_bar_visibility(ScrollBarVisibility::AlwaysHidden)
@@ -414,11 +493,12 @@ pub fn code(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
 
                     let code_width = ui.available_width()
                         - 30.0
-                        - Font::get_width(ui, &Font::default_medium()) * 3.0;
+                        - Font::get_width(ui, &FontId::proportional(Font::SMALL)) * 3.0;
 
                     let job = LayoutJob::simple(
-                        app.code.tabs[app.code.current_tab].code.clone(),
-                        Font::default_medium(),
+                        app.ui.code.tabs[app.ui.code.current_tab].code.clone(),
+                        FontId::proportional(Font::SMALL),
+                        // FontId::proportional(Font::SMALL),
                         Color32::PLACEHOLDER,
                         code_width,
                     );
@@ -449,8 +529,8 @@ pub fn code(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                                     &code[..end],
                                     0.0,
                                     TextFormat::simple(
-                                        Font::default_medium(),
-                                        app.theme.syntax_comment,
+                                        FontId::proportional(Font::SMALL),
+                                        LIGHT_THEME.syntax_comment,
                                     ),
                                 );
                                 code = &code[end..];
@@ -458,15 +538,17 @@ pub fn code(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                                 let mut it = code.char_indices();
                                 it.next();
                                 let end = it.next().map_or(code.len(), |(idx, _chr)| idx);
-                                let mut format =
-                                    TextFormat::simple(Font::default_medium(), app.theme.code);
+                                let mut format = TextFormat::simple(
+                                    FontId::proportional(Font::SMALL),
+                                    LIGHT_THEME.code,
+                                );
                                 if &code[..end] == "\n" {
                                     line += 1;
                                     col = 0;
                                 } else {
                                     col += 1;
                                 }
-                                if let Some(err) = &app.code.curr_parsing_error {
+                                if let Some(err) = &app.ui.code.curr_parsing_error {
                                     match err {
                                         TuringParserError::FileError {
                                             given_path: _,
@@ -494,11 +576,7 @@ pub fn code(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                                         }
                                     }
                                 }
-                                layout_job.append(
-                                    &code[..end],
-                                    0.0,
-                                    format,
-                                );
+                                layout_job.append(&code[..end], 0.0, format);
                                 code = &code[end..];
                             }
                         }
@@ -506,20 +584,21 @@ pub fn code(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                         ui.fonts_mut(|f| f.layout_job(layout_job))
                     };
 
-                    let salt = app.code.tabs[app.code.current_tab].name.clone();
-                    let code = TextEdit::multiline(&mut app.code.tabs[app.code.current_tab].code)
-                        .code_editor()
-                        .id_salt(salt)
-                        .font(Font::default_medium())
-                        .frame(Frame::NONE)
-                        .margin(Margin::same(0))
-                        .background_color(app.theme.code_background)
-                        .layouter(&mut layouter);
+                    let salt = app.ui.code.tabs[app.ui.code.current_tab].name.clone();
+                    let code =
+                        TextEdit::multiline(&mut app.ui.code.tabs[app.ui.code.current_tab].code)
+                            .code_editor()
+                            .id_salt(salt)
+                            .font(FontId::proportional(Font::SMALL))
+                            .frame(Frame::NONE)
+                            .margin(Margin::same(0))
+                            .background_color(LIGHT_THEME.code_background)
+                            .layouter(&mut layouter);
 
                     let line_number = Label::new(
                         RichText::new(number)
-                            .color(app.theme.text_secondary.gamma_multiply(0.5))
-                            .font(Font::default_medium()),
+                            .color(LIGHT_THEME.text_secondary.gamma_multiply(0.5))
+                            .font(FontId::proportional(Font::SMALL)),
                     )
                     .halign(egui::Align::Min)
                     .selectable(false)
@@ -528,8 +607,8 @@ pub fn code(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                     ui.add_space(10.0);
                     ui.add_sized(
                         vec2(
-                            Font::get_width(ui, &Font::default_medium()) * 2.0,
-                            Font::get_heigth(ui, &Font::default_medium())
+                            Font::get_width(ui, &FontId::proportional(Font::SMALL)) * 2.0,
+                            Font::get_heigth(ui, &FontId::proportional(Font::SMALL))
                                 * galley.rows.len() as f32,
                         ),
                         line_number,
@@ -540,13 +619,13 @@ pub fn code(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
 
                     // When the code changes, we can assume the error is irrelevant :
                     if resp.changed() {
-                        app.code.curr_parsing_error = None;
+                        app.ui.code.curr_parsing_error = None;
                     }
 
                     if resp.has_focus() {
                         app.transient.listen_to_keybind = false;
                     }
-                    if let Some(error) = &app.code.curr_parsing_error {
+                    if let Some(error) = &app.ui.code.curr_parsing_error {
                         resp.on_hover_text_at_pointer(match error {
                             TuringParserError::FileError {
                                 given_path: _,
@@ -576,5 +655,4 @@ pub fn code(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                 },
             );
         });
-    Ok(())
 }

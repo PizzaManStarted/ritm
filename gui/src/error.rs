@@ -1,8 +1,6 @@
-use std::fmt::Display;
+use std::{fmt::Display, format, writeln};
 
-use egui::{Context, Id, Label, Modal, RichText, vec2};
-
-use crate::{App, turing::TransitionId, utils::font::Font};
+use crate::turing::TransitionId;
 
 #[derive(Debug, PartialEq)]
 pub enum RitmError {
@@ -12,28 +10,38 @@ pub enum RitmError {
 
 #[derive(Debug, PartialEq)]
 pub enum GuiError {
+    // General
     InvalidApplicationState,
+
+    // Graph
     GraphError { error: String },
-    CodeError { error: String },
-    NoTransitionSelected,
     NoStateSelected,
-    InvalidTransition { reason: String },
-    TransitionAlreadyExist { transition_id: TransitionId },
+    NoTransitionSelected,
     StateAlreadyExist { state_id: usize, name: String },
+    TransitionAlreadyExist { transition_id: TransitionId },
+    InvalidTransition { reason: String },
+
+    // Code
+    CodeError { error: String },
     SyntaxError { error: String },
-    NoTransitionEditing,
+
+    // Turing
     NoStateEditing,
-    FileError { error: String },
+    NoTransitionEditing,
+
+    // IO
     InvalidInput { input: String },
+    FileError { error: String },
+
+    // Control
     NoStep,
-    Default { error: String },
 }
 
 impl Display for RitmError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let error = match self {
-            Self::GuiError(s) => s.to_string(),
-            Self::CoreError(s) => s.to_string(),
+            Self::GuiError(s) => format!("{s}"),
+            Self::CoreError(s) => format!("CORE ERROR : {s}"),
         };
         writeln!(f, "{}", error)
     }
@@ -42,55 +50,37 @@ impl Display for RitmError {
 impl Display for GuiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let error = match self {
-            Self::InvalidApplicationState => "Application state invalid !".to_string(),
+            // General
+            Self::InvalidApplicationState => "Invalid application state !".to_string(),
+
+            // Graph
             Self::GraphError { error } => format!("Error in the graph : {}", error),
-            Self::CodeError { error } => format!("Error in code : {}", error),
-            Self::NoTransitionSelected => "No transition selected".to_string(),
             Self::NoStateSelected => "No state selected".to_string(),
-            Self::InvalidTransition { reason } => format!("Invalid transition : {}", reason),
+            Self::NoTransitionSelected => "No transition selected".to_string(),
+            Self::StateAlreadyExist { state_id, name } => {
+                format!("State {} with id {} already exist", name, state_id)
+            }
             Self::TransitionAlreadyExist { transition_id } => format!(
                 "Transition {} between state {} and {} already exist",
                 transition_id.id, transition_id.source_id, transition_id.target_id
             ),
-            Self::StateAlreadyExist { state_id, name } => {
-                format!("State {} with id {} already exist", name, state_id)
-            }
+            Self::InvalidTransition { reason } => format!("Invalid transition : {}", reason),
+
+            // Code
+            Self::CodeError { error } => format!("Error in code : {}", error),
             Self::SyntaxError { error } => format!("Syntax error : {}", error),
+
+            // Turing
             Self::NoTransitionEditing => "No transition are being edited".to_string(),
             Self::NoStateEditing => "No state are being edited".to_string(),
+
+            // IO
             Self::FileError { error } => format!("Could not load file: {}", error),
             Self::InvalidInput { input } => format!("{} is an invalid input", input),
-            Self::Default { error } => format!("Error : {}", error),
+
+            // Control
             Self::NoStep => "There is no next step !".to_string(),
         };
         writeln!(f, "{}", error)
     }
-}
-
-pub fn show(ctx: &Context, app: &mut App) {
-    let Some(error) = app.error.front() else {
-        return;
-    };
-
-    let error = error.to_string();
-    let popup_size = vec2(300.0, 300.0);
-
-    Modal::new(Id::new("error")).show(ctx, |ui| {
-        ui.set_max_size(popup_size);
-        ui.set_min_size(vec2(popup_size.x, 0.0));
-
-        ui.vertical_centered_justified(|ui| {
-            ui.add(
-                Label::new(RichText::new(error).font(Font::default_medium()))
-                    .halign(egui::Align::Center)
-                    .selectable(true),
-            );
-            if ui
-                .button(RichText::new("close").font(Font::default_medium()))
-                .clicked()
-            {
-                app.error.pop_front();
-            }
-        });
-    });
 }

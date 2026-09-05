@@ -175,7 +175,7 @@ fn stop_first_reject() {
 /// Feed it `0...0` in order for it to suceed
 fn _get_smaller_non_deter_graph() -> SimpleTuringGraph {
     let q2 = &String::from("q2");
-    let mut graph = SimpleTuringGraph::new(1, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(1, true);
 
     graph
         .try_add_state(q2, TuringStateType::Normal)
@@ -217,7 +217,7 @@ fn _get_smaller_non_deter_graph() -> SimpleTuringGraph {
 fn get_test_non_deter_graph() -> SimpleTuringGraph {
     let q1 = &String::from("q1");
     let q2 = &String::from("q2");
-    let mut graph = SimpleTuringGraph::new(1, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(1, true);
 
     graph
         .try_add_state(q1, TuringStateType::Normal)
@@ -298,7 +298,7 @@ fn get_test_non_deter_graph() -> SimpleTuringGraph {
 fn get_small_inf_machine(mode: Mode) -> SimpleTuringMachine {
     let q1 = &String::from("q1");
 
-    let mut graph = SimpleTuringGraph::new(1, true).unwrap();
+    let mut graph = SimpleTuringGraph::new(1, true);
     graph
         .try_add_state(q1, TuringStateType::Normal)
         .expect("valid name");

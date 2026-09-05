@@ -10,8 +10,7 @@ use crate::{
     },
 };
 use std::{
-    collections::{HashMap, VecDeque},
-    fmt::{Debug, Display},
+    collections::{HashMap, VecDeque}, fmt::{Debug, Display}, write,
 };
 
 #[derive(Debug, Error)]
@@ -195,7 +194,7 @@ where
 
 impl<S: TuringState, T: TuringTransition> Default for TuringGraph<S, T> {
     fn default() -> Self {
-        Self::new(1, false).expect("correct for one work ribbon")
+        Self::new(1, false)
     }
 }
 
@@ -233,7 +232,7 @@ where
     ///     * `q_i` : The initial state
     /// * If `default_state` parameter is set to [`true`] :
     ///     * `q_a` : The default accepting state.
-    pub fn new(k: usize, default_state: bool) -> Result<Self, TuringGraphError> {
+    pub fn new(k: usize, default_state: bool) -> Self {
         // Add the default states
         let mut state_hashmap = IndexMap::new();
 
@@ -258,13 +257,13 @@ where
             next_state_index = 2;
         }
 
-        Ok(Self {
+        Self {
             state_hashmap,
             transition_hasmap: IndexMap::new(),
             available_state_id: VecDeque::new(),
             next_state_id: next_state_index,
             k,
-        })
+        }
     }
 
     /// Adds a new rule to a state of the machine of the form : `from {transition} to`.

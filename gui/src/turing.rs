@@ -27,7 +27,7 @@ pub struct Turing {
 impl Default for Turing {
     fn default() -> Self {
         let graph: TuringGraph<State, Transition> =
-            TuringGraph::new(0, true).expect("Turing graph creation fail");
+            TuringGraph::new(0, true);
         let mode = Mode::SaveAll;
         let mut tm =
             TuringMachine::new(graph, "".to_string(), mode).expect("Turing machine creation fail");
@@ -574,7 +574,7 @@ impl TuringState for State {
 }
 
 /// Transition are identified by the trio (source_id, id, target_id)
-#[derive(Debug, PartialEq, Default, Clone, Copy)]
+#[derive(Debug, PartialEq, Default, Clone, Copy, Hash)]
 pub struct TransitionId {
     pub source_id: usize,
     pub id: usize,
@@ -588,6 +588,22 @@ impl From<(usize, usize, usize)> for TransitionId {
             id: value.1,
             target_id: value.2,
         }
+    }
+}
+
+impl From<(usize, usize)> for TransitionId {
+    fn from(value: (usize, usize)) -> Self {
+        Self {
+            source_id: value.0,
+            id: 0,
+            target_id: value.1,
+        }
+    }
+}
+
+impl From<TransitionId> for (usize, usize) {
+    fn from(val: TransitionId) -> Self {
+        (val.source_id, val.target_id)
     }
 }
 

@@ -1,6 +1,6 @@
 use egui::{
-    Align, Align2, Color32, Frame, Label, Layout, Margin, Rect, Response, RichText, ScrollArea,
-    Sense, Stroke, StrokeKind, Ui, Vec2,
+    Align, Color32, Frame, Label, Layout, Rect, Response, RichText, ScrollArea, Sense, Stroke,
+    StrokeKind, Ui, Vec2,
     epaint::PathShape,
     pos2,
     scroll_area::{ScrollBarVisibility, ScrollSource},
@@ -9,11 +9,12 @@ use egui::{
 
 use crate::{
     App,
-    ui::tutorial::TutorialBox, utils::{constant::Constant, effect::{Fade, fade}},
+    ui::theme::LIGHT_THEME,
+    utils::{constant::Constant, effect::Fade},
 };
 
 pub fn show(app: &mut App, ui: &mut Ui) {
-    let tape_count = app.turing.tm.graph_ref().get_k() + 1;
+    let tapes_count = app.turing.tm.graph_ref().get_k() + 1;
 
     // Apply a scale correction to element for small screen
     let square_size = Constant::SQUARE_SIZE;
@@ -22,149 +23,93 @@ pub fn show(app: &mut App, ui: &mut Ui) {
     let scale = 1.0;
 
     // Tapes frame
-    let res = Frame::new()
-        .inner_margin(Margin::same(3))
-        .outer_margin(Margin::same(0))
-        .fill(app.theme.primary)
-        .show(ui, |ui| {
-            ui.spacing_mut().item_spacing = (0.0, vertical_space).into();
+    let res = Frame::new().show(ui, |ui| {
+        ui.spacing_mut().item_spacing.y = vertical_space;
 
-            // Get the absolute center of the ribbons layout
-            let center = ui.available_rect_before_wrap().left() + ui.available_width() / 2.0;
-            // Compute how many square will be visible
-            let mut square_count = ((ui.available_width() + horizontal_space)
-                / (horizontal_space + square_size)) as usize;
+        // Get the absolute center of the ribbons layout
+        let center = ui.max_rect().center().x;
 
-            // Ensure the count is odd because there is always a square centered
-            if square_count.is_multiple_of(2) {
-                square_count += 1
-            }
+        // Compute how many square will be visible
+        // Size + Spacing / Square + Spacing
+        let mut square_count = ((ui.available_width() + horizontal_space)
+            / (horizontal_space + square_size)) as usize
+            + 2;
 
-            // Compute the final width of the ribbons
-            let ribbon_width =
-                square_count as f32 * (square_size + horizontal_space) - horizontal_space;
+        // Ensure the count is odd because there is always a square in the center
+        if square_count.is_multiple_of(2) {
+            square_count += 1
+        }
 
-            // ui.set_height(ui.ctx().screen_rect().height());
-            let content = ScrollArea::vertical()
-                .scroll_bar_visibility(ScrollBarVisibility::VisibleWhenNeeded)
-                .auto_shrink(true)
-                .min_scrolled_height(ui.ctx().content_rect().height() / 3.0)
-                .max_height(ui.ctx().content_rect().height() / 3.0)
-                .show(ui, |ui| {
-                    // Scroll area to center and display the ribbon
-                    ScrollArea::horizontal()
-                        .scroll_source(ScrollSource::NONE)
-                        .scroll_bar_visibility(ScrollBarVisibility::AlwaysHidden)
-                        .horizontal_scroll_offset(
-                            3.0 // 3.0 is the margin of the center square
-                        + square_size
-                        + horizontal_space
-                        + (ribbon_width - ui.available_width()) / 2.0,
-                        ) // this offset center the symbol
-                        .show(ui, |ui| {
-                            let width = ui.available_width();
-                            // Draw each ribbon
-                            let mut write_rect = Rect::ZERO;
-                            let mut center_rect = Rect::ZERO;
-                            for i in 0..tape_count {
-                                // Get the top of the current ribbon to draw the arrow
-                                let top = ui.available_rect_before_wrap().top();
+        // Compute the final width of the ribbons
+        // #Square * Square + (#Square - 1) * Spacing
+        let ribbon_width =
+            square_count as f32 * (square_size + horizontal_space) - horizontal_space;
 
-                                // Draw the ribbon
-                                let res = tape(app, ui, width, i);
+        // ScrollArea to scroll when too many tapes
+        // Notes: This may be overkill but better too many than too few
+        let content = ScrollArea::vertical()
+            .scroll_bar_visibility(ScrollBarVisibility::VisibleWhenNeeded)
+            .auto_shrink(true)
+            .min_scrolled_height(ui.ctx().content_rect().height() / 3.0)
+            .max_height(ui.ctx().content_rect().height() / 3.0)
+            .show(ui, |ui| {
+                // Scroll area to center and display the tapes
+                ScrollArea::horizontal()
+                    .scroll_source(ScrollSource::NONE)
+                    .scroll_bar_visibility(ScrollBarVisibility::AlwaysHidden)
+                    .horizontal_scroll_offset(
+                        3.0 // 3.0 is the margin of the center square
+                        + (ribbon_width - ui.available_width()) / 2.0, // center the tapes
+                    ) // this offset center the symbol
+                    .show(ui, |ui| {
+                        // Draw each tape
+                        for i in 0..tapes_count {
+                            // Get the top of the current tape to draw the arrow
+                            let top = ui.cursor().top();
 
-                                if i == 0 {
-                                    app.tutorial.add_boxe(
-                                        "reading_tape",
-                                        TutorialBox::new(res.interact_rect)
-                                            .with_align(Align2::CENTER_BOTTOM),
-                                    );
-                                } else if write_rect == Rect::ZERO {
-                                    write_rect = Rect::from_min_size(
-                                        res.interact_rect.min,
-                                        res.interact_rect.size(),
-                                    )
-                                } else {
-                                    write_rect = Rect::from_min_max(
-                                        write_rect.min,
-                                        write_rect.max + vec2(0.0, res.interact_rect.height()),
-                                    )
-                                }
+                            // Draw the tape
+                            tape(app, ui, square_count, i);
 
-                                if center_rect == Rect::ZERO {
-                                    center_rect = Rect::from_min_size(
-                                        pos2(
-                                            res.interact_rect.center().x - 3.0 - square_size / 2.0,
-                                            res.interact_rect.min.y,
-                                        ),
-                                        Vec2::splat(square_size + 6.0),
-                                    )
-                                } else {
-                                    center_rect = Rect::from_min_max(
-                                        center_rect.min,
-                                        center_rect.max
-                                            + vec2(
-                                                0.0,
-                                                res.interact_rect.height() + vertical_space,
-                                            ),
-                                    )
-                                }
+                            // Draw the arrow on top of the tapes
+                            ui.painter().add(PathShape::convex_polygon(
+                                vec![
+                                    (center - 9.0 * scale, top).into(),
+                                    (center + 9.0 * scale, top).into(),
+                                    (center, top + 12.0 * scale).into(),
+                                ],
+                                LIGHT_THEME.border,
+                                Stroke::NONE,
+                            ));
+                        }
+                    });
+            });
 
-                                // Draw the arrow on top of the ribbon
-                                ui.painter().add(PathShape::convex_polygon(
-                                    vec![
-                                        (center - 9.0 * scale, top).into(),
-                                        (center + 9.0 * scale, top).into(),
-                                        (center, top + 12.0 * scale).into(),
-                                    ],
-                                    app.theme.border,
-                                    Stroke::NONE,
-                                ));
-                            }
+        (
+            content.content_size.y,
+            content.state.offset.y >= content.content_size.y - content.inner_rect.height(),
+        )
+    });
 
-                            app.tutorial.add_boxe(
-                                "writing_tape",
-                                TutorialBox::new(write_rect).with_align(Align2::CENTER_BOTTOM),
-                            );
-
-                            app.tutorial.add_boxe(
-                                "current_character",
-                                TutorialBox::new(center_rect).with_align(Align2::CENTER_BOTTOM),
-                            );
-                        });
-                });
-
-            (
-                content.content_size.y,
-                content.state.offset.y >= content.content_size.y - content.inner_rect.height(),
-            )
-        });
-
+    // Add a fade effect on the side
     if !res.inner.1 && res.inner.0 >= ui.ctx().content_rect().height() / 3.0 {
         let fade_rect = Rect::from_min_max(
-            pos2(res.response.rect.min.x, res.response.rect.max.y - 50.0),
+            pos2(res.response.rect.min.x, res.response.rect.max.y),
             res.response.rect.max,
         );
-        fade(
-            ui,
+        // println!("{}", fade_rect);
+        ui.put(
             fade_rect,
-            egui::Direction::BottomUp,
             Fade::new()
-                .with_color(app.theme.primary, 0.0)
+                .with_color(LIGHT_THEME.secondary, 0.0)
                 .with_color(Color32::TRANSPARENT, 1.0)
-                .with_step(50),
+                .with_step(50)
+                .with_direction(egui::Direction::BottomUp),
         );
     }
-
-    app.tutorial.add_boxe(
-        "tape_section",
-        TutorialBox::new(res.response.rect).with_align(Align2::CENTER_BOTTOM),
-    );
 }
 
-/// Draw a ribbon with the correct spacing and character
-fn tape(app: &mut App, ui: &mut Ui, width: f32, tape_id: usize) -> Response {
-    // Apply a scale correction to element for small screen
+/// Draw a tapes with the correct spacing and character
+fn tape(app: &mut App, ui: &mut Ui, square_count: usize, tape_id: usize) -> Response {
     let horizontal_space = Constant::HORIZONTAL_SPACING;
     let square_size = Constant::SQUARE_SIZE;
 
@@ -176,10 +121,11 @@ fn tape(app: &mut App, ui: &mut Ui, width: f32, tape_id: usize) -> Response {
         |ui| {
             ui.style_mut().spacing.item_spacing = (horizontal_space, 0.0).into();
 
-            let square_count: usize =
-                ((width + horizontal_space) / (horizontal_space + square_size)) as usize + 2;
+            // Compute the square count
+            // let square_count: usize =
+            //     ((width + horizontal_space) / (horizontal_space + square_size)) as usize + 2;
 
-            // Get the chars and pointer from reading or writing ribbon
+            // Get the chars and pointer from reading or writing tapes
             let tape = &app.turing.current_step.get_tapes()[tape_id];
             let (chars, pointer): (&Vec<char>, i32) =
                 (tape.get_contents(), tape.get_pointer() as i32);
@@ -208,7 +154,7 @@ fn tape(app: &mut App, ui: &mut Ui, width: f32, tape_id: usize) -> Response {
 }
 
 /// Draw a single square with a character
-fn square(app: &mut App, ui: &mut Ui, character: char, is_current: bool) {
+fn square(_app: &mut App, ui: &mut Ui, character: char, is_current: bool) {
     // Apply a scale correction to element for small screen
     let square_size = Constant::SQUARE_SIZE;
 
@@ -220,14 +166,14 @@ fn square(app: &mut App, ui: &mut Ui, character: char, is_current: bool) {
         rect,
         Constant::SQUARE_CORNER,
         if character == ' ' {
-            app.theme.disabled
+            LIGHT_THEME.disabled
         } else {
-            app.theme.surface
+            LIGHT_THEME.surface
         },
         if is_current {
-            Stroke::new(3.0, app.theme.border)
+            Stroke::new(3.0, LIGHT_THEME.border)
         } else {
-            Stroke::NONE
+            Stroke::new(1.0, LIGHT_THEME.border)
         },
         StrokeKind::Inside,
     );
@@ -238,7 +184,7 @@ fn square(app: &mut App, ui: &mut Ui, character: char, is_current: bool) {
         Label::new(
             RichText::new(character)
                 .size(square_size / 2.0)
-                .color(app.theme.text_primary),
+                .color(LIGHT_THEME.text_primary),
         ),
     );
 }

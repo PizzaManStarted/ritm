@@ -7,7 +7,8 @@ use crate::{
     App,
     error::RitmError,
     turing::TransitionId,
-    ui::theme::Theme, utils::{constant::Constant, font::Font, physic},
+    ui::theme::{LIGHT_THEME, Theme},
+    utils::{constant::Constant, font::Font, physic},
 };
 use egui::{
     Align2, Color32, Pos2, Rect, Sense, Stroke, TextFormat, Ui, Vec2,
@@ -284,6 +285,7 @@ fn draw_labels(
 
     let reverse = placement.1.y.is_sign_positive();
     let selected = app
+        .ui
         .graph
         .selected_transitions
         .is_some_and(|transitions| transitions == *sample_transition_id);
@@ -299,16 +301,16 @@ fn draw_labels(
             text,
             TextFormat {
                 font_id: if *is_previous {
-                    Font::bold(Font::MEDIUM_SIZE * 2.0)
+                    Font::bold(20.0 * 2.0)
                 } else {
-                    Font::default(Font::MEDIUM_SIZE * 2.0)
+                    Font::default(20.0 * 2.0)
                 },
                 color: if selected {
-                    app.theme.selection
+                    LIGHT_THEME.selection
                 } else if *is_previous {
-                    app.theme.highlight
+                    LIGHT_THEME.highlight
                 } else {
-                    Theme::constrast_color(app.theme.secondary)
+                    Theme::constrast_color(LIGHT_THEME.secondary)
                 },
                 ..Default::default()
             },
@@ -382,17 +384,21 @@ fn draw_labels(
     }
 
     if clicked.0 {
-        app.graph.select_transitions(*sample_transition_id);
-        app.edit.is_adding_transition = false;
-        app.edit.is_adding_state = false;
+        app.ui.graph.select_transitions(*sample_transition_id);
+        app.ui.edit.is_adding_transition = false;
+        app.ui.edit.is_adding_state = false;
     }
 
     if clicked.1 {
-        app.popup
-            .switch_to(crate::ui::popup::RitmPopupEnum::TransitionEdit((
-                sample_transition_id.source_id,
-                sample_transition_id.target_id,
-            )));
+        app.ui
+            .popup
+            .open(crate::ui::popup::RitmPopupEnum::TransitionEdit(
+                (
+                    sample_transition_id.source_id,
+                    sample_transition_id.target_id,
+                )
+                    .into(),
+            ));
         app.turing.prepare_transition_edit(
             sample_transition_id.source_id,
             sample_transition_id.target_id,

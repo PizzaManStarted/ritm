@@ -1,9 +1,14 @@
-use egui::{Align, Label, Rect, Sense, Stroke, Ui, text::{LayoutJob, TextWrapping}, vec2};
+use egui::{
+    Align, Label, Rect, Sense, Stroke, Ui,
+    text::{LayoutJob, TextWrapping},
+    vec2,
+};
 
 use crate::{
     App,
     error::RitmError,
-    utils::constant::Constant, utils::font::Font,
+    ui::theme::LIGHT_THEME,
+    utils::{constant::Constant, font::Font},
 };
 
 /// Display every state of the turing machine
@@ -44,23 +49,26 @@ pub fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) -> Result<(), Ritm
         state.inner_state.position,
         Constant::STATE_RADIUS,
         state.inner_state.color,
-        if app.graph.selected_state.is_some_and(|id| id == state_id) {
-            Stroke::new(4.0, app.theme.selection)
+        if app.ui.graph.selected_state.is_some_and(|id| id == state_id) {
+            Stroke::new(4.0, LIGHT_THEME.selection)
         } else if app.turing.current_step.get_state_pointer() == state_id {
-            Stroke::new(4.0, app.theme.highlight)
+            Stroke::new(4.0, LIGHT_THEME.highlight)
         } else {
-            Stroke::new(2.0, app.theme.border)
+            Stroke::new(2.0, LIGHT_THEME.border)
         },
     );
 
-
     let name = state.get_name();
-    let size= Font::fit_width(ui, rect.size()*0.9, name).clamp(10.0, Font::BIG_SIZE) * 2.0;
+    let size = Font::fit_width(ui, rect.size() * 0.9, name).clamp(10.0, 30.0) * 2.0;
     let job = LayoutJob {
         break_on_newline: false,
         halign: Align::Center,
         wrap: TextWrapping::truncate_at_width(rect.width()),
-        ..LayoutJob::simple_singleline(name.to_string(), Font::default(size), app.theme.text_primary)
+        ..LayoutJob::simple_singleline(
+            name.to_string(),
+            Font::default(size),
+            LIGHT_THEME.text_primary,
+        )
     };
 
     let label = Label::new(job);
@@ -72,6 +80,7 @@ pub fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) -> Result<(), Ritm
     let response = ui.allocate_rect(
         rect,
         if app
+            .ui
             .graph
             .drag_transition
             .is_some_and(|(f, _)| f == state_id)
@@ -87,16 +96,16 @@ pub fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) -> Result<(), Ritm
     }
 
     if response.clicked() {
-        if app.edit.is_adding_transition {
+        if app.ui.edit.is_adding_transition {
             app.turing.add_default_transition(
-                app.graph.selected_state().expect("state selected"),
+                app.ui.graph.selected_state().expect("state selected"),
                 state_id,
             )?;
-            app.edit.is_adding_transition &= !app.settings.reset_after_action;
-            app.edit.is_adding_state = false;
+            app.ui.edit.is_adding_transition &= !app.settings.reset_after_action;
+            app.ui.edit.is_adding_state = false;
         } else {
-            app.graph.select_state(state_id);
-            app.edit.is_adding_state = false;
+            app.ui.graph.select_state(state_id);
+            app.ui.edit.is_adding_state = false;
         }
     }
 
@@ -108,13 +117,13 @@ pub fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) -> Result<(), Ritm
         .try_get_state_mut(state_id)
         .expect("state exist");
 
-    if let Some((s, _)) = app.graph.drag_transition
+    if let Some((s, _)) = app.ui.graph.drag_transition
         && response.contains_pointer()
     {
-        app.graph.drag_transition = Some((s, Some(state_id)));
+        app.ui.graph.drag_transition = Some((s, Some(state_id)));
     }
 
-    if app.graph.drag_transition.is_none()
+    if app.ui.graph.drag_transition.is_none()
         && response.is_pointer_button_down_on()
         && !response.dragged()
     {
@@ -124,7 +133,7 @@ pub fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) -> Result<(), Ritm
             > ui.ctx()
                 .options(|r| r.input_options.max_click_duration - 0.4)
         {
-            app.graph.drag_transition = Some((state_id, Some(state_id)));
+            app.ui.graph.drag_transition = Some((state_id, Some(state_id)));
         }
         ui.ctx().request_repaint();
     }
@@ -138,11 +147,11 @@ pub fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) -> Result<(), Ritm
     }
 
     if response.drag_started() {
-        app.graph.drag_transition = None;
-        app.graph.is_dragging = true
+        app.ui.graph.drag_transition = None;
+        app.ui.graph.is_dragging = true
     }
     if response.drag_stopped() {
-        app.graph.is_dragging = false
+        app.ui.graph.is_dragging = false
     }
     Ok(())
 }

@@ -7,7 +7,8 @@ use crate::{
     App,
     error::RitmError,
     turing::StateEdit,
-    ui::{popup::RitmPopupEnum, theme::Theme}, utils::font::Font,
+    ui::{popup::RitmPopupEnum, theme::{LIGHT_THEME, Theme}},
+    utils::font::Font,
 };
 
 pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
@@ -20,15 +21,13 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
                     .fit_to_exact_size(Vec2::splat(
                         Font::get_heigth(ui, &Font::default_big()) + 4.0,
                     ))
-                    .tint(app.theme.overlay),
+                    .tint(LIGHT_THEME.surface),
             );
 
             if app.turing.state_edit.is_none()
-                && let Some(RitmPopupEnum::StateEdit(selected)) = app.popup.current()
+                && let Some(RitmPopupEnum::StateEdit(selected)) = app.ui.popup.current()
             {
-                app.turing.state_edit = if let Some(state) = *selected
-                    && let Some(state) = app.turing.get_state(state).ok()
-                {
+                app.turing.state_edit = if let Ok(state) = app.turing.get_state(*selected) {
                     Some(StateEdit::from(state))
                 } else {
                     Some(StateEdit::empty(app.turing.tm.graph_ref().get_next_id()))
@@ -36,7 +35,7 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
             }
 
             let Some(state) = &mut app.turing.state_edit else {
-                app.popup.close();
+                app.ui.popup.close();
                 return;
             };
 
@@ -50,24 +49,24 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
 
         ui.columns(2, |ui| {
             let text = RichText::new("Cancel")
-                .color(Theme::constrast_color(app.theme.error))
+                .color(Theme::constrast_color(LIGHT_THEME.error))
                 .font(Font::default_medium())
                 .atom_grow(true);
 
             if ui[1]
                 .add(
                     Button::new(text)
-                        .stroke(Stroke::new(2.0, app.theme.border))
-                        .fill(app.theme.error)
+                        .stroke(Stroke::new(2.0, LIGHT_THEME.border))
+                        .fill(LIGHT_THEME.error)
                         .corner_radius(10.0),
                 )
                 .clicked()
             {
-                app.popup.close();
+                app.ui.popup.close();
             }
 
             let Some(state) = &app.turing.state_edit else {
-                app.popup.close();
+                app.ui.popup.close();
                 return Ok(());
             };
 
@@ -77,20 +76,19 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
                 .add(
                     Button::new(
                         RichText::new("Save")
-                            .color(Theme::constrast_color(app.theme.success))
+                            .color(Theme::constrast_color(LIGHT_THEME.success))
                             .font(Font::default_medium())
                             .atom_grow(true),
                     )
-                    .stroke(Stroke::new(2.0, app.theme.border))
+                    .stroke(Stroke::new(2.0, LIGHT_THEME.border))
                     .fill(if state_name.is_empty() {
-                        app.theme.disabled
+                        LIGHT_THEME.border
                     } else {
-                        app.theme.success
+                        LIGHT_THEME.success
                     })
                     .corner_radius(10.0),
                 )
-                .clicked()
-                || app.popup.is_confirm())
+                .clicked())
                 && !state_name.is_empty()
             {
                 let state_id = app.turing.apply_state_change();
@@ -98,11 +96,11 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
                 match state_id {
                     Ok(state_id) => {
                         app.turing.state_edit = None;
-                        app.graph.select_state(state_id);
-                        app.popup.close();
+                        app.ui.graph.select_state(state_id);
+                        app.ui.popup.close();
                     }
-                    Err(error) => {
-                        app.error.push_back(error);
+                    Err(_error) => {
+                        // app.ui.error.push_back(error);
                     }
                 }
             };
