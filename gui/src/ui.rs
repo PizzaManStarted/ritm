@@ -1,3 +1,5 @@
+use std::println;
+
 use egui::{CentralPanel, CornerRadius, Frame, Margin, Panel, Shape, Stroke, Ui, Vec2, pos2, vec2};
 
 pub mod code;
@@ -152,7 +154,9 @@ pub fn desktop_show(app: &mut App, ui: &mut Ui) {
                                         .stroke(Stroke::new(1.0, LIGHT_THEME.border)),
                                 )
                                 .show_inside(ui, |ui| {
-                                    let _ = graph::show(app, ui);
+                                    if let Err(e) = graph::show(app, ui) {
+                                        println!("{e:?}");
+                                    }
                                 })
                         });
                 });

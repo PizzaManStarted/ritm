@@ -91,7 +91,7 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
 fn input(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
     ui.allocate_ui_with_layout(
         ui.available_size(),
-        Layout::right_to_left(Align::Center),
+        Layout::bottom_up(Align::Center),
         |ui| {
             if ui
                 .add(

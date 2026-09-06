@@ -1,6 +1,5 @@
 use egui::{
-    Align, Button, Frame, Id, Image, ImageSource, LayerId, Layout, Margin, Pos2, Rect,
-    Response, Sense, Stroke, Ui, UiBuilder, Vec2, include_image, vec2,
+    Align, Button, Color32, Frame, Id, Image, ImageSource, LayerId, Layout, Margin, Pos2, Rect, Response, Stroke, Ui, UiBuilder, Vec2, include_image, vec2,
 };
 
 use crate::{
@@ -21,20 +20,19 @@ pub struct Edit {
 pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
     let icon_size = app.settings.edit_button_size + 10.0;
 
-    // The parent ui paint on the background layer, so we need to change it to a higher layer
-    let layer = LayerId::new(egui::Order::Middle, Id::new("edit"));
     let ui_rect = ui.available_rect_before_wrap();
     // Floating control absolute position
     ui.scope_builder(
         UiBuilder::new()
             .max_rect(Rect::from_min_max(
-                Pos2::new(ui_rect.right() - icon_size - 10.0, ui_rect.top()),
-                Pos2::new(ui_rect.right() - 10.0, ui_rect.bottom() - 10.0),
+                Pos2::new(ui_rect.right() - icon_size, ui_rect.top()),
+                Pos2::new(ui_rect.right(), ui_rect.bottom()),
             ))
-            .sense(Sense::empty())
-            .layout(Layout::bottom_up(Align::Center).with_cross_align(Align::Center))
-            .layer_id(layer),
+            .layer_id(LayerId::new(egui::Order::Debug, Id::new("test")))
+            .layout(Layout::bottom_up(Align::Center).with_cross_align(Align::Center)),
         |ui| {
+
+        
 
             // TODO: replace with flags from bitflags crate
             let state_selected =
@@ -173,6 +171,7 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                 .response;
         },
     );
+
     Ok(())
 }
 

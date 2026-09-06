@@ -1,18 +1,21 @@
 use std::{collections::HashMap, io::Cursor, vec};
 
 use egui::{
-    Button, Color32, Event, Id, Image, LayerId, Pos2, Rect, Scene, Stroke, Ui, UiBuilder, UserData,
-    Vec2, ViewportCommand, include_image, pos2, vec2,
+    Button, Color32, Event, Id, Image, LayerId, Pos2, Rect, Scene, Sense, Stroke, Ui, UiBuilder, UserData, Vec2, ViewportCommand, include_image, pos2, vec2,
 };
 use image::{ImageBuffer, Rgba};
 
 use crate::{
-    App, error::RitmError, turing::{StateWrapper, TransitionId, Turing}, ui::{
+    App,
+    error::RitmError,
+    turing::{StateWrapper, TransitionId, Turing},
+    ui::{
         edit,
         graph::transition::{draw_arrow, draw_self_arrow},
         popup::RitmPopupEnum,
         theme::LIGHT_THEME,
-    }, utils::{constant::Constant, physic},
+    },
+    utils::{constant::Constant, physic},
 };
 
 pub mod state;
@@ -136,15 +139,6 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
                         Stroke::new(1.0, Color32::GRAY),
                     );
                 }
-
-                ui.painter().line(
-                    vec![pos2(0.0, 0.0), pos2(0.0, 10.0)],
-                    Stroke::new(1.0, Color32::BLUE),
-                );
-                ui.painter().line(
-                    vec![pos2(0.0, 0.0), pos2(10.0, 0.0)],
-                    Stroke::new(1.0, Color32::RED),
-                );
             }
 
             // Draw the transitions of the turing machine
@@ -209,18 +203,7 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
     }
 
     // TODO maybe enable the button when small windows but change the behavior to save code as text file directly
-    let layer = LayerId::new(egui::Order::Middle, Id::new("graph-buttons"));
-
-    // The different button on top of the graph
-    ui.scope_builder(
-        UiBuilder::new()
-            .layer_id(layer)
-            .max_rect(ui.max_rect().shrink(10.0)), // Shrink the size of the overlay to avoid problem
-        |ui| {
-            // Add a button to hide all ?
-            toggle_grid(ui, app);
-        },
-    );
+    let layer = LayerId::new(egui::Order::Background, Id::new("graph-buttons"));
 
     // Save scene border and recenter if asked
     // TODO find a better way to recenter, to avoid sticking to top
@@ -230,11 +213,6 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
     } else {
         scene_rect
     };
-
-    // Reset the graph (after recenter because need to redraw the states)
-    if !app.transient.taking_screenshot {
-        reset_button(ui, app, layer);
-    }
 
     // If the graph scene is clicked...
     if scene_response.clicked() {
@@ -252,10 +230,6 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
         app.ui.graph.unselect();
     }
 
-    if !app.transient.taking_screenshot {
-        edit::show(app, ui)?;
-    }
-
     // // Take a screenshot of the machine
     // if !app.transient.taking_screenshot {
     //     take_screenshot_button(ui, app, layer);
@@ -265,6 +239,31 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
     if !app.ui.graph.is_stable {
         ui.ctx().request_repaint();
     }
+
+    // The different button on top of the graph
+    ui.scope_builder(
+        UiBuilder::new()
+            .layer_id(layer)
+            .sense(Sense::empty())
+            .max_rect(ui.max_rect().shrink(10.0)), // Shrink the size of the overlay to avoid problem
+        |ui| {
+            // Add a button to hide all ?
+
+            // Toggle the grid mode
+            toggle_grid(ui, app);
+
+            // Reset the graph (after recenter because need to redraw the states)
+            if !app.transient.taking_screenshot {
+                reset_button(ui, app);
+            }
+
+            if !app.transient.taking_screenshot {
+                edit::show(app, ui)?;
+            }
+            Ok(())
+        },
+    ).inner?;
+    
     Ok(())
 }
 
@@ -340,38 +339,30 @@ fn apply_force(app: &mut App) {
 }
 
 /// Button to reset the graph to the initial and accepting state
-fn reset_button(ui: &mut Ui, app: &mut App, layer: LayerId) {
-    let icon_size = Vec2::splat(app.settings.edit_button_size + 10.0);
-    ui.scope_builder(
-        UiBuilder::new()
-            .layer_id(layer)
-            .max_rect(Rect::from_min_size(
-                ui.max_rect().right_top() - vec2(icon_size.x, 0.0),
-                icon_size,
-            )),
-        |ui| {
-            let button = ui.put(
-                Rect::from_min_size(
-                    ui.max_rect().right_top() - vec2(icon_size.x + 10.0, 0.0),
-                    icon_size,
-                ),
-                Button::image(
-                    Image::new(include_image!("../../assets/icon/erase.svg"))
-                        .fit_to_exact_size(icon_size)
-                        .tint(LIGHT_THEME.surface),
-                )
-                .frame(false),
-            );
-            if button.clicked() {
-                app.turing = Turing::default()
-            }
-        },
+fn reset_button(ui: &mut Ui, app: &mut App) {
+    let icon_size = Vec2::splat(app.settings.edit_button_size);
+
+    let button = ui.put(
+        Rect::from_min_size(
+            ui.max_rect().right_top() - vec2(icon_size.x, 0.0),
+            icon_size,
+        ),
+        Button::image(
+            Image::new(include_image!("../../assets/icon/erase.svg"))
+                .fit_to_exact_size(icon_size)
+                .tint(LIGHT_THEME.icon),
+        )
+        .frame(false),
     );
+    if button.clicked() {
+        // TODO add a confirmation popup
+        app.turing = Turing::default()
+    }
 }
 
 /// Button to reset the graph to the initial and accepting state
 fn toggle_grid(ui: &mut Ui, app: &mut App) {
-    let icon_size = Vec2::splat(app.settings.edit_button_size + 10.0);
+    let icon_size = Vec2::splat(app.settings.edit_button_size);
     let icon_color = if app.ui.graph.grid_enabled {
         LIGHT_THEME.primary
     } else {

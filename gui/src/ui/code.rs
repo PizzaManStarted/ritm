@@ -3,7 +3,10 @@ use std::format;
 use egui::{
     Align, Align2, Atom, AtomExt, Atoms, Button, Color32, FontId, Frame, Id, Image, IntoAtoms,
     Label, Layout, Margin, RichText, ScrollArea, Stroke, TextEdit, TextFormat, Ui, Vec2,
-    include_image, scroll_area::ScrollBarVisibility, text::LayoutJob, vec2,
+    include_image,
+    scroll_area::{ScrollBarVisibility, ScrollSource},
+    text::LayoutJob,
+    vec2,
 };
 use ritm_core::turing_parser::TuringParserError;
 
@@ -299,6 +302,7 @@ fn tabs(ui: &mut Ui, app: &mut App) {
             ui.spacing_mut().scroll.bar_width = ui.spacing().scroll.floating_width;
             ui.spacing_mut().scroll.active_background_opacity = 0.0;
             ui.spacing_mut().scroll.dormant_background_opacity = 0.0;
+            ui.style_mut().always_scroll_the_only_direction = true;
             ScrollArea::horizontal()
                 .id_salt("tabs")
                 .max_height(ui.available_height())
@@ -340,7 +344,7 @@ fn tabs(ui: &mut Ui, app: &mut App) {
 fn tab(app: &mut App, ui: &mut Ui, index: usize) {
     let is_current_tab = app.ui.code.current_tab == index;
     // Tab frame
-    Frame::new()
+    let tab = Frame::new()
         .fill(if !is_current_tab {
             Color32::from_gray(128).blend(LIGHT_THEME.code_background.gamma_multiply_u8(200))
         } else {
@@ -348,127 +352,132 @@ fn tab(app: &mut App, ui: &mut Ui, index: usize) {
         })
         .inner_margin(Margin::symmetric(5, 2))
         .show(ui, |ui| {
-
             ui.horizontal_centered(|ui| {
+                // Define the id for the sub buttons
+                let text_edit_id = Id::new("text_edit");
+                let delete_button_id = Id::new("delete_button");
 
-            // Define the id for the sub buttons
-            let text_edit_id = Id::new("text_edit");
-            let delete_button_id = Id::new("delete_button");
+                // Get the tab data
+                let tab = &mut app.ui.code.tabs[index];
 
-            // Get the tab data
-            let tab = &mut app.ui.code.tabs[index];
-
-            // Layout the button
-            ui.spacing_mut().icon_spacing = 4.0;
-            ui.spacing_mut().button_padding = vec2(0.0, 0.0);
-            let button = Button::new(if is_current_tab && app.ui.code.editing_name {
-                Atoms::new(
-                    // Atom::custom(Id::NULL, vec2(0.0, 30.0)),
-                    Atom::custom(
-                        text_edit_id,
-                        vec2(
-                            Font::get_width_word(
-                                ui,
-                                &FontId::proportional(Font::MEDIUM),
-                                &app.ui.code.tabs[app.ui.code.current_tab].name,
-                            ) + 10.0,
-                            30.0,
-                        ),
-                    ),
-                )
-            } else {
-                (
-                    Atom::custom(Id::NULL, vec2(0.0, 30.0)),
-                    RichText::new(tab.name.clone())
-                        .color(LIGHT_THEME.code)
-                        .font(FontId::proportional(Font::MEDIUM)),
-                    Atom::custom(delete_button_id, Vec2::splat(Font::ICON))
-                        .atom_align(Align2::RIGHT_CENTER),
-                )
-                    .into_atoms()
-            })
-            .min_size(vec2(0.0, ui.available_height()))
-            .frame(false)
-            .fill(LIGHT_THEME.code_background)
-            .atom_ui(ui);
-
-            // Textedit
-            // TODO: change text_edit color
-            if let Some(rect) = button.rect(text_edit_id) {
-                let text_edit =
-                    TextEdit::singleline(&mut app.ui.code.tabs[app.ui.code.current_tab].name)
-                        // .margin(Margin::symmetric(
-                        //     2,
-                        //     -((Font::get_heigth(ui, &FontId::proportional(Font::SMALL)) - Font::BIG_SIZE) / 2.0)
-                        //         as i8,
-                        // ))
-                        .vertical_align(Align::Center)
-                        .background_color(Color32::PLACEHOLDER)
-                        .font(Font::default(20.0))
-                        .frame(Frame::NONE)
-                        .text_color(LIGHT_THEME.code);
-
-                let response = ui.put(rect, text_edit);
-
-                if response.lost_focus() {
-                    app.ui.code.tab_name_check();
-                    app.ui.code.editing_name = false;
-                }
-
-                if app.ui.code.editing_name {
-                    response.request_focus();
-                }
-
-                // TODO: maybe reenable this ?
-                // no (i mean put a setting at least)
-                // response.request_focus();
-            }
-
-            if !is_current_tab && button.response.clicked() {
-                app.ui.code.switch_to(index);
-            }
-
-            // A bunch of visual, can't wait for a style update
-            ui.visuals_mut().widgets.hovered.weak_bg_fill = if !is_current_tab {
-                Color32::from_gray(128).blend(LIGHT_THEME.code_background.gamma_multiply_u8(180))
-            } else {
-                Color32::from_gray(128).blend(LIGHT_THEME.code_background.gamma_multiply_u8(210))
-            };
-            ui.visuals_mut().widgets.inactive.weak_bg_fill = if !is_current_tab {
-                Color32::from_gray(128).blend(LIGHT_THEME.code_background.gamma_multiply_u8(210))
-            } else {
-                LIGHT_THEME.code_background
-            };
-            ui.visuals_mut().widgets.inactive.bg_stroke = Stroke::NONE;
-            ui.visuals_mut().widgets.hovered.bg_stroke = Stroke::NONE;
-            ui.visuals_mut().widgets.active.bg_stroke = Stroke::NONE;
-            ui.spacing_mut().button_padding.x = 0.0;
-
-            // Show the close button only if hovered or if it's the current tab
-            if !(app.ui.code.editing_name)
-                && (ui.rect_contains_pointer(button.response.rect) || is_current_tab)
-                && let Some(rect) = button.rect(delete_button_id)
-                && ui
-                    .put(
-                        rect,
-                        Button::image(
-                            Image::new(include_image!("../../assets/icon/close_small.svg"))
-                                .shrink_to_fit()
-                                .tint(LIGHT_THEME.code),
+                // Layout the button
+                ui.spacing_mut().icon_spacing = 4.0;
+                ui.spacing_mut().button_padding = vec2(0.0, 0.0);
+                let button = Button::new(if is_current_tab && app.ui.code.editing_name {
+                    Atoms::new(
+                        // Atom::custom(Id::NULL, vec2(0.0, 30.0)),
+                        Atom::custom(
+                            text_edit_id,
+                            vec2(
+                                Font::get_width_word(
+                                    ui,
+                                    &FontId::proportional(Font::MEDIUM),
+                                    &app.ui.code.tabs[app.ui.code.current_tab].name,
+                                ) + 10.0,
+                                30.0,
+                            ),
                         ),
                     )
-                    .clicked()
-            {
-                app.ui.code.tabs[index].mark_to_delete();
-            }
+                } else {
+                    (
+                        Atom::custom(Id::NULL, vec2(0.0, 30.0)),
+                        RichText::new(tab.name.clone())
+                            .color(LIGHT_THEME.code)
+                            .font(FontId::proportional(Font::MEDIUM)),
+                        Atom::custom(delete_button_id, Vec2::splat(Font::ICON))
+                            .atom_align(Align2::RIGHT_CENTER),
+                    )
+                        .into_atoms()
+                })
+                .min_size(vec2(0.0, ui.available_height()))
+                .frame(false)
+                .fill(LIGHT_THEME.code_background)
+                .atom_ui(ui);
 
-            if button.response.double_clicked() {
-                app.ui.code.editing_name = true;
-            }
+                // Textedit
+                // TODO: change text_edit color
+                if let Some(rect) = button.rect(text_edit_id) {
+                    let text_edit =
+                        TextEdit::singleline(&mut app.ui.code.tabs[app.ui.code.current_tab].name)
+                            // .margin(Margin::symmetric(
+                            //     2,
+                            //     -((Font::get_heigth(ui, &FontId::proportional(Font::SMALL)) - Font::BIG_SIZE) / 2.0)
+                            //         as i8,
+                            // ))
+                            .vertical_align(Align::Center)
+                            .background_color(Color32::PLACEHOLDER)
+                            .font(Font::default(20.0))
+                            .frame(Frame::NONE)
+                            .text_color(LIGHT_THEME.code);
 
+                    let response = ui.put(rect, text_edit);
+
+                    if response.lost_focus() {
+                        app.ui.code.tab_name_check();
+                        app.ui.code.editing_name = false;
+                    }
+
+                    if app.ui.code.editing_name {
+                        response.request_focus();
+                    }
+
+                    // TODO: maybe reenable this ?
+                    // no (i mean put a setting at least)
+                    // response.request_focus();
+                }
+
+                if !is_current_tab && button.response.clicked() {
+                    app.ui.code.switch_to(index);
+                }
+
+                // A bunch of visual, can't wait for a style update
+                ui.visuals_mut().widgets.hovered.weak_bg_fill = if !is_current_tab {
+                    Color32::from_gray(128)
+                        .blend(LIGHT_THEME.code_background.gamma_multiply_u8(180))
+                } else {
+                    Color32::from_gray(128)
+                        .blend(LIGHT_THEME.code_background.gamma_multiply_u8(210))
+                };
+                ui.visuals_mut().widgets.inactive.weak_bg_fill = if !is_current_tab {
+                    Color32::from_gray(128)
+                        .blend(LIGHT_THEME.code_background.gamma_multiply_u8(210))
+                } else {
+                    LIGHT_THEME.code_background
+                };
+                ui.visuals_mut().widgets.inactive.bg_stroke = Stroke::NONE;
+                ui.visuals_mut().widgets.hovered.bg_stroke = Stroke::NONE;
+                ui.visuals_mut().widgets.active.bg_stroke = Stroke::NONE;
+                ui.spacing_mut().button_padding.x = 0.0;
+
+                // Show the close button only if hovered or if it's the current tab
+                if !(app.ui.code.editing_name)
+                    && (ui.rect_contains_pointer(button.response.rect) || is_current_tab)
+                    && let Some(rect) = button.rect(delete_button_id)
+                    && ui
+                        .put(
+                            rect,
+                            Button::image(
+                                Image::new(include_image!("../../assets/icon/close_small.svg"))
+                                    .shrink_to_fit()
+                                    .tint(LIGHT_THEME.code),
+                            ),
+                        )
+                        .clicked()
+                {
+                    app.ui.code.tabs[index].mark_to_delete();
+                }
+
+                if button.response.double_clicked() {
+                    app.ui.code.editing_name = true;
+                }
             });
             Ok::<(), RitmError>(())
-        });
+        })
+        .response;
+    if app.ui.code.auto_scroll && app.ui.code.current_tab == index {
+        ui.scroll_to_rect(tab.rect, None);
+        app.ui.code.auto_scroll = false;
+    }
 }
 
 /// If there is no tabe, propose the creation of a new one or loading
