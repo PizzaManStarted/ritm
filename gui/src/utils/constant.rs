@@ -31,17 +31,6 @@ impl Constant {
 
     pub const ICON_SIZE: f32 = 35.0;
 
-    // /// Scale down the value passed when the application is smaller than default
-    // pub fn scale<T: From<f32> + Into<f32>>(ui: &Ui, value: T) -> T {
-    //     let size = ui.ctx().screen_rect().size();
-    //     if Self::DEFAULT_SIZE.x <= size.x && Self::DEFAULT_SIZE.y <= size.y {
-    //         value
-    //     } else {
-    //         T::from(
-    //             (size.x / Self::DEFAULT_SIZE.x).min(size.y / Self::DEFAULT_SIZE.y) * value.into(),
-    //         )
-    //     }
-    // }
     #[cfg(not(target_arch = "wasm32"))]
     pub fn update_scale(ui: &Ui) {
         let size = ui.viewport_rect().size() * ui.pixels_per_point();

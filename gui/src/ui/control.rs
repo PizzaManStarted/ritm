@@ -69,7 +69,7 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
         ui.set_height(70.0);
         let grid = Grid::new(ui, 2, 3);
 
-        let input = grid.place(ui, 1, 1, |ui| input(app, ui));
+        let input = grid.place_range(ui, 1..=2, 1..=1, |ui| input(app, ui));
         input.inner?;
 
         grid.place(ui, 1, 2, |ui| control(app, ui));
@@ -341,7 +341,7 @@ fn state(app: &mut App, ui: &mut Ui) {
         });
 }
 
-fn button(flex: &mut FlexInstance, app: &mut App, icon: ImageSource, disabled: bool) -> Response {
+fn button(flex: &mut FlexInstance, _app: &mut App, icon: ImageSource, disabled: bool) -> Response {
     let icon_size = Vec2::splat(Constant::CONTROL_ICON_SIZE);
     flex.add(
         item(),

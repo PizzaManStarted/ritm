@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, mem::replace, todo};
+use std::{mem::replace, todo};
 
 use egui::{
     Align, Atom, AtomLayout, Button, Color32, CornerRadius, FontId, Frame, Id, Image, ImageSource,
@@ -91,17 +91,12 @@ impl<'a> RitmPopupEnum {
     }
 
     pub fn close(&self, app: &mut App, ui: &mut Ui) {
-        match self {
-            _ => {}
-        }
         app.ui.popup.close();
         ui.close();
     }
 
-    pub fn min_size(&self, ui: &Ui) -> Vec2 {
-        match self {
-            _ => Vec2::ZERO,
-        }
+    pub fn min_size(&self, _ui: &Ui) -> Vec2 {
+        Vec2::ZERO
     }
 }
 

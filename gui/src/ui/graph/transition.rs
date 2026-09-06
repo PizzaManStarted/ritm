@@ -28,72 +28,65 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
     // Used to compute the center of every state position
     let mut neighbors: HashMap<usize, HashSet<usize>> = HashMap::new();
 
-    let transition_data: Vec<(usize, usize, usize)> = app
-        .turing
-        .tm
-        .graph_ref()
-        .get_transitions_hashmap()
-        .iter()
-        .map(|(k, v)| (k.0, k.1, v.len()))
-        .collect();
-    for (source_id, target_id, count) in transition_data {
-        for i in 0..count {
-            if source_id != target_id {
-                neighbors
-                    .entry(source_id)
-                    .or_insert(HashSet::from([target_id]))
-                    .insert(target_id);
-                neighbors
-                    .entry(target_id)
-                    .or_insert(HashSet::from([source_id]))
-                    .insert(source_id);
+    for (source_id, target_id, i) in app.turing.get_transitions_id().into_iter().map(Into::into) {
+        if source_id != target_id {
+            neighbors
+                .entry(source_id)
+                .or_insert(HashSet::from([target_id]))
+                .insert(target_id);
+            neighbors
+                .entry(target_id)
+                .or_insert(HashSet::from([source_id]))
+                .insert(source_id);
+        }
+
+        // check if the current transition has been used to get to the current state
+        let transition_taken = match &app.turing.current_step {
+            TuringExecutionSteps::FirstIteration { .. } => None,
+            TuringExecutionSteps::TransitionTaken {
+                previous_state,
+                reached_state,
+                transition_index,
+                ..
+            } => Some((
+                previous_state.get_id(),
+                transition_index.1,
+                reached_state.get_id(),
+            )),
+            TuringExecutionSteps::Backtracked { .. } => None,
+        };
+
+        let is_previous = transition_taken.is_some_and(|f| f == (source_id, i, target_id));
+
+        match transitions_hashmap.entry((source_id, target_id)) {
+            Entry::Occupied(mut e) => {
+                e.get_mut()
+                    .push(((source_id, i, target_id).into(), is_previous));
             }
-
-            // check if the current transition has been used to get to the current state
-            let transition_taken = match &app.turing.current_step {
-                TuringExecutionSteps::FirstIteration { .. } => None,
-                TuringExecutionSteps::TransitionTaken {
-                    previous_state,
-                    reached_state,
-                    transition_index,
-                    ..
-                } => Some((
-                    previous_state.get_id(),
-                    transition_index.1,
-                    reached_state.get_id(),
-                )),
-                TuringExecutionSteps::Backtracked { .. } => None,
-            };
-
-            let is_previous = transition_taken.is_some_and(|f| f == (source_id, i, target_id));
-
-            match transitions_hashmap.entry((source_id, target_id)) {
-                Entry::Occupied(mut e) => {
-                    e.get_mut()
-                        .push(((source_id, i, target_id).into(), is_previous));
-                }
-                Entry::Vacant(e) => {
-                    e.insert(vec![((source_id, i, target_id).into(), is_previous)]);
-                }
+            Entry::Vacant(e) => {
+                e.insert(vec![((source_id, i, target_id).into(), is_previous)]);
             }
         }
     }
 
     for ((source, target), transitions) in transitions_hashmap.iter() {
+        // Self transition
         if source == target {
             let transition_vec = app.turing.best_vector(*source)?;
             let source_position = app.turing.get_state(*source)?.inner_state.position;
 
             let placement = draw_self_arrow(app, ui, source_position, transition_vec)?;
+
             draw_labels(app, ui, transitions, placement)?;
-        } else {
-            let transitions_keys = app.turing.tm.graph_ref().get_transitions_hashmap();
-            let reverse = transitions_keys.contains_key(&(*source, *target))
-                && transitions_keys.contains_key(&(*target, *source));
+        }
+        // Normal transition
+        else {
+            let both_way = app.turing.is_dual_transition(*source, *target);
 
             let target_position = app.turing.get_state(*target)?.inner_state.position;
             let source_position = app.turing.get_state(*source)?.inner_state.position;
-            let placement = draw_arrow(app, ui, source_position, target_position, Some(reverse))?;
+            let placement = draw_arrow(app, ui, source_position, target_position, Some(both_way))?;
+
             draw_labels(app, ui, transitions, placement)?;
         }
     }

@@ -14,7 +14,7 @@ pub const LIGHT_THEME: Theme = Theme {
     text_primary: hex_color!("#000000"),
     text_secondary: hex_color!("#444444"),
     text_disabled: hex_color!("#999999"),
-    icon: hex_color!("#1b54f3"),
+    icon: hex_color!("#000000"),
     hover: hex_color!("#ff00ff"),
     active: hex_color!("#ff00ff"),
     focus: hex_color!("#ff00ff"),

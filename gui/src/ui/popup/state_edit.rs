@@ -30,7 +30,7 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
                 app.turing.state_edit = if let Ok(state) = app.turing.get_state(*selected) {
                     Some(StateEdit::from(state))
                 } else {
-                    Some(StateEdit::empty(app.turing.tm.graph_ref().get_next_id()))
+                    Some(StateEdit::empty(app.turing.next_id()))
                 }
             }
 

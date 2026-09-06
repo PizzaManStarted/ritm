@@ -191,7 +191,7 @@ fn button(ui: &mut Ui, app: &mut App, icon: ImageSource, selected: bool) -> Resp
                         .tint(if selected {
                             LIGHT_THEME.active
                         } else {
-                            LIGHT_THEME.surface
+                            LIGHT_THEME.icon
                         }),
                 )
                 .frame(false)

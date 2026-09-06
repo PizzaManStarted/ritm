@@ -1,21 +1,15 @@
 use egui::{
-    Atom, Frame, Image, RichText, Spinner, Stroke, TextEdit, Ui, Vec2, include_image, vec2,
+    Image, RichText, Ui, Vec2, include_image,
 };
-use serde::Serialize;
 
 use crate::{
     App,
-    ui::{component::button::RitmButton, popup::RitmPopupEnum, theme::LIGHT_THEME},
+    ui::{component::button::RitmButton, theme::LIGHT_THEME},
 };
 
 #[derive(Default)]
 pub struct Save {}
 
-#[derive(Serialize, Default, Clone)]
-struct NewMachineRequest {
-    name: String,
-    description: String,
-}
 
 impl Save {
     pub fn save(ui: &mut Ui, app: &mut App) {

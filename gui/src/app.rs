@@ -1,11 +1,8 @@
-use std::{collections::VecDeque, time::Duration};
+use std::{collections::VecDeque, format, time::Duration};
 
 use egui::{Pos2, Ui};
 use egui_extras::install_image_loaders;
-use ritm_core::{
-    turing_graph::TuringGraph,
-    turing_parser::{graph_to_string, parse_turing_graph_string},
-};
+use ritm_core::turing_graph::TuringGraph;
 
 use crate::{
     error::RitmError,
@@ -74,7 +71,7 @@ impl Default for Transient {
 
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        cc.egui_ctx.set_debug_on_hover(true);
+        // cc.egui_ctx.set_debug_on_hover(true);
 
         // Load the fonts used in the application
         load_font(cc);
@@ -128,12 +125,12 @@ impl App {
     }
 
     pub fn new_state_at_pos(&mut self, pos: Pos2) {
-        let mut state_edit = StateEdit::empty(self.turing.tm.graph_ref().get_next_id());
+        let mut state_edit = StateEdit::empty(self.turing.next_id());
 
-        state_edit.get_edit().state.position = pos;
+        state_edit.get_edit().state.position = (pos/self.settings.grid_size as f32).round() * self.settings.grid_size as f32;
         state_edit.get_edit().name = format!(
             "q_{}",
-            self.turing.tm.graph_ref().get_state_hashmap().len() + 1
+            self.turing.next_id()+1
         );
 
         self.turing.state_edit = Some(state_edit);

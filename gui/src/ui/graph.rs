@@ -1,19 +1,17 @@
-use std::{collections::HashMap, io::Cursor};
+use std::{collections::HashMap, io::Cursor, vec};
 
 use egui::{
-    Button, Event, Id, Image, LayerId, Pos2, Rect, Scene, Ui, UiBuilder, UserData, Vec2, ViewportCommand, include_image, vec2
+    Button, Color32, Event, Id, Image, LayerId, Pos2, Rect, Scene, Stroke, Ui, UiBuilder, UserData,
+    Vec2, ViewportCommand, include_image, pos2, vec2,
 };
 use image::{ImageBuffer, Rgba};
-use ritm_core::turing_graph::TuringStateWrapper;
 
 use crate::{
-    App,
-    error::RitmError,
-    turing::{State, TransitionId, Turing},
-    ui::{
+    App, error::RitmError, turing::{StateWrapper, TransitionId, Turing}, ui::{
         edit,
         graph::transition::{draw_arrow, draw_self_arrow},
-        popup::RitmPopupEnum, theme::LIGHT_THEME,
+        popup::RitmPopupEnum,
+        theme::LIGHT_THEME,
     }, utils::{constant::Constant, physic},
 };
 
@@ -21,12 +19,17 @@ pub mod state;
 pub mod transition;
 
 pub struct Graph {
+    // The id of a state if selected
     selected_state: Option<usize>,
+    // The id of a transition if selected
     selected_transitions: Option<TransitionId>,
+    // The graph rect
     graph_rect: Rect,
     recenter: bool,
     is_stable: bool,
     is_dragging: bool,
+    grid_enabled: bool,
+    // The start state id and the end state id if hovered
     drag_transition: Option<(usize, Option<usize>)>,
 }
 
@@ -40,6 +43,7 @@ impl Default for Graph {
             is_stable: false,
             is_dragging: false,
             drag_transition: None,
+            grid_enabled: true,
         }
     }
 }
@@ -91,27 +95,65 @@ impl Graph {
 ///
 /// User can edit the graph and update the code and turing machine
 pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
-    // current rect of the element inside the scene
+    // Current rect of the element inside the scene
     let mut inner_rect = Rect::ZERO;
 
+    // Previous frame scene rect
     let mut scene_rect = app.ui.graph.graph_rect;
 
     let graph_rect = ui.available_rect_before_wrap();
 
     // Compute the force applied on every node when no node are dragged
-    if !app.ui.graph.is_dragging {
+    if !app.ui.graph.is_dragging && !app.ui.graph.grid_enabled {
         apply_force(app);
     }
 
     let scene_response = Scene::new()
-        .zoom_range(0.0..=1.0)
+        .zoom_range(0.1..=1.0)
         .show(ui, &mut scene_rect, |ui| {
+            // Draw the grid
+            if app.ui.graph.grid_enabled {
+                let bound = ui.clip_rect();
+
+                let increment = app.settings.grid_size as i32;
+                // println!("{:?} {}", bound.min, );
+                let offset = bound.min / (increment as f32).round();
+                for i in 0..=(bound.width() / increment as f32) as i32 {
+                    ui.painter().line(
+                        vec![
+                            pos2(((offset.x as i32 + i) * increment) as f32, bound.min.y),
+                            pos2(((offset.x as i32 + i) * increment) as f32, bound.max.y),
+                        ],
+                        Stroke::new(1.0, Color32::GRAY),
+                    );
+                }
+                for i in 0..=(bound.height() / increment as f32) as i32 {
+                    ui.painter().line(
+                        vec![
+                            pos2(bound.min.x, ((offset.y as i32 + i) * increment) as f32),
+                            pos2(bound.max.x, ((offset.y as i32 + i) * increment) as f32),
+                        ],
+                        Stroke::new(1.0, Color32::GRAY),
+                    );
+                }
+
+                ui.painter().line(
+                    vec![pos2(0.0, 0.0), pos2(0.0, 10.0)],
+                    Stroke::new(1.0, Color32::BLUE),
+                );
+                ui.painter().line(
+                    vec![pos2(0.0, 0.0), pos2(10.0, 0.0)],
+                    Stroke::new(1.0, Color32::RED),
+                );
+            }
+
             // Draw the transitions of the turing machine
             transition::show(app, ui)?;
 
             // Draw the states of the turing machine on top of the transition
             state::show(app, ui)?;
 
+            // Handle the drag of a transition from a state
             if transition_dragging(ui, app, graph_rect).is_err() {
                 // app.error.push_back(x);
             }
@@ -123,6 +165,8 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
         })
         .response;
 
+    // Take a screenshot if a screenshot event is received
+    // TODO replace it by svg ?
     ui.input(|i| {
         for e in &i.raw.events {
             if let Event::Screenshot { image, .. } = e {
@@ -144,7 +188,12 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
         }
     });
 
-    if scene_response.is_pointer_button_down_on() && !scene_response.dragged() {
+    // Add a state by long press on empty space
+    // TODO make popup safer to avoid infinite popup
+    if scene_response.is_pointer_button_down_on()
+        && !scene_response.dragged()
+        && app.ui.popup.current().is_none()
+    {
         let time = ui.input(|r| r.time);
         let time_down = time - ui.input(|r| r.pointer.press_start_time()).unwrap_or(time);
         if time_down
@@ -160,10 +209,21 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
     }
 
     // TODO maybe enable the button when small windows but change the behavior to save code as text file directly
-    let layer = LayerId::new(egui::Order::Middle, Id::new("graph-button"));
+    let layer = LayerId::new(egui::Order::Middle, Id::new("graph-buttons"));
+
+    // The different button on top of the graph
+    ui.scope_builder(
+        UiBuilder::new()
+            .layer_id(layer)
+            .max_rect(ui.max_rect().shrink(10.0)), // Shrink the size of the overlay to avoid problem
+        |ui| {
+            // Add a button to hide all ?
+            toggle_grid(ui, app);
+        },
+    );
 
     // Save scene border and recenter if asked
-    // TODO better way to recenter, avoid sticking to top
+    // TODO find a better way to recenter, to avoid sticking to top
     app.ui.graph.graph_rect = if app.ui.graph.recenter {
         app.ui.graph.recenter = false;
         inner_rect
@@ -176,9 +236,9 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
         reset_button(ui, app, layer);
     }
 
-    // If the graph scene is clicked
-    // TODO: need to rework state adding flow
+    // If the graph scene is clicked...
     if scene_response.clicked() {
+        //... and the user want a new state
         if app.ui.edit.is_adding_state {
             let click_pos = scene_response
                 .interact_pointer_pos()
@@ -196,12 +256,12 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
         edit::show(app, ui)?;
     }
 
-    // Take a screenshot of the machine
-    if !app.transient.taking_screenshot {
-        take_screenshot_button(ui, app, layer);
-    }
+    // // Take a screenshot of the machine
+    // if !app.transient.taking_screenshot {
+    //     take_screenshot_button(ui, app, layer);
+    // }
 
-    // Repaint the canvas
+    // Force the repaint of the canvas if the graph is instable
     if !app.ui.graph.is_stable {
         ui.ctx().request_repaint();
     }
@@ -218,7 +278,7 @@ fn apply_force(app: &mut App) {
     // register the max force applied on a state to check if the system is stable
     let mut max_force_applied: f32 = 0.0;
 
-    let states = app.turing.tm.graph_ref().get_states();
+    let states = app.turing.get_states();
 
     for i in 0..states.len() {
         let mut force: f32 = 0.0;
@@ -230,10 +290,7 @@ fn apply_force(app: &mut App) {
                 continue;
             }
 
-            // true if there is a transition between the two states
-            let transition_hashmap = app.turing.tm.graph_ref().get_transitions_hashmap();
-            let are_adjacent = transition_hashmap.contains_key(&(i, j))
-                || transition_hashmap.contains_key(&(j, i));
+            let are_adjacent = app.turing.adjacent(i, j);
 
             let distance = physic::distance(
                 states[i].inner_state.position,
@@ -243,7 +300,7 @@ fn apply_force(app: &mut App) {
                 states[i].inner_state.position,
                 states[j].inner_state.position,
             );
-            let size = Constant::L + (100 * (app.turing.tm.graph_ref().get_k())) as f32;
+            let size = Constant::L + (100 * app.turing.writing_tape_count()) as f32;
 
             // different equations are use based on the adjacency of the states
             if are_adjacent {
@@ -272,8 +329,7 @@ fn apply_force(app: &mut App) {
         forces.insert(i, final_force);
     }
 
-    let mut states_mut: Vec<&mut TuringStateWrapper<State>> =
-        app.turing.tm.graph_mut().get_states_mut();
+    let mut states_mut: Vec<&mut StateWrapper> = app.turing.get_states_mut();
 
     for state_mut in states_mut.iter_mut().filter(|s| !s.inner_state.is_pinned) {
         // translate the state by the amount of force
@@ -314,6 +370,37 @@ fn reset_button(ui: &mut Ui, app: &mut App, layer: LayerId) {
 }
 
 /// Button to reset the graph to the initial and accepting state
+fn toggle_grid(ui: &mut Ui, app: &mut App) {
+    let icon_size = Vec2::splat(app.settings.edit_button_size + 10.0);
+    let icon_color = if app.ui.graph.grid_enabled {
+        LIGHT_THEME.primary
+    } else {
+        LIGHT_THEME.icon
+    };
+
+    let button = ui.put(
+        Rect::from_min_size(ui.max_rect().left_top(), icon_size),
+        Button::image(
+            Image::new(include_image!("../../assets/icon/grid.svg"))
+                .fit_to_exact_size(icon_size)
+                .tint(icon_color),
+        )
+        .frame(false),
+    );
+    if button.clicked() {
+        app.ui.graph.grid_enabled ^= true;
+
+        if app.ui.graph.grid_enabled {
+            let increment = app.settings.grid_size as f32;
+            for state in app.turing.get_states_mut() {
+                state.inner_state.position =
+                    (state.inner_state.position / increment).round() * increment
+            }
+        }
+    }
+}
+
+/// Button to reset the graph to the initial and accepting state
 fn take_screenshot_button(ui: &mut Ui, app: &mut App, layer: LayerId) {
     let icon_size = Vec2::splat(app.settings.edit_button_size + 10.0);
     ui.scope_builder(
@@ -346,7 +433,6 @@ fn take_screenshot_button(ui: &mut Ui, app: &mut App, layer: LayerId) {
 }
 
 fn transition_dragging(ui: &mut Ui, app: &mut App, graph_rect: Rect) -> Result<(), RitmError> {
-    
     if let Some((source_id, target_id)) = app.ui.graph.drag_transition {
         // If the mouse/pen is released then we check if a transition can be added
         if !ui.input(|r| r.pointer.any_down()) {
@@ -355,9 +441,12 @@ fn transition_dragging(ui: &mut Ui, app: &mut App, graph_rect: Rect) -> Result<(
                     app.turing.add_default_transition(source_id, target_id)?;
                 }
                 app.turing.prepare_transition_edit(source_id, target_id)?;
-                app.ui.popup
+                app.ui
+                    .popup
                     .open(RitmPopupEnum::TransitionEdit(TransitionId {
-                        source_id, target_id, id: 0
+                        source_id,
+                        target_id,
+                        id: 0,
                     }));
             }
 

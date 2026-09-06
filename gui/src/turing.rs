@@ -5,9 +5,7 @@ use rand::{random, random_range};
 use ritm_core::{
     turing_graph::{
         TuringGraph, TuringGraphError, TuringState, TuringStateType, TuringStateWrapper,
-    },
-    turing_machine::{Mode, TuringExecutionSteps, TuringMachine},
-    turing_transition::{TuringTransition, TuringTransitionWrapper},
+    }, turing_machine::{Mode, TuringExecutionSteps, TuringMachine}, turing_parser::graph_to_string, turing_transition::{TuringTransition, TuringTransitionWrapper},
 };
 
 use crate::error::{GuiError, RitmError};
@@ -17,7 +15,7 @@ pub type StateWrapper = TuringStateWrapper<State>;
 pub type TransitionsEdit = ((usize, usize), Vec<(TransitionEdit, Option<String>)>);
 
 pub struct Turing {
-    pub tm: TuringMachine<State, Transition>,
+    tm: TuringMachine<State, Transition>,
     pub current_step: TuringExecutionSteps,
     pub accepted: Option<bool>,
     pub transition_edit: Option<TransitionsEdit>,
@@ -26,8 +24,7 @@ pub struct Turing {
 
 impl Default for Turing {
     fn default() -> Self {
-        let graph: TuringGraph<State, Transition> =
-            TuringGraph::new(0, true);
+        let graph: TuringGraph<State, Transition> = TuringGraph::new(0, true);
         let mode = Mode::SaveAll;
         let mut tm =
             TuringMachine::new(graph, "".to_string(), mode).expect("Turing machine creation fail");
@@ -261,7 +258,7 @@ impl Turing {
         &self,
         source_id: usize,
         target_id: usize,
-    ) -> Result<&Vec<TuringTransitionWrapper<Transition>>, RitmError> {
+    ) -> Result<&Vec<TransitionWrapper>, RitmError> {
         self.tm
             .graph_ref()
             .get_transitions(source_id, target_id)
@@ -273,6 +270,75 @@ impl Turing {
                 }
             })
             .map_err(|e| RitmError::CoreError(e.to_string()))?
+    }
+
+    pub fn get_states(&self) -> Vec<&StateWrapper> {
+        self.tm.graph_ref().get_states()
+    }
+
+    pub fn get_states_mut(&mut self) -> Vec<&mut StateWrapper> {
+        self.tm.graph_mut().get_states_mut()
+    }
+
+    pub fn get_states_id(&self) -> Vec<usize> {
+        self.tm
+            .graph_ref()
+            .get_state_hashmap()
+            .keys()
+            .copied()
+            .collect()
+    }
+
+    pub fn get_transitions_id(&self) -> Vec<TransitionId> {
+        self.tm
+            .graph_ref()
+            .get_transitions_hashmap()
+            .iter()
+            .flat_map(|((s, t), trs)| {
+                trs.iter().enumerate().map(|(id, _)| TransitionId {
+                    source_id: *s,
+                    id,
+                    target_id: *t,
+                })
+            })
+            .collect()
+    }
+
+    pub fn is_dual_transition(&self, source_id: usize, target_id: usize) -> bool {
+        self.tm
+            .graph_ref()
+            .get_transitions_hashmap()
+            .contains_key(&(source_id, target_id))
+            && self
+                .tm
+                .graph_ref()
+                .get_transitions_hashmap()
+                .contains_key(&(target_id, source_id))
+    }
+
+    // True if a transition exist between the two states
+    pub fn adjacent(&self, a: usize, b: usize) -> bool {
+        self.tm
+            .graph_ref()
+            .get_transitions_hashmap()
+            .contains_key(&(a, b))
+            || self
+                .tm
+                .graph_ref()
+                .get_transitions_hashmap()
+                .contains_key(&(b, a))
+    }
+
+    pub fn writing_tape_count(&self) -> usize {
+        self.tm.graph_ref().get_k()
+    }
+
+    pub fn next_id(&self) -> usize {
+        self.tm.graph_ref().get_next_id()
+    }
+
+    pub fn to_code(&self) -> String {
+        graph_to_string(self.tm.graph_ref())
     }
 }
 
@@ -601,9 +667,9 @@ impl From<(usize, usize)> for TransitionId {
     }
 }
 
-impl From<TransitionId> for (usize, usize) {
+impl From<TransitionId> for (usize, usize, usize) {
     fn from(val: TransitionId) -> Self {
-        (val.source_id, val.target_id)
+        (val.source_id, val.id, val.target_id)
     }
 }
 

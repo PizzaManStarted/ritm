@@ -1,5 +1,5 @@
 use egui::{Image, RichText, Ui, Vec2, include_image};
-use ritm_core::turing_parser::{graph_to_string, parse_turing_graph_string};
+use ritm_core::turing_parser::parse_turing_graph_string;
 
 use crate::{App, error::RitmError, turing::Turing, ui::component::button::RitmButton};
 
@@ -48,7 +48,7 @@ impl Convert {
 
     /// Convert the graph to code
     fn graph_to_code(app: &mut App) {
-        let code = graph_to_string(app.turing.tm.graph_ref());
+        let code = app.turing.to_code();
         app.ui.code.new_tab(app.ui.code.default_tab_name(), code);
     }
 

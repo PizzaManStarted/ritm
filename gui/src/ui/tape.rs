@@ -14,7 +14,7 @@ use crate::{
 };
 
 pub fn show(app: &mut App, ui: &mut Ui) {
-    let tapes_count = app.turing.tm.graph_ref().get_k() + 1;
+    let tapes_count = app.turing.writing_tape_count() + 1;
 
     // Apply a scale correction to element for small screen
     let square_size = Constant::SQUARE_SIZE;

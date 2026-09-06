@@ -1,15 +1,16 @@
-use std::path::Path;
-
 use egui::{
-    AtomExt, CentralPanel, Checkbox, ComboBox, DragValue, Grid, Id, Image, ImageSource, RichText,
-    Stroke, TextBuffer, Ui, UserData, ViewportBuilder, ViewportCommand, ViewportId, include_image,
-    style::WidgetVisuals, vec2,
+    AtomExt, Checkbox, ComboBox, DragValue, Grid, Image, ImageSource, RichText, Stroke, Ui,
+    include_image, style::WidgetVisuals, vec2,
 };
-use image::{ExtendedColorType, save_buffer};
 use include_directory::{Dir, include_directory};
 use ritm_core::turing_machine::Mode;
 
-use crate::{App, error::RitmError, ui::theme::{LIGHT_THEME, Theme}, utils::font::Font};
+use crate::{
+    App,
+    error::RitmError,
+    ui::theme::{LIGHT_THEME, Theme},
+    utils::font::Font,
+};
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct Settings {
@@ -20,6 +21,7 @@ pub struct Settings {
     pub enable_debug: bool,
     pub theme_changer: bool,
     pub edit_button_size: f32,
+    pub grid_size: usize,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -39,6 +41,7 @@ impl Default for Settings {
             enable_debug: false,
             theme_changer: false,
             edit_button_size: 25.0,
+            grid_size: 100,
         }
     }
 }
@@ -141,7 +144,7 @@ fn get_file(name: &str) -> ImageSource<'_> {
     }
 }
 
-fn localisation_setting(ui: &mut Ui, app: &mut App) {
+fn localisation_setting(ui: &mut Ui, _apppp: &mut App) {
     ui.label(RichText::new(t!("language")).font(Font::default_medium()));
 
     let locale = rust_i18n::locale().to_string();
@@ -251,7 +254,7 @@ fn localisation_setting(ui: &mut Ui, app: &mut App) {
 //     ui.end_row();
 // }
 
-fn theme_choose(ui: &mut Ui, app: &mut App) {
+fn theme_choose(ui: &mut Ui, _app: &mut App) {
     ui.label(RichText::new(t!("theme")).font(Font::default_medium()));
     ComboBox::from_id_salt("Themes")
         .selected_text(
@@ -314,7 +317,7 @@ fn edit_button_size(ui: &mut Ui, app: &mut App) {
 
 fn tape_count(ui: &mut Ui, app: &mut App) {
     ui.label(RichText::new(t!("tape_count")).font(Font::default_medium()));
-    let mut k = app.turing.tm.graph_ref().get_k();
+    let mut k = app.turing.writing_tape_count();
     if ui
         .add(
             DragValue::new(&mut k)
@@ -330,48 +333,48 @@ fn tape_count(ui: &mut Ui, app: &mut App) {
     ui.end_row();
 }
 
-pub fn debug_show(ui: &Ui, app: &mut App) {
-    let mut x = false;
-    ui.show_viewport_immediate(
-        ViewportId::from_hash_of(Id::new("test")),
-        ViewportBuilder::default()
-            .with_always_on_top()
-            .with_inner_size(vec2(150.0, 30.0)),
-        |ui, _vc| {
-            CentralPanel::default().show_inside(ui, |ui| {
-                if ui.button("Take screenshot").clicked() {
-                    x = true;
-                }
-            })
-        },
-    );
+// pub fn debug_show(ui: &Ui, app: &mut App) {
+//     let mut x = false;
+//     ui.show_viewport_immediate(
+//         ViewportId::from_hash_of(Id::new("test")),
+//         ViewportBuilder::default()
+//             .with_always_on_top()
+//             .with_inner_size(vec2(150.0, 30.0)),
+//         |ui, _vc| {
+//             CentralPanel::default().show_inside(ui, |ui| {
+//                 if ui.button("Take screenshot").clicked() {
+//                     x = true;
+//                 }
+//             })
+//         },
+//     );
 
-    if x {
-        ui.send_viewport_cmd(ViewportCommand::Screenshot(UserData::default()));
-    }
-    take_screenshot(app, ui);
-}
+//     if x {
+//         ui.send_viewport_cmd(ViewportCommand::Screenshot(UserData::default()));
+//     }
+//     take_screenshot(app, ui);
+// }
 
-fn take_screenshot(_app: &mut App, ui: &Ui) {
-    let rect = ui.content_rect();
+// fn take_screenshot(_app: &mut App, ui: &Ui) {
+//     let rect = ui.content_rect();
 
-    let time = ui.input(|r| r.time);
-    ui.input(|i| {
-        i.events.iter().for_each(|e| {
-            if let egui::Event::Screenshot { image, .. } = e {
-                let image = image.region(&rect, Some(i.pixels_per_point));
-                save_buffer(
-                    Path::new(&format!(
-                        "assets/help/screenshot-{}.png",
-                        time.to_string().char_range(0..4)
-                    )),
-                    image.as_raw(),
-                    image.source_size.x as u32,
-                    image.source_size.y as u32,
-                    ExtendedColorType::Rgba8,
-                )
-                .unwrap();
-            }
-        })
-    });
-}
+//     let time = ui.input(|r| r.time);
+//     ui.input(|i| {
+//         i.events.iter().for_each(|e| {
+//             if let egui::Event::Screenshot { image, .. } = e {
+//                 let image = image.region(&rect, Some(i.pixels_per_point));
+//                 save_buffer(
+//                     Path::new(&format!(
+//                         "assets/help/screenshot-{}.png",
+//                         time.to_string()..char_range(0..4)
+//                     )),
+//                     image.as_raw(),
+//                     image.source_size.x as u32,
+//                     image.source_size.y as u32,
+//                     ExtendedColorType::Rgba8,
+//                 )
+//                 .unwrap();
+//             }
+//         })
+//     });
+// }

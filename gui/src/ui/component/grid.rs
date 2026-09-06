@@ -1,5 +1,7 @@
+use std::ops::{Range, RangeInclusive};
+
 use eframe::egui;
-use egui::UiBuilder;
+use egui::{UiBuilder, vec2};
 
 pub struct Grid {
     cell: egui::Rect,
@@ -57,6 +59,28 @@ impl Grid {
         let hold_rect = self
             .cell
             .translate(egui::vec2(colf32 * width, rowf32 * height));
+        // Return
+        ui.scope_builder(UiBuilder::new().max_rect(hold_rect), add_ctx)
+    }
+
+    pub fn place_range<R>(
+        &self,
+        ui: &mut egui::Ui,
+        row: RangeInclusive<usize>,
+        col: RangeInclusive<usize>,
+        add_ctx: impl FnOnce(&mut egui::Ui) -> R,
+    ) -> egui::InnerResponse<R> {
+        assert!(*row.start() >= 1);
+        assert!(*col.start() >= 1);
+        let height = self.cell.height();
+        let width = self.cell.width();
+        let colf32: f32 = (col.start() - 1) as f32;
+        let rowf32: f32 = (row.start() - 1) as f32;
+        let mut hold_rect = self
+            .cell
+            .translate(egui::vec2(colf32 * width, rowf32 * height));
+        hold_rect.set_width((col.end() - col.start() + 1) as f32 * width);
+        hold_rect.set_height((row.end() - row.start() + 1) as f32 * height);
         // Return
         ui.scope_builder(UiBuilder::new().max_rect(hold_rect), add_ctx)
     }

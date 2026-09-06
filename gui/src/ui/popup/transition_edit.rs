@@ -92,7 +92,7 @@ pub fn show(ui: &mut Ui, app: &mut App) -> Result<(), RitmError> {
                     )
                     .clicked()
                 {
-                    let k = app.turing.tm.graph_ref().get_k();
+                    let k = app.turing.writing_tape_count();
                     let selected_transition = &mut app.turing.get_transitions_edit_mut()?.1;
                     selected_transition.push((
                         TransitionEdit::from(&TransitionWrapper {

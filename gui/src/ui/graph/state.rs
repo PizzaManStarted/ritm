@@ -14,14 +14,8 @@ use crate::{
 /// Display every state of the turing machine
 pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
     // This line copy every keys of the hasmap to avoid borrowing the struct App that we need in each call.
-    let keys: Vec<usize> = app
-        .turing
-        .tm
-        .graph_ref()
-        .get_state_hashmap()
-        .keys()
-        .copied()
-        .collect();
+    let keys: Vec<usize> = app.turing.get_states_id();
+
     for i in keys {
         draw_node(app, ui, i)?;
     }
@@ -31,12 +25,7 @@ pub fn show(app: &mut App, ui: &mut Ui) -> Result<(), RitmError> {
 /// Draw a single state
 pub fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) -> Result<(), RitmError> {
     // Get the state information
-    let state = app
-        .turing
-        .tm
-        .graph_mut()
-        .get_state(state_id)
-        .expect("state exist");
+    let state = app.turing.get_state(state_id)?;
 
     // Define the boundaries of the node
     let rect = Rect::from_center_size(
@@ -110,12 +99,7 @@ pub fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) -> Result<(), Ritm
     }
 
     // Reborrow the state as a mut this time
-    let state = app
-        .turing
-        .tm
-        .graph_mut()
-        .try_get_state_mut(state_id)
-        .expect("state exist");
+    let state = app.turing.get_state_mut(state_id)?;
 
     if let Some((s, _)) = app.ui.graph.drag_transition
         && response.contains_pointer()
@@ -143,6 +127,11 @@ pub fn draw_node(app: &mut App, ui: &mut Ui, state_id: usize) -> Result<(), Ritm
         state.inner_state.position = response
             .interact_pointer_pos()
             .expect("Pointer should exist");
+        if app.ui.graph.grid_enabled {
+            state.inner_state.position =
+                (state.inner_state.position / app.settings.grid_size as f32).round()
+                    * app.settings.grid_size as f32
+        }
         state.inner_state.is_pinned = true;
     }
 
